@@ -217,7 +217,7 @@ export const Forum: React.FC = () => {
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 px-4.5 rounded-full cursor-pointer active:scale-95 shadow-xs transition-all shrink-0"
+          className="flex items-center gap-1.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-2.5 px-4.5 rounded-full cursor-pointer active:scale-95 shadow-xs transition-all shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Tạo chủ đề thảo luận</span>
@@ -247,8 +247,8 @@ export const Forum: React.FC = () => {
                   onClick={() => setSelectedCategory(cat.id)}
                   className={`w-full text-left py-2.5 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                     selectedCategory === cat.id
-                      ? 'bg-slate-100 text-slate-900 font-extrabold border-l-4 border-slate-900 shadow-xs'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                      ? 'bg-brand-primary/10 text-brand-primary font-extrabold border-l-4 border-brand-primary shadow-xs'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-brand-primary'
                   }`}
                 >
                   {cat.name}
@@ -278,7 +278,7 @@ export const Forum: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm chủ đề thảo luận hoặc từ khóa tag..."
-              className="w-full bg-white border border-brand-border rounded-2xl py-3 pl-10 pr-4 text-xs text-brand-text focus:outline-none focus:border-slate-800 transition-all font-semibold"
+              className="w-full bg-white border border-brand-border rounded-2xl py-3 pl-10 pr-4 text-xs text-brand-text focus:outline-none focus:border-brand-secondary transition-all font-semibold"
             />
           </div>
 
@@ -310,7 +310,7 @@ export const Forum: React.FC = () => {
 
                   {/* Body Title & Text */}
                   <div className="text-left space-y-1.5">
-                    <h3 className="text-base font-bold text-brand-text font-serif leading-tight hover:text-slate-800 transition-colors">
+                    <h3 className="text-base font-bold text-brand-text font-serif leading-tight hover:text-brand-primary transition-colors">
                       {t.title}
                     </h3>
                     <p className="text-brand-text-muted text-xs leading-relaxed font-medium line-clamp-2">
@@ -336,7 +336,7 @@ export const Forum: React.FC = () => {
                       <button
                         onClick={(e) => handleUpvote(t.id, e)}
                         className={`flex items-center gap-1.5 font-bold cursor-pointer px-3 py-1 rounded-full text-xs transition-all ${
-                          t.hasUpvoted ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800'
+                          t.hasUpvoted ? 'bg-brand-secondary/15 text-brand-primary' : 'bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-brand-primary'
                         }`}
                       >
                         <ThumbsUp className="w-3.5 h-3.5" />
@@ -455,13 +455,13 @@ export const Forum: React.FC = () => {
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Nhập ý kiến thảo luận của bạn..."
                   rows={2}
-                  className="flex-1 bg-slate-50 border border-brand-border rounded-2xl py-2 px-3 text-xs text-brand-text focus:outline-none focus:border-slate-800 resize-none font-medium placeholder-slate-400"
+                  className="flex-1 bg-slate-50 border border-brand-border rounded-2xl py-2 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-secondary resize-none font-medium placeholder-slate-400"
                 />
               </div>
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2 px-4.5 rounded-full cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                  className="bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-2 px-4.5 rounded-full cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                 >
                   <Smile className="w-3.5 h-3.5" />
                   <span>Trả lời</span>
@@ -499,7 +499,7 @@ export const Forum: React.FC = () => {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ví dụ: Xin đề mẫu môn AIL302 Practical Exam..."
-                  className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-slate-800 font-semibold"
+                  className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-secondary font-semibold"
                 />
               </div>
 
@@ -509,7 +509,7 @@ export const Forum: React.FC = () => {
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-slate-800 font-semibold cursor-pointer"
+                    className="w-full bg-brand-bg border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-primary font-semibold cursor-pointer"
                   >
                     <option value="WEB">Lập trình Web</option>
                     <option value="AI">Trí tuệ nhân tạo</option>
@@ -524,7 +524,7 @@ export const Forum: React.FC = () => {
                     value={newTags}
                     onChange={(e) => setNewTags(e.target.value)}
                     placeholder="Ví dụ: AI, Python, K19"
-                    className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-slate-800 font-medium"
+                    className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-secondary font-medium"
                   />
                 </div>
               </div>
@@ -537,13 +537,13 @@ export const Forum: React.FC = () => {
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   placeholder="Gợi ý: Hãy mô tả cụ thể câu hỏi hoặc điểm bạn cần được mentor hướng dẫn chéo, và kỹ năng bạn có thể trao lại..."
-                  className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-slate-800 resize-none font-medium placeholder-slate-400"
+                  className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-secondary resize-none font-medium placeholder-slate-400"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-3.5 px-4 rounded-full cursor-pointer active:scale-[0.98] transition-all"
+                className="w-full bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-3.5 px-4 rounded-full cursor-pointer active:scale-[0.98] transition-all"
               >
                 Đăng bài thảo luận
               </button>

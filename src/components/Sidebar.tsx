@@ -14,8 +14,6 @@ import {
   MessageSquare,
   Send,
   Home,
-  Settings,
-  HelpCircle,
   User
 } from 'lucide-react';
 
@@ -33,8 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const linkClass = (path: string) => {
     return `flex items-center gap-3.5 py-3 px-4.5 rounded-xl text-xs font-bold transition-all duration-200 ${
       isActive(path)
-        ? 'bg-slate-900 text-white shadow-sm'
-        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+        ? 'text-slate-900 bg-transparent font-extrabold'
+        : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
     }`;
   };
 
@@ -92,18 +90,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         />
       )}
 
-      {/* Sidebar Panel */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/60 flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } md:static md:h-screen shrink-0`}
       >
         <div className="flex flex-col flex-1">
           {/* Logo */}
           <div className="flex items-center justify-between mb-8">
-            <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2 group text-left">
-              <span className="text-xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
-                <span className="text-slate-400 font-extrabold">///</span> SkillSwap
+            <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2.5 group text-left">
+              <img src="/SkillSwapLogo.png" alt="SkillSwap Logo" className="w-11 h-11 object-contain" />
+              <span className="text-xl font-bold tracking-tight text-brand-primary">
+                SkillSwap
               </span>
             </Link>
             <button
@@ -127,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             {user?.roles?.[0] !== 'ADMIN' && (
               <button
                 onClick={handlePostClick}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-full py-3 px-4.5 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer mt-4"
+                className="w-full bg-[#1e293b] hover:bg-[#0f172a] text-white rounded-full py-3 px-4.5 text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer mt-4"
               >
                 Đăng tin
               </button>
@@ -136,14 +134,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer Settings & Invite Links */}
-        <div className="pt-6 border-t border-slate-100 flex flex-col gap-1.5 mt-auto">
+        <div className="pt-6 border-t border-slate-100 flex flex-col gap-2 mt-auto text-left">
           <Link
             to="/profile"
             onClick={onClose}
-            className="flex items-center gap-3 py-2 px-4.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+            className="py-1 px-4.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
           >
-            <Settings className="w-4 h-4" />
-            <span>Cài đặt</span>
+            Cài đặt
           </Link>
           <a
             href="#help"
@@ -152,10 +149,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               onClose();
               alert("Đang chuyển hướng tới Trung tâm hỗ trợ SkillSwap...");
             }}
-            className="flex items-center gap-3 py-2 px-4.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+            className="py-1 px-4.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
           >
-            <HelpCircle className="w-4 h-4" />
-            <span>Trung tâm hỗ trợ</span>
+            Trung tâm hỗ trợ
           </a>
           <button
             onClick={() => {
@@ -163,10 +159,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               navigator.clipboard.writeText(window.location.origin);
               alert("Đã sao chép link mời bạn bè tham gia SkillSwap!");
             }}
-            className="flex items-center gap-3 py-2 px-4.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors text-left w-full cursor-pointer"
+            className="py-1 px-4.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors text-left w-full cursor-pointer"
           >
-            <Users className="w-4 h-4" />
-            <span>Mời bạn bè</span>
+            Mời bạn bè
           </button>
         </div>
       </aside>

@@ -4,22 +4,27 @@
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-serif: 'Plus Jakarta Sans', Georgia, sans-serif;
   
-  --color-brand-bg: #f8fafc;
+  --color-brand-bg: #f1f5f9;
   --color-brand-sidebar: #ffffff;
   --color-brand-card: #ffffff;
   --color-brand-card-bg: #ffffff;
   --color-brand-border: #f1f5f9;
-  --color-brand-primary: #0f172a;
-  --color-brand-primary-hover: #1e293b;
-  --color-brand-blue: #2563eb;
-  --color-brand-blue-hover: #1d4ed8;
-  --color-brand-text: #0f172a;
-  --color-brand-text-muted: #64748b;
-  --color-brand-grey: #94a3b8;
+  
+  /* Logo Theme Colors */
+  --color-brand-primary: #0038e0; /* Vibrant Royal Blue */
+  --color-brand-primary-hover: #002db3;
+  --color-brand-secondary: #00a2ff; /* Bright Cyan/Sky Blue */
+  --color-brand-secondary-hover: #008ae6;
+  
+  --color-brand-blue: #0038e0;
+  --color-brand-blue-hover: #002db3;
+  --color-brand-text: #051138; /* Deepest Indigo/Blue-Black */
+  --color-brand-text-muted: #5c688d; /* Indigo Slate */
+  --color-brand-grey: #a5b4fc;
   
   /* Backward compatibility for CSS variables mapping */
-  --color-brand-terracotta: #0f172a;
-  --color-brand-terracotta-hover: #1e293b;
+  --color-brand-terracotta: #0038e0;
+  --color-brand-terracotta-hover: #002db3;
 }
 
 body {
@@ -39,8 +44,8 @@ body {
 /* Nearlist-inspired Card & Shadow styling */
 .meetmind-card {
   background: var(--color-brand-card);
-  border: 1px solid var(--color-brand-border);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 8px -1px rgba(15, 23, 42, 0.02);
 }
 
 .meetmind-card-hover {

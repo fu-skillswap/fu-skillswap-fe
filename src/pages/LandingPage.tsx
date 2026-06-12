@@ -37,15 +37,16 @@ export const LandingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-[#0f172a] font-sans selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-brand-text font-sans selection:bg-brand-primary selection:text-white">
       
       {/* Public Header */}
       <header className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/60 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <span className="text-lg font-bold tracking-tight text-slate-800 flex items-center gap-2">
-              <span className="text-slate-400 font-extrabold">///</span> SkillSwap
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <img src="/SkillSwapLogo.png" alt="SkillSwap Logo" className="w-11 h-11 object-contain" />
+            <span className="text-lg font-bold tracking-tight text-brand-primary">
+              SkillSwap
             </span>
           </Link>
 
@@ -62,14 +63,14 @@ export const LandingPage: React.FC = () => {
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
-                className="inline-flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                className="inline-flex items-center justify-center bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
               >
                 Vào Dashboard
               </Link>
             ) : (
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                className="inline-flex items-center justify-center bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
               >
                 Đăng nhập ngay
               </Link>
@@ -84,18 +85,18 @@ export const LandingPage: React.FC = () => {
         style={{ backgroundImage: "url('/fpt-banner.png')" }}
       >
         {/* Gradient Overlay for Legibility */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0f172a]/95 via-[#0f172a]/75 to-transparent pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#051138]/95 via-[#051138]/75 to-transparent pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Hero Content Left */}
           <div className="max-w-2xl space-y-6">
-            <span className="inline-flex items-center gap-1.5 bg-[#f58220] text-white text-[10px] font-extrabold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md shadow-[#f58220]/25 animate-pulse">
+            <span className="inline-flex items-center gap-1.5 bg-brand-primary text-white text-[10px] font-extrabold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md shadow-brand-primary/25 animate-pulse">
               <Sparkles className="w-3.5 h-3.5" /> Cộng đồng trao đổi kỹ năng FPTU
             </span>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight">
               Kiến thức của bạn,<br />
-              <span className="text-[#f58220]">Kỹ năng</span> của bạn học
+              <span className="text-brand-secondary">Kỹ năng</span> của bạn học
             </h1>
             
             <p className="text-slate-200 text-xs sm:text-sm font-semibold max-w-xl leading-relaxed">
@@ -106,7 +107,7 @@ export const LandingPage: React.FC = () => {
             <div className="flex flex-wrap gap-4 pt-2">
               <Link
                 to="/login"
-                className="flex items-center gap-1.5 bg-[#f58220] hover:bg-[#e07216] text-white text-xs font-bold py-3.5 px-7 rounded-full shadow-lg shadow-[#f58220]/20 active:scale-95 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-95 text-white text-xs font-bold py-3.5 px-7 rounded-full shadow-lg shadow-brand-primary/20 active:scale-95 transition-all cursor-pointer"
               >
                 <span>Bắt đầu trao đổi ngay</span>
                 <ArrowRight className="w-4 h-4" />
@@ -228,7 +229,7 @@ export const LandingPage: React.FC = () => {
                   />
                   <div className="text-left">
                     <span className="text-xs font-bold block">Bạn (Sinh viên K19)</span>
-                    <span className="text-[9px] text-[#f58220] font-bold">Thế mạnh: Figma UI/UX ⇄ Cần học: Python</span>
+                    <span className="text-[9px] text-brand-primary font-bold">Thế mạnh: Figma UI/UX ⇄ Cần học: Python</span>
                   </div>
                 </div>
 
@@ -285,13 +286,13 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
             
             {/* Mentee card */}
-            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-slate-400 hover:shadow-xs transition-all space-y-4">
-              <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
+              <div className="w-9 h-9 rounded-full bg-slate-100 text-brand-primary flex items-center justify-center font-bold">
                 <Smile className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Dành cho Mentee (Học viên)</h3>
               <ul className="space-y-2.5 text-xs text-slate-500 font-semibold">
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Tìm kiếm, lọc danh sách Mentor theo ngành.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-brand-secondary shrink-0 mt-0.5" /> <span>Tìm kiếm, lọc danh sách Mentor theo ngành.</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Xem độ tương hợp (%) và đánh giá lịch sử.</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Nộp đơn xin lên làm Mentor (kèm tài liệu).</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Báo cáo kết quả và viết phản hồi công khai.</span></li>
@@ -299,13 +300,13 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Mentor card */}
-            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-slate-400 hover:shadow-xs transition-all space-y-4">
-              <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
+              <div className="w-9 h-9 rounded-full bg-slate-100 text-brand-primary flex items-center justify-center font-bold">
                 <Award className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Dành cho Mentor (Người dạy)</h3>
               <ul className="space-y-2.5 text-xs text-slate-500 font-semibold">
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Tạo lịch rảnh (Slots) theo ngày và giờ hẹn.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-brand-secondary shrink-0 mt-0.5" /> <span>Tạo lịch rảnh (Slots) theo ngày và giờ hẹn.</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Chấp nhận hoặc từ chối lịch kèm lý do.</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Cập nhật link phòng trực tuyến (Zoom/Meet).</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Cấu hình portfolio, kinh nghiệm & dịch vụ.</span></li>
@@ -313,13 +314,13 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Admin card */}
-            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-slate-400 hover:shadow-xs transition-all space-y-4">
-              <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
+              <div className="w-9 h-9 rounded-full bg-slate-100 text-brand-primary flex items-center justify-center font-bold">
                 <Compass className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Dành cho Admin (Quản trị)</h3>
               <ul className="space-y-2.5 text-xs text-slate-500 font-semibold">
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Xem dashboard báo cáo chỉ số MVP vận hành.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-brand-secondary shrink-0 mt-0.5" /> <span>Xem dashboard báo cáo chỉ số MVP vận hành.</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Quản lý khóa/mở hoạt động của tài khoản.</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Phê duyệt hàng chờ chứng chỉ xin lên Mentor.</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Giám sát hệ thống logs đăng ký & đặt chỗ.</span></li>
@@ -336,10 +337,10 @@ export const LandingPage: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div className="space-y-2">
-              <span className="inline-block text-[9px] font-extrabold text-slate-700 bg-slate-100 border border-slate-200 py-1 px-3.5 rounded-full uppercase tracking-wider">
+              <span className="inline-block text-[9px] font-extrabold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 py-1 px-3.5 rounded-full uppercase tracking-wider">
                 Đội ngũ tinh hoa
               </span>
-              <h2 className="text-3xl font-bold text-[#0f172a] tracking-tight">Mentor tiêu biểu xuất sắc</h2>
+              <h2 className="text-3xl font-bold text-brand-text tracking-tight">Mentor tiêu biểu xuất sắc</h2>
               <p className="text-slate-500 text-xs sm:text-sm font-semibold">
                 Các sinh viên khóa trên đạt kết quả GPA cao và có nhiều kinh nghiệm dự án thực tế.
               </p>
@@ -347,7 +348,7 @@ export const LandingPage: React.FC = () => {
             
             <Link
               to="/login"
-              className="text-xs font-bold text-slate-950 hover:text-slate-700 hover:underline inline-flex items-center gap-1 shrink-0"
+              className="text-xs font-bold text-brand-primary hover:text-brand-primary-hover hover:underline inline-flex items-center gap-1 shrink-0"
             >
               Xem tất cả danh sách <ArrowRight className="w-4 h-4" />
             </Link>
@@ -355,7 +356,7 @@ export const LandingPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {mockTopMentors.map((m, idx) => (
-              <div key={idx} className="bg-white border border-slate-200/80 p-6 rounded-3xl space-y-5 flex flex-col justify-between hover:border-slate-400 hover:shadow-xs transition-all relative overflow-hidden group">
+              <div key={idx} className="bg-white border border-slate-200/80 p-6 rounded-3xl space-y-5 flex flex-col justify-between hover:border-brand-secondary hover:shadow-xs transition-all relative overflow-hidden group">
                 <div className="space-y-4">
                   {/* Avatar & Info */}
                   <div className="flex items-start gap-3.5">
@@ -365,14 +366,14 @@ export const LandingPage: React.FC = () => {
                       className="w-11 h-11 rounded-xl bg-slate-50 object-cover border border-slate-200"
                     />
                     <div className="text-left space-y-0.5">
-                      <span className="text-sm font-bold text-slate-900 block group-hover:text-slate-700 transition-colors">{m.name}</span>
+                      <span className="text-sm font-bold text-brand-text block group-hover:text-brand-primary transition-colors">{m.name}</span>
                       <span className="text-[10px] text-slate-400 font-extrabold uppercase block">{m.role}</span>
                     </div>
                   </div>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-1 text-xs font-bold text-[#f58220]">
-                    <Star className="w-3.5 h-3.5 fill-[#f58220]" /> {m.rating}{' '}
+                  <div className="flex items-center gap-1 text-xs font-bold text-brand-secondary">
+                    <Star className="w-3.5 h-3.5 fill-brand-secondary text-brand-secondary" /> {m.rating}{' '}
                     <span className="text-slate-400 text-[10px] font-semibold">({m.reviews} đánh giá)</span>
                   </div>
 
@@ -398,7 +399,7 @@ export const LandingPage: React.FC = () => {
                   
                   <Link
                     to="/login"
-                    className="text-slate-800 hover:text-slate-650 inline-flex items-center gap-1 cursor-pointer"
+                    className="text-brand-primary hover:text-brand-primary-hover inline-flex items-center gap-1 cursor-pointer"
                   >
                     Xem lịch rảnh <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
@@ -411,20 +412,20 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* CTA Bottom Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white text-center relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-brand-primary to-[#051138] text-white text-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"></div>
         
         <div className="max-w-4xl mx-auto px-6 space-y-6 relative">
           <h2 className="text-3xl font-bold tracking-tight leading-tight">
             Nâng cao năng lực học tập và kết nối hôm nay!
           </h2>
-          <p className="text-slate-400 text-xs font-semibold max-w-md mx-auto leading-relaxed">
+          <p className="text-white/80 text-xs font-semibold max-w-md mx-auto leading-relaxed">
             Đăng nhập ngay bằng Chế độ Bypass để trải nghiệm các vai trò, đặt lịch học và trao đổi kiến thức học thuật tại FPT University.
           </p>
           <div className="pt-2">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 bg-[#f58220] hover:bg-[#e07216] text-white text-xs font-extrabold py-3.5 px-8 rounded-full shadow-xl shadow-[#f58220]/20 transition-all active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-brand-secondary hover:bg-brand-secondary-hover text-white text-xs font-extrabold py-3.5 px-8 rounded-full shadow-xl shadow-brand-secondary/20 transition-all active:scale-95 cursor-pointer"
             >
               <span>Truy cập hệ thống ngay</span>
               <ArrowRight className="w-4.5 h-4.5" />
@@ -434,13 +435,14 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Public Footer */}
-      <footer className="bg-[#0b172a] text-slate-400 py-12 text-left text-xs">
+      <footer className="bg-[#051138] text-slate-400 py-12 text-left text-xs">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
           
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="text-base font-bold text-white flex items-center gap-1.5">
-                <span className="text-slate-500 font-extrabold">///</span> SkillSwap
+            <div className="flex items-center gap-2.5">
+              <img src="/SkillSwapLogo.png" alt="SkillSwap Logo" className="w-10 h-10 object-contain brightness-0 invert" />
+              <span className="text-base font-bold text-white">
+                SkillSwap
               </span>
             </div>
             <p className="leading-relaxed font-semibold">

@@ -194,7 +194,7 @@ export const Chat: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm đối tác chat..."
-              className="w-full bg-slate-50 border border-brand-border rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none focus:border-slate-800 font-semibold"
+              className="w-full bg-slate-50 border border-brand-border rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none focus:border-brand-secondary font-semibold"
             />
           </div>
         </div>
@@ -212,7 +212,7 @@ export const Chat: React.FC = () => {
                 onClick={() => setActivePartnerId(partner.id)}
                 className={`w-full p-4 flex gap-3 text-left transition-colors cursor-pointer ${
                   activePartnerId === partner.id
-                    ? 'bg-slate-100 border-l-4 border-slate-900 shadow-xs'
+                    ? 'bg-brand-primary/10 border-l-4 border-brand-primary shadow-xs'
                     : 'hover:bg-slate-50'
                 }`}
               >
@@ -308,7 +308,7 @@ export const Chat: React.FC = () => {
                   <div
                     className={`p-3.5 rounded-2xl text-xs font-semibold leading-relaxed ${
                       isMe
-                        ? 'bg-slate-900 text-white rounded-br-none shadow-sm'
+                        ? 'bg-brand-primary text-white rounded-br-none shadow-sm'
                         : 'bg-slate-100 text-slate-800 rounded-bl-none border border-slate-200/50'
                     }`}
                   >
@@ -346,11 +346,11 @@ export const Chat: React.FC = () => {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={`Nhắn tin cho ${activePartner.name}...`}
-              className="flex-1 bg-slate-50 border border-brand-border rounded-xl py-3 px-4 text-xs focus:outline-none focus:border-slate-800 font-semibold"
+              className="flex-1 bg-slate-50 border border-brand-border rounded-xl py-3 px-4 text-xs focus:outline-none focus:border-brand-secondary font-semibold"
             />
             <button
               type="submit"
-              className="p-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl cursor-pointer active:scale-95 shadow-xs transition-all flex items-center justify-center shrink-0"
+              className="p-3 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl cursor-pointer active:scale-95 shadow-xs transition-all flex items-center justify-center shrink-0"
               title="Gửi tin nhắn"
             >
               <Send className="w-4 h-4" />
