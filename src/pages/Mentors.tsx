@@ -319,19 +319,19 @@ export const Mentors: React.FC = () => {
       
       {/* Title */}
       <div className="space-y-2">
-        <span className="inline-flex items-center gap-1 bg-brand-terracotta/15 text-brand-terracotta text-xs font-bold py-1 px-3 rounded-full border border-brand-terracotta/25">
+        <span className="inline-flex items-center gap-1 bg-brand-terracotta/15 text-brand-terracotta text-body font-bold py-1 px-3 rounded-full border border-brand-terracotta/25">
           <Sparkles className="w-3.5 h-3.5" /> Kết nối kỹ năng FPT
         </span>
         <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight">
           Tìm kiếm Mentor & Bạn cùng tiến
         </h1>
-        <p className="text-brand-text-muted text-sm max-w-2xl font-medium">
+        <p className="text-brand-text-muted text-body max-w-2xl font-medium">
           Lọc và ghép cặp với các sinh viên khóa trên hoặc các bạn cùng ngành để bắt đầu phiên trao đổi kỹ năng học thuật.
         </p>
       </div>
 
       {/* Filter Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border border-brand-border p-4 rounded-2xl shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface border border-brand-border p-4 rounded-card shadow-sm">
         
         {/* Search bar */}
         <div className="relative md:col-span-2">
@@ -341,7 +341,7 @@ export const Mentors: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm kiếm theo tên hoặc từ khóa kỹ năng (React, Python...)..."
-            className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-3 pl-10 pr-4 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta transition-all font-semibold"
+            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 pl-10 pr-4 text-body text-brand-text focus:outline-none focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta transition-all font-semibold"
           />
         </div>
 
@@ -350,7 +350,7 @@ export const Mentors: React.FC = () => {
           <select
             value={selectedSpecialization}
             onChange={(e) => setSelectedSpecialization(e.target.value)}
-            className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-3 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
+            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
           >
             <option value="ALL">Tất cả chuyên ngành</option>
             {specializations.map((spec) => (
@@ -366,7 +366,7 @@ export const Mentors: React.FC = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-3 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
+            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
           >
             <option value="ALL">Tất cả trạng thái</option>
             <option value="AVAILABLE">Sẵn sàng (Available)</option>
@@ -384,17 +384,17 @@ export const Mentors: React.FC = () => {
           ))}
         </div>
       ) : filteredMentors.length === 0 ? (
-        <div className="meetmind-card py-16 text-center space-y-3 rounded-3xl">
+        <div className="meetmind-card py-16 text-center space-y-3 rounded-card">
           <SlidersHorizontal className="w-10 h-10 text-brand-grey mx-auto" />
-          <p className="text-brand-text font-bold text-sm">Không tìm thấy Mentor phù hợp</p>
-          <p className="text-brand-text-muted text-xs font-semibold">Vui lòng điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm</p>
+          <p className="text-brand-text font-bold text-body">Không tìm thấy Mentor phù hợp</p>
+          <p className="text-brand-text-muted text-body font-semibold">Vui lòng điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMentors.map((m) => (
             <div
               key={m.id}
-              className="meetmind-card meetmind-card-hover p-6 flex flex-col justify-between gap-5 relative overflow-hidden group rounded-3xl"
+              className="meetmind-card meetmind-card-hover p-6 flex flex-col justify-between gap-5 relative overflow-hidden group rounded-card"
             >
               <div className="space-y-4">
                 
@@ -403,30 +403,30 @@ export const Mentors: React.FC = () => {
                   <img
                     src={m.avatarUrl}
                     alt={m.name}
-                    className="w-14 h-14 rounded-2xl bg-brand-bg object-cover border border-brand-border"
+                    className="w-14 h-14 rounded-card bg-brand-bg object-cover border border-brand-border"
                   />
                   <div className="space-y-1 text-left">
                     <h3 className="text-brand-text font-bold text-base leading-tight group-hover:text-brand-terracotta transition-colors">
                       {m.name}
                     </h3>
-                    <p className="text-brand-text-muted text-xs font-semibold">
+                    <p className="text-brand-text-muted text-body font-semibold">
                       {m.major}
                     </p>
-                    <span className="inline-block text-[10px] font-extrabold text-brand-terracotta bg-brand-terracotta/15 border border-brand-terracotta/25 px-2 py-0.5 rounded-lg">
+                    <span className="inline-block text-meta font-extrabold text-brand-terracotta bg-brand-terracotta/15 border border-brand-terracotta/25 px-2 py-0.5 rounded-lg">
                       {m.specialization}
                     </span>
                   </div>
                 </div>
 
                 {/* Rating & Action to open drawer */}
-                <div className="flex items-center gap-4 text-xs font-bold">
+                <div className="flex items-center gap-4 text-body font-bold">
                   <button
                     onClick={() => handleOpenReviews(m)}
                     className="flex items-center gap-1 text-amber-500 hover:text-amber-600 transition-colors font-bold cursor-pointer"
                     title="Click để xem nhận xét chi tiết"
                   >
                     <Star className="w-3.5 h-3.5 fill-amber-500" /> {m.rating}{' '}
-                    <span className="text-brand-text-muted text-[10px] underline font-semibold ml-1">
+                    <span className="text-brand-text-muted text-meta underline font-semibold ml-1">
                       ({m.reviews.length} đánh giá)
                     </span>
                   </button>
@@ -438,11 +438,11 @@ export const Mentors: React.FC = () => {
                 </div>
 
                 {/* Match Rationale reasons */}
-                <div className="bg-brand-bg/50 border border-brand-border/60 p-3 rounded-2xl text-left space-y-1">
-                  <span className="text-[9px] font-bold text-brand-terracotta uppercase tracking-wider block">Gợi ý tương hợp</span>
+                <div className="bg-brand-bg/50 border border-brand-border/60 p-3 rounded-card text-left space-y-1">
+                  <span className="text-meta font-bold text-brand-terracotta uppercase tracking-wider block">Gợi ý tương hợp</span>
                   <ul className="space-y-1">
                     {m.matchingReasons.map((reason, idx) => (
-                      <li key={idx} className="text-[10px] text-brand-text font-medium flex items-start gap-1">
+                      <li key={idx} className="text-meta text-brand-text font-medium flex items-start gap-1">
                         <Check className="w-3.5 h-3.5 text-brand-terracotta shrink-0 mt-0.5" />
                         <span>{reason}</span>
                       </li>
@@ -451,7 +451,7 @@ export const Mentors: React.FC = () => {
                 </div>
 
                 {/* Bio */}
-                <p className="text-brand-text-muted text-xs leading-relaxed font-medium line-clamp-3">
+                <p className="text-brand-text-muted text-body leading-relaxed font-medium line-clamp-3">
                   {m.bio}
                 </p>
 
@@ -460,7 +460,7 @@ export const Mentors: React.FC = () => {
                   {m.skills.map((s, idx) => (
                     <span
                       key={idx}
-                      className="text-[9px] bg-brand-bg border border-brand-border text-brand-text-muted py-0.5 px-2 rounded-lg font-bold"
+                      className="text-meta bg-brand-bg border border-brand-border text-brand-text-muted py-0.5 px-2 rounded-lg font-bold"
                     >
                       {s}
                     </span>
@@ -473,14 +473,14 @@ export const Mentors: React.FC = () => {
               <div className="flex items-center justify-between pt-3 border-t border-brand-border">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${m.status === 'AVAILABLE' ? 'bg-green-500 dot-glow-green' : 'bg-red-500'}`}></span>
-                  <span className="text-[10px] text-brand-text-muted uppercase tracking-wider font-extrabold">
+                  <span className="text-meta text-brand-text-muted uppercase tracking-wider font-extrabold">
                     {m.status === 'AVAILABLE' ? 'Sẵn sàng' : 'Bận'}
                   </span>
                 </div>
                 <button
                   onClick={() => handleOpenBooking(m)}
                   disabled={m.status === 'BUSY'}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-xs font-bold shadow-md shadow-brand-terracotta/20 hover:opacity-90 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-field bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold shadow-md shadow-brand-terracotta/20 hover:opacity-90 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Calendar className="w-3.5 h-3.5" /> Lên lịch
                 </button>
@@ -501,14 +501,14 @@ export const Mentors: React.FC = () => {
           />
 
           {/* Drawer Panel */}
-          <div className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-50 bg-white border-l border-brand-border shadow-2xl p-6 overflow-y-auto flex flex-col justify-between animate-slideLeft text-left">
+          <div className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-50 bg-surface border-l border-brand-border shadow-2xl p-6 overflow-y-auto flex flex-col justify-between animate-slideLeft text-left">
             <div className="space-y-6">
               
               {/* Header */}
               <div className="flex items-center justify-between border-b border-brand-border pb-4">
                 <div>
                   <h3 className="text-lg font-bold font-serif text-brand-text">Đánh giá từ sinh viên</h3>
-                  <p className="text-xs text-brand-text-muted font-medium mt-0.5">Phản hồi công khai cho Mentor {drawerMentor.name}</p>
+                  <p className="text-body text-brand-text-muted font-medium mt-0.5">Phản hồi công khai cho Mentor {drawerMentor.name}</p>
                 </div>
                 <button
                   onClick={() => setShowReviewDrawer(false)}
@@ -519,7 +519,7 @@ export const Mentors: React.FC = () => {
               </div>
 
               {/* Summary Stats */}
-              <div className="flex items-center gap-4 bg-brand-bg/40 border border-brand-border p-4 rounded-2xl">
+              <div className="flex items-center gap-4 bg-brand-bg/40 border border-brand-border p-4 rounded-card">
                 <div className="text-center shrink-0 pr-4 border-r border-brand-border">
                   <span className="text-3xl font-extrabold text-brand-text font-serif">{drawerMentor.rating}</span>
                   <div className="flex justify-center gap-0.5 text-amber-500 mt-1">
@@ -527,14 +527,14 @@ export const Mentors: React.FC = () => {
                       <Star key={i} className={`w-3 h-3 ${i < Math.floor(drawerMentor.rating) ? 'fill-amber-500' : 'text-brand-border'}`} />
                     ))}
                   </div>
-                  <span className="text-[9px] text-brand-text-muted font-bold block mt-1.5">{drawerMentor.reviews.length} đánh giá</span>
+                  <span className="text-meta text-brand-text-muted font-bold block mt-1.5">{drawerMentor.reviews.length} đánh giá</span>
                 </div>
                 <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2 text-[10px] font-semibold text-brand-text">
+                  <div className="flex items-center gap-2 text-meta font-semibold text-brand-text">
                     <span>Thái độ:</span>
                     <span className="text-brand-terracotta font-bold">Cực kỳ nhiệt tình ⭐⭐⭐⭐⭐</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] font-semibold text-brand-text">
+                  <div className="flex items-center gap-2 text-meta font-semibold text-brand-text">
                     <span>Chuyên môn:</span>
                     <span className="text-brand-blue font-bold">Giải thích sâu, dễ hiểu ⭐⭐⭐⭐⭐</span>
                   </div>
@@ -544,7 +544,7 @@ export const Mentors: React.FC = () => {
               {/* Reviews List */}
               <div className="space-y-4">
                 {drawerMentor.reviews.map((rev) => (
-                  <div key={rev.id} className="p-4 border border-brand-border rounded-2xl space-y-3 bg-white hover:shadow-sm transition-shadow">
+                  <div key={rev.id} className="p-4 border border-brand-border rounded-card space-y-3 bg-surface hover:shadow-sm transition-shadow">
                     
                     {/* Header: Reviewer info, date */}
                     <div className="flex items-start justify-between">
@@ -555,8 +555,8 @@ export const Mentors: React.FC = () => {
                           className="w-8 h-8 rounded-lg border border-brand-border"
                         />
                         <div>
-                          <span className="text-xs font-bold text-brand-text block">{rev.reviewerName}</span>
-                          <span className="text-[9px] text-brand-text-muted font-semibold block">{rev.date}</span>
+                          <span className="text-body font-bold text-brand-text block">{rev.reviewerName}</span>
+                          <span className="text-meta text-brand-text-muted font-semibold block">{rev.date}</span>
                         </div>
                       </div>
                       
@@ -568,12 +568,12 @@ export const Mentors: React.FC = () => {
                     </div>
 
                     {/* Review text */}
-                    <p className="text-xs text-brand-text leading-relaxed font-medium">
+                    <p className="text-body text-brand-text leading-relaxed font-medium">
                       "{rev.comment}"
                     </p>
 
                     {/* Skill swapped pill */}
-                    <div className="pt-2 border-t border-brand-border/60 flex items-center justify-between text-[9px] font-bold text-brand-text-muted">
+                    <div className="pt-2 border-t border-brand-border/60 flex items-center justify-between text-meta font-bold text-brand-text-muted">
                       <span>Nội dung học:</span>
                       <span className="bg-brand-bg border border-brand-border px-2 py-0.5 rounded-md text-brand-terracotta font-extrabold flex items-center gap-1">
                         <Heart className="w-3 h-3 text-brand-terracotta fill-brand-terracotta" /> {rev.swappedSkill}
@@ -594,7 +594,7 @@ export const Mentors: React.FC = () => {
                   handleOpenBooking(drawerMentor);
                 }}
                 disabled={drawerMentor.status === 'BUSY'}
-                className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-xs font-bold cursor-pointer disabled:opacity-40 shadow-md shadow-brand-terracotta/25 transition-all"
+                className="w-full flex items-center justify-center gap-1.5 py-3 rounded-field bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold cursor-pointer disabled:opacity-40 shadow-md shadow-brand-terracotta/25 transition-all"
               >
                 <Calendar className="w-4 h-4" />
                 <span>Đặt lịch học cùng {drawerMentor.name}</span>
@@ -608,7 +608,7 @@ export const Mentors: React.FC = () => {
       {/* Booking Scheduler Modal */}
       {showBookingModal && activeMentor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-white border border-brand-border rounded-3xl p-6 relative shadow-2xl">
+          <div className="w-full max-w-md bg-surface border border-brand-border rounded-card p-6 relative shadow-2xl">
             
             <button
               onClick={() => setShowBookingModal(false)}
@@ -623,66 +623,66 @@ export const Mentors: React.FC = () => {
                   <Check className="w-6 h-6" />
                 </div>
                 <h3 className="text-brand-text font-bold text-base">Yêu cầu đã được gửi!</h3>
-                <p className="text-brand-text-muted text-xs font-semibold">Hệ thống đã gửi đề xuất trao đổi tới {activeMentor.name}. Theo dõi lịch hẹn ở mục "Lịch hẹn của tôi".</p>
+                <p className="text-brand-text-muted text-body font-semibold">Hệ thống đã gửi đề xuất trao đổi tới {activeMentor.name}. Theo dõi lịch hẹn ở mục "Lịch hẹn của tôi".</p>
               </div>
             ) : (
               <form onSubmit={handleBookingSubmit} className="space-y-4">
                 <div className="text-left">
                   <h3 className="text-brand-text font-bold text-lg font-serif">Đặt lịch với {activeMentor.name}</h3>
-                  <p className="text-brand-text-muted text-xs font-medium mt-0.5">Thỏa thuận môn học / kỹ năng cần trao đổi của bạn</p>
+                  <p className="text-brand-text-muted text-body font-medium mt-0.5">Thỏa thuận môn học / kỹ năng cần trao đổi của bạn</p>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-brand-bg border border-brand-border rounded-2xl text-left">
+                <div className="flex items-center gap-3 p-3 bg-brand-bg border border-brand-border rounded-card text-left">
                   <img
                     src={activeMentor.avatarUrl}
                     alt={activeMentor.name}
-                    className="w-10 h-10 rounded-xl border border-brand-border"
+                    className="w-10 h-10 rounded-field border border-brand-border"
                   />
                   <div>
-                    <span className="text-xs font-bold text-brand-text block">{activeMentor.name}</span>
-                    <span className="text-[10px] text-brand-terracotta font-bold">{activeMentor.specialization}</span>
+                    <span className="text-body font-bold text-brand-text block">{activeMentor.name}</span>
+                    <span className="text-meta text-brand-terracotta font-bold">{activeMentor.specialization}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1">Ngày hẹn</label>
+                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Ngày hẹn</label>
                     <input
                       type="date"
                       required
                       value={bookingDate}
                       onChange={(e) => setBookingDate(e.target.value)}
-                      className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
+                      className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1">Giờ hẹn</label>
+                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Giờ hẹn</label>
                     <input
                       type="time"
                       required
                       value={bookingTime}
                       onChange={(e) => setBookingTime(e.target.value)}
-                      className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
+                      className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1">Đề xuất trao đổi kỹ năng</label>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Đề xuất trao đổi kỹ năng</label>
                   <textarea
                     required
                     rows={3}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Ví dụ: Mình có thể hỗ trợ bạn làm quen với HTML/CSS/JS, đổi lại bạn có thể hướng dẫn mình phần cơ bản của Python không?"
-                    className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2.5 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium animate-fadeIn"
+                    className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium animate-fadeIn"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer hover:opacity-90 transition-all active:scale-[0.98] shadow-md shadow-brand-terracotta/20"
+                  className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer hover:opacity-90 transition-all active:scale-[0.98] shadow-md shadow-brand-terracotta/20"
                 >
                   {loading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

@@ -55,13 +55,13 @@ export const UserManagement: React.FC = () => {
         <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight">
           Quản lý người dùng
         </h1>
-        <p className="text-brand-text-muted text-sm font-medium">
+        <p className="text-brand-text-muted text-body font-medium">
           Xem thông tin cơ bản, vai trò học tập và quản lý trạng thái kích hoạt tài khoản sinh viên.
         </p>
       </div>
 
       {/* Filter Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border border-brand-border p-4 rounded-2xl shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface border border-brand-border p-4 rounded-card shadow-sm">
         
         {/* Search */}
         <div className="relative md:col-span-2">
@@ -71,7 +71,7 @@ export const UserManagement: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên hoặc email học sinh..."
-            className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2.5 pl-10 pr-4 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta transition-all"
+            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 pl-10 pr-4 text-body text-brand-text focus:outline-none focus:border-brand-terracotta transition-all"
           />
         </div>
 
@@ -80,7 +80,7 @@ export const UserManagement: React.FC = () => {
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2.5 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
+            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
           >
             <option value="ALL">Tất cả vai trò</option>
             <option value="MENTEE">Sinh viên (Mentee)</option>
@@ -94,7 +94,7 @@ export const UserManagement: React.FC = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2.5 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
+            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
           >
             <option value="ALL">Tất cả trạng thái</option>
             <option value="ACTIVE">Đang hoạt động</option>
@@ -105,13 +105,13 @@ export const UserManagement: React.FC = () => {
       </div>
 
       {/* User Table Card */}
-      <div className="meetmind-card rounded-3xl overflow-hidden shadow-sm">
+      <div className="meetmind-card rounded-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
+          <table className="w-full text-body text-left border-collapse">
             
             {/* Headers */}
             <thead>
-              <tr className="bg-brand-bg border-b border-brand-border text-brand-text-muted font-bold text-[10px] uppercase tracking-wider">
+              <tr className="bg-brand-bg border-b border-brand-border text-brand-text-muted font-bold text-meta uppercase tracking-wider">
                 <th className="py-4 px-6">Họ và tên</th>
                 <th className="py-4 px-4">Email sinh viên</th>
                 <th className="py-4 px-4">Cơ sở FPT</th>
@@ -136,7 +136,7 @@ export const UserManagement: React.FC = () => {
                     
                     {/* Name */}
                     <td className="py-4 px-6 font-bold text-brand-text flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-brand-bg border border-brand-border flex items-center justify-center font-bold text-[11px] text-brand-terracotta">
+                      <div className="w-8 h-8 rounded-full bg-brand-bg border border-brand-border flex items-center justify-center font-bold text-meta text-brand-terracotta">
                         {u.name.charAt(0)}
                       </div>
                       <span>{u.name}</span>
@@ -150,7 +150,7 @@ export const UserManagement: React.FC = () => {
 
                     {/* Role */}
                     <td className="py-4 px-4">
-                      <span className={`inline-block text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase border ${
+                      <span className={`inline-block text-meta font-extrabold px-2 py-0.5 rounded-md uppercase border ${
                         u.role === 'ADMIN'
                           ? 'bg-brand-sidebar/10 text-brand-sidebar border-brand-sidebar/20'
                           : u.role === 'MENTOR'
@@ -170,7 +170,7 @@ export const UserManagement: React.FC = () => {
 
                     {/* Status */}
                     <td className="py-4 px-4">
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${
+                      <span className={`inline-flex items-center gap-1 text-meta font-bold ${
                         u.status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'}`}></span>
@@ -182,7 +182,7 @@ export const UserManagement: React.FC = () => {
                     <td className="py-4 px-6 text-right">
                       <button
                         onClick={() => handleToggleStatus(u.id)}
-                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all cursor-pointer ${
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-field border text-meta font-bold transition-all cursor-pointer ${
                           u.status === 'ACTIVE'
                             ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
                             : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'

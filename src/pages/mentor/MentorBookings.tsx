@@ -120,13 +120,13 @@ export const MentorBookings: React.FC = () => {
         <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight flex items-center gap-2">
           <ListTodo className="w-8 h-8 text-brand-terracotta" /> Quản lý đặt lịch hẹn
         </h1>
-        <p className="text-brand-text-muted text-sm font-medium">
+        <p className="text-brand-text-muted text-body font-medium">
           Xem các yêu cầu đặt lịch học từ sinh viên (mentee), phê duyệt, gửi link phòng học trực tuyến và đánh dấu hoàn tất.
         </p>
       </div>
 
       {successMsg && (
-        <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-xs font-semibold">
+        <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 p-4 rounded-field text-body font-semibold">
           <Check className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{successMsg}</span>
         </div>
@@ -135,14 +135,14 @@ export const MentorBookings: React.FC = () => {
       {/* List bookings */}
       <div className="space-y-4">
         {bookings.length === 0 ? (
-          <div className="meetmind-card py-16 text-center text-brand-text-muted text-xs font-semibold rounded-3xl">
+          <div className="meetmind-card py-16 text-center text-brand-text-muted text-body font-semibold rounded-card">
             Hiện không có yêu cầu đặt lịch nào.
           </div>
         ) : (
           bookings.map((b) => (
             <div
               key={b.id}
-              className="meetmind-card p-6 rounded-3xl relative overflow-hidden flex flex-col md:flex-row justify-between gap-6"
+              className="meetmind-card p-6 rounded-card relative overflow-hidden flex flex-col md:flex-row justify-between gap-6"
             >
               {/* Applicant, times, learning goals */}
               <div className="space-y-3 flex-1 text-left">
@@ -150,13 +150,13 @@ export const MentorBookings: React.FC = () => {
                   <img
                     src={b.avatarUrl}
                     alt={b.menteeName}
-                    className="w-9 h-9 rounded-xl object-cover border border-brand-border"
+                    className="w-9 h-9 rounded-field object-cover border border-brand-border"
                   />
                   <div>
-                    <span className="text-xs font-bold text-brand-text block">{b.menteeName}</span>
-                    <span className="text-[10px] text-brand-text-muted font-bold">{b.specialization}</span>
+                    <span className="text-body font-bold text-brand-text block">{b.menteeName}</span>
+                    <span className="text-meta text-brand-text-muted font-bold">{b.specialization}</span>
                   </div>
-                  <span className={`text-[9px] font-bold py-0.5 px-2 rounded-lg border ml-2 ${
+                  <span className={`text-meta font-bold py-0.5 px-2 rounded-lg border ml-2 ${
                     b.status === 'PENDING'
                       ? 'bg-amber-50 text-amber-700 border-amber-200'
                       : b.status === 'ACCEPTED'
@@ -169,16 +169,16 @@ export const MentorBookings: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="space-y-1 bg-brand-bg/40 border border-brand-border p-3.5 rounded-2xl">
-                  <p className="text-xs font-bold text-brand-text flex items-center gap-1.5">
+                <div className="space-y-1 bg-brand-bg/40 border border-brand-border p-3.5 rounded-card">
+                  <p className="text-body font-bold text-brand-text flex items-center gap-1.5">
                     <MessageSquare className="w-3.5 h-3.5 text-brand-terracotta" /> Mục tiêu: {b.learningGoalTitle}
                   </p>
-                  <p className="text-[11px] text-brand-text-muted font-medium pl-5">
+                  <p className="text-meta text-brand-text-muted font-medium pl-5">
                     {b.learningGoalDescription}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 text-[10px] text-brand-text-muted font-semibold">
+                <div className="flex flex-wrap items-center gap-4 text-meta text-brand-text-muted font-semibold">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-brand-terracotta" /> Ngày học: {b.date}
                   </span>
@@ -202,13 +202,13 @@ export const MentorBookings: React.FC = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleOpenAccept(b)}
-                      className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-xs font-bold py-2 px-3.5 rounded-xl cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95"
+                      className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2 px-3.5 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95"
                     >
                       <Check className="w-3.5 h-3.5" /> Nhận dạy
                     </button>
                     <button
                       onClick={() => handleOpenReject(b)}
-                      className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-xs font-bold py-2 px-3.5 rounded-xl cursor-pointer transition-all active:scale-95"
+                      className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-body font-bold py-2 px-3.5 rounded-field cursor-pointer transition-all active:scale-95"
                     >
                       <X className="w-3.5 h-3.5" /> Từ chối
                     </button>
@@ -218,14 +218,14 @@ export const MentorBookings: React.FC = () => {
                 {b.status === 'ACCEPTED' && (
                   <button
                     onClick={() => handleMarkComplete(b.id)}
-                    className="bg-brand-blue hover:bg-brand-blue-hover text-white text-xs font-bold py-2 px-4 rounded-xl cursor-pointer transition-all active:scale-95"
+                    className="bg-brand-blue hover:bg-brand-blue-hover text-white text-body font-bold py-2 px-4 rounded-field cursor-pointer transition-all active:scale-95"
                   >
                     Đánh dấu hoàn thành
                   </button>
                 )}
                 
                 {b.status === 'COMPLETED' && (
-                  <span className="text-[11px] text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3 py-1.5 rounded-xl">
+                  <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3 py-1.5 rounded-field">
                     Buổi học đã hoàn tất
                   </span>
                 )}
@@ -239,7 +239,7 @@ export const MentorBookings: React.FC = () => {
       {/* Meet Link Modal */}
       {showLinkModal && activeBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white border border-brand-border rounded-3xl p-6 relative">
+          <div className="w-full max-w-md bg-surface border border-brand-border rounded-card p-6 relative">
             <button
               onClick={() => setShowLinkModal(false)}
               className="absolute top-4 right-4 p-1.5 rounded-full bg-brand-bg hover:bg-brand-bg/85 border border-brand-border text-brand-text-muted hover:text-brand-text cursor-pointer transition-all"
@@ -250,26 +250,26 @@ export const MentorBookings: React.FC = () => {
             <form onSubmit={handleAcceptSubmit} className="space-y-4">
               <div className="text-left">
                 <h3 className="text-lg font-bold font-serif text-brand-text">Cung cấp liên kết phòng học</h3>
-                <p className="text-brand-text-muted text-xs font-medium mt-0.5">
+                <p className="text-brand-text-muted text-body font-medium mt-0.5">
                   Nhập link Google Meet, Zoom hoặc MS Teams cho buổi học với {activeBooking.menteeName}.
                 </p>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1.5">Link phòng học trực tuyến (URL)</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Link phòng học trực tuyến (URL)</label>
                 <input
                   type="url"
                   required
                   value={meetingLink}
                   onChange={(e) => setMeetingLink(e.target.value)}
-                  className="w-full bg-brand-bg border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
+                  className="w-full bg-brand-bg border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
                   placeholder="https://meet.google.com/abc-defg-hij"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer active:scale-[0.98] transition-all"
+                className="w-full flex items-center justify-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer active:scale-[0.98] transition-all"
               >
                 <Video className="w-4 h-4" />
                 <span>Xác nhận & Gửi</span>
@@ -282,7 +282,7 @@ export const MentorBookings: React.FC = () => {
       {/* Reject Reason Modal */}
       {showRejectModal && activeBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white border border-brand-border rounded-3xl p-6 relative">
+          <div className="w-full max-w-md bg-surface border border-brand-border rounded-card p-6 relative">
             <button
               onClick={() => setShowRejectModal(false)}
               className="absolute top-4 right-4 p-1.5 rounded-full bg-brand-bg hover:bg-brand-bg/85 border border-brand-border text-brand-text-muted hover:text-brand-text cursor-pointer transition-all"
@@ -293,26 +293,26 @@ export const MentorBookings: React.FC = () => {
             <form onSubmit={handleRejectSubmit} className="space-y-4">
               <div className="text-left">
                 <h3 className="text-lg font-bold font-serif text-brand-text">Từ chối yêu cầu đặt lịch</h3>
-                <p className="text-brand-text-muted text-xs font-semibold mt-0.5">
+                <p className="text-brand-text-muted text-body font-semibold mt-0.5">
                   Vui lòng cung cấp lý do cho sinh viên.
                 </p>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1.5">Lý do từ chối (bắt buộc)</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Lý do từ chối (bắt buộc)</label>
                 <textarea
                   required
                   rows={4}
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="Ví dụ: Khung giờ này mình bận đột xuất, bạn chọn slot rảnh khác giúp mình nhé..."
-                  className="w-full bg-brand-bg border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
+                  className="w-full bg-brand-bg border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer active:scale-[0.98] transition-all"
+                className="w-full bg-red-600 hover:bg-red-700 text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer active:scale-[0.98] transition-all"
               >
                 Xác nhận Từ chối
               </button>

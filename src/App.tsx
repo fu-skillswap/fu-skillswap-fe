@@ -27,6 +27,7 @@ import { MenteeBookings } from './pages/MenteeBookings';
 // Forum & Chat Pages
 import { Forum } from './pages/Forum';
 import { Chat } from './pages/Chat';
+import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/mentors" element={<Mentors />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
 
             {/* Admin Workspaces */}
             <Route path="/admin/metrics" element={<AdminMetrics />} />

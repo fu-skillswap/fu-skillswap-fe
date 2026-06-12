@@ -37,10 +37,10 @@ export const LandingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-brand-text font-sans selection:bg-brand-primary selection:text-white">
+    <div className="min-h-screen bg-surface-muted text-brand-text font-sans selection:bg-brand-primary selection:text-white">
       
       {/* Public Header */}
-      <header className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/60 transition-all">
+      <header className="sticky top-0 z-40 w-full bg-surface/90 backdrop-blur-md border-b border-line transition-all">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
@@ -51,11 +51,11 @@ export const LandingPage: React.FC = () => {
           </Link>
 
           {/* Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-500">
-            <a href="#about" className="hover:text-slate-900 transition-colors">Về chúng tôi</a>
-            <a href="#features" className="hover:text-slate-900 transition-colors">Tính năng chính</a>
-            <a href="#mentors" className="hover:text-slate-900 transition-colors">Mentor tiêu biểu</a>
-            <a href="#stats" className="hover:text-slate-900 transition-colors">Số liệu thống kê</a>
+          <nav className="hidden md:flex items-center gap-8 text-body font-bold text-fg-muted">
+            <a href="#about" className="hover:text-fg transition-colors">Về chúng tôi</a>
+            <a href="#features" className="hover:text-fg transition-colors">Tính năng chính</a>
+            <a href="#mentors" className="hover:text-fg transition-colors">Mentor tiêu biểu</a>
+            <a href="#stats" className="hover:text-fg transition-colors">Số liệu thống kê</a>
           </nav>
 
           {/* CTA Button */}
@@ -63,14 +63,14 @@ export const LandingPage: React.FC = () => {
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
-                className="inline-flex items-center justify-center bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                className="inline-flex items-center justify-center bg-brand-primary hover:bg-brand-primary-hover text-white text-body font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
               >
                 Vào Dashboard
               </Link>
             ) : (
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                className="inline-flex items-center justify-center bg-brand-primary hover:bg-brand-primary-hover text-white text-body font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
               >
                 Đăng nhập ngay
               </Link>
@@ -90,7 +90,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Hero Content Left */}
           <div className="max-w-2xl space-y-6">
-            <span className="inline-flex items-center gap-1.5 bg-brand-primary text-white text-[10px] font-extrabold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md shadow-brand-primary/25 animate-pulse">
+            <span className="inline-flex items-center gap-1.5 bg-brand-primary text-white text-meta font-extrabold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md shadow-brand-primary/25 animate-pulse">
               <Sparkles className="w-3.5 h-3.5" /> Cộng đồng trao đổi kỹ năng FPTU
             </span>
             
@@ -99,7 +99,7 @@ export const LandingPage: React.FC = () => {
               <span className="text-brand-secondary">Kỹ năng</span> của bạn học
             </h1>
             
-            <p className="text-slate-200 text-xs sm:text-sm font-semibold max-w-xl leading-relaxed">
+            <p className="text-slate-200 text-body sm:text-body font-semibold max-w-xl leading-relaxed">
               SkillSwap là nền tảng trao đổi kỹ năng chéo học thuật độc quyền cho sinh viên FPT University. 
               Bạn chia sẻ thế mạnh lập trình, đổi lấy sự trợ giúp về thiết kế UI/UX hay ngoại ngữ từ bạn cùng trường.
             </p>
@@ -107,14 +107,14 @@ export const LandingPage: React.FC = () => {
             <div className="flex flex-wrap gap-4 pt-2">
               <Link
                 to="/login"
-                className="flex items-center gap-1.5 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-95 text-white text-xs font-bold py-3.5 px-7 rounded-full shadow-lg shadow-brand-primary/20 active:scale-95 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-95 text-white text-body font-bold py-3.5 px-7 rounded-full shadow-lg shadow-brand-primary/20 active:scale-95 transition-all cursor-pointer"
               >
                 <span>Bắt đầu trao đổi ngay</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="#features"
-                className="flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold py-3.5 px-7 rounded-full active:scale-95 transition-all backdrop-blur-xs"
+                className="flex items-center justify-center bg-surface/10 hover:bg-surface/20 border border-white/20 text-white text-body font-bold py-3.5 px-7 rounded-full active:scale-95 transition-all backdrop-blur-xs"
               >
                 Tìm hiểu cơ chế
               </a>
@@ -124,28 +124,28 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Stats Counter Section */}
-      <section id="stats" className="py-12 bg-white border-b border-slate-100">
+      <section id="stats" className="py-12 bg-surface border-b border-line-soft">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             
-            <div className="bg-white border border-slate-150 rounded-3xl p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
-              <span className="text-3xl font-bold text-slate-900 block">1,200+</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Giờ học trao đổi</span>
+            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
+              <span className="text-3xl font-bold text-fg block">1,200+</span>
+              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Giờ học trao đổi</span>
             </div>
 
-            <div className="bg-white border border-slate-150 rounded-3xl p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
-              <span className="text-3xl font-bold text-slate-900 block">450+</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Thành viên FPTU</span>
+            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
+              <span className="text-3xl font-bold text-fg block">450+</span>
+              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Thành viên FPTU</span>
             </div>
 
-            <div className="bg-white border border-slate-150 rounded-3xl p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
-              <span className="text-3xl font-bold text-slate-900 block">80+</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mentor được duyệt</span>
+            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
+              <span className="text-3xl font-bold text-fg block">80+</span>
+              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Mentor được duyệt</span>
             </div>
 
-            <div className="bg-white border border-slate-150 rounded-3xl p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
-              <span className="text-3xl font-bold text-slate-900 block">4.85 / 5</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Điểm hài lòng</span>
+            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
+              <span className="text-3xl font-bold text-fg block">4.85 / 5</span>
+              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Điểm hài lòng</span>
             </div>
 
           </div>
@@ -153,52 +153,52 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* About Platform Mechanism */}
-      <section id="about" className="py-20 bg-slate-50/50 text-left">
+      <section id="about" className="py-20 bg-surface-muted/50 text-left">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           
           <div className="space-y-6">
-            <span className="inline-block text-[9px] font-extrabold text-slate-755 bg-slate-100 border border-slate-200 py-1 px-3.5 rounded-full uppercase tracking-wider">
+            <span className="inline-block text-meta font-extrabold text-fg bg-surface-muted border border-line py-1 px-3.5 rounded-full uppercase tracking-wider">
               Cơ chế vận hành
             </span>
-            <h2 className="text-3xl font-bold text-[#0f172a] tracking-tight leading-tight">
+            <h2 className="text-3xl font-bold text-fg tracking-tight leading-tight">
               Mô hình Trao đổi Kỹ năng Chéo hoạt động như thế nào?
             </h2>
-            <p className="text-slate-500 text-xs font-semibold leading-relaxed">
+            <p className="text-fg-muted text-body font-semibold leading-relaxed">
               SkillSwap loại bỏ rào cản chi phí trong gia sư học thuật bằng việc thiết lập vòng lặp chia sẻ kiến thức công bằng:
             </p>
 
             <div className="space-y-4">
               <div className="flex gap-4 items-start">
-                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold">1</span>
+                <div className="w-8 h-8 rounded-full bg-surface-muted border border-line text-fg flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-body font-bold">1</span>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-slate-900 block">Khai báo hồ sơ kỹ năng</span>
-                  <p className="text-[11px] text-slate-500 mt-1 font-semibold leading-relaxed">
+                  <span className="text-body font-bold text-fg block">Khai báo hồ sơ kỹ năng</span>
+                  <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
                     Bạn cập nhật các kỹ năng bản thân đã thành thạo (được chứng thực qua môn học) và các kỹ năng bạn mong muốn học tập.
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-4 items-start">
-                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold">2</span>
+                <div className="w-8 h-8 rounded-full bg-surface-muted border border-line text-fg flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-body font-bold">2</span>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-slate-900 block">Ghép cặp thông minh</span>
-                  <p className="text-[11px] text-slate-500 mt-1 font-semibold leading-relaxed">
+                  <span className="text-body font-bold text-fg block">Ghép cặp thông minh</span>
+                  <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
                     Thuật toán tự động quét dữ liệu và đề xuất các bạn cùng trường có nhu cầu trao đổi đối ứng (Kỹ năng có ⇄ Kỹ năng cần) phù hợp nhất với bạn.
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-4 items-start">
-                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold">3</span>
+                <div className="w-8 h-8 rounded-full bg-surface-muted border border-line text-fg flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-body font-bold">3</span>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-slate-900 block">Gặp mặt trực tuyến & Trao đổi chéo</span>
-                  <p className="text-[11px] text-slate-500 mt-1 font-semibold leading-relaxed">
+                  <span className="text-body font-bold text-fg block">Gặp mặt trực tuyến & Trao đổi chéo</span>
+                  <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
                     Mentor duyệt lịch hẹn, cung cấp phòng Google Meet/Zoom trực tiếp và hai bên tiến hành dạy - học lẫn nhau hoàn toàn miễn phí.
                   </p>
                 </div>
@@ -208,12 +208,12 @@ export const LandingPage: React.FC = () => {
 
           {/* Interactive Mockups / Match Visual Demo */}
           <div className="space-y-6">
-            <div className="w-full bg-white border border-slate-200/80 p-6 rounded-3xl shadow-[0_1px_3px_rgba(15,23,42,0.02)] relative space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <Compass className="w-4 h-4 text-slate-600 animate-spin-slow" /> Mô phỏng thuật toán ghép cặp
+            <div className="w-full bg-surface border border-line p-6 rounded-card shadow-[0_1px_3px_rgba(15,23,42,0.02)] relative space-y-5">
+              <div className="flex items-center justify-between border-b border-line-soft pb-3">
+                <span className="text-body font-bold text-fg flex items-center gap-1.5">
+                  <Compass className="w-4 h-4 text-fg-muted animate-spin-slow" /> Mô phỏng thuật toán ghép cặp
                 </span>
-                <span className="text-[9px] bg-green-50 text-green-700 font-extrabold border border-green-200 px-2 py-0.5 rounded-lg">
+                <span className="text-meta bg-green-50 text-green-700 font-extrabold border border-green-200 px-2 py-0.5 rounded-lg">
                   98% Tương hợp
                 </span>
               </div>
@@ -221,47 +221,47 @@ export const LandingPage: React.FC = () => {
               {/* Match Visualization Demo */}
               <div className="space-y-4">
                 {/* Mentee (You) */}
-                <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-150 rounded-2xl">
+                <div className="flex items-center gap-3 p-3 bg-surface-muted border border-line rounded-card">
                   <img
                     src="https://api.dicebear.com/7.x/avataaars/svg?seed=mentee"
                     alt="Mentee"
-                    className="w-8 h-8 rounded-full border border-slate-200 object-cover"
+                    className="w-8 h-8 rounded-full border border-line object-cover"
                   />
                   <div className="text-left">
-                    <span className="text-xs font-bold block">Bạn (Sinh viên K19)</span>
-                    <span className="text-[9px] text-brand-primary font-bold">Thế mạnh: Figma UI/UX ⇄ Cần học: Python</span>
+                    <span className="text-body font-bold block">Bạn (Sinh viên K19)</span>
+                    <span className="text-meta text-brand-primary font-bold">Thế mạnh: Figma UI/UX ⇄ Cần học: Python</span>
                   </div>
                 </div>
 
                 {/* Exchange Symbol */}
                 <div className="flex justify-center">
-                  <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-705 shadow-2xs">
-                    <span className="text-xs font-extrabold">⇄</span>
+                  <div className="w-8 h-8 rounded-full bg-surface-muted border border-line flex items-center justify-center text-slate-705 shadow-2xs">
+                    <span className="text-body font-extrabold">⇄</span>
                   </div>
                 </div>
 
                 {/* Mentor */}
-                <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-150 rounded-2xl">
+                <div className="flex items-center gap-3 p-3 bg-surface-muted border border-line rounded-card">
                   <img
                     src="https://api.dicebear.com/7.x/avataaars/svg?seed=long"
                     alt="Mentor"
-                    className="w-8 h-8 rounded-full border border-slate-200 object-cover"
+                    className="w-8 h-8 rounded-full border border-line object-cover"
                   />
                   <div className="text-left">
-                    <span className="text-xs font-bold block">Trần Hoàng Long (Sinh viên K18)</span>
-                    <span className="text-[9px] text-green-600 font-bold">Thế mạnh: Python ⇄ Cần học: Figma</span>
+                    <span className="text-body font-bold block">Trần Hoàng Long (Sinh viên K18)</span>
+                    <span className="text-meta text-green-600 font-bold">Thế mạnh: Python ⇄ Cần học: Figma</span>
                   </div>
                 </div>
               </div>
 
               {/* Match Rationale text */}
-              <div className="bg-slate-50 border border-slate-155 p-4 rounded-2xl text-[10px] text-slate-500 font-semibold space-y-1.5 text-left leading-normal">
-                <p className="text-slate-800 font-extrabold flex items-center gap-1 uppercase tracking-wider text-[8px] border-b border-slate-200/60 pb-1.5">
-                  <Check className="w-3.5 h-3.5 shrink-0 text-slate-800" /> Lý do đề xuất hệ thống
+              <div className="bg-surface-muted border border-slate-155 p-4 rounded-card text-meta text-fg-muted font-semibold space-y-1.5 text-left leading-normal">
+                <p className="text-fg font-extrabold flex items-center gap-1 uppercase tracking-wider text-[8px] border-b border-line pb-1.5">
+                  <Check className="w-3.5 h-3.5 shrink-0 text-fg" /> Lý do đề xuất hệ thống
                 </p>
-                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-slate-700 shrink-0 mt-0.5" /> <span>Bạn sở hữu kỹ năng Figma Long đang tìm kiếm.</span></p>
-                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-slate-700 shrink-0 mt-0.5" /> <span>Long sẵn sàng chia sẻ kỹ năng Python bạn đang cần.</span></p>
-                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-slate-700 shrink-0 mt-0.5" /> <span>Hai bạn cùng học tập tại Cơ sở TP. Hồ Chí Minh.</span></p>
+                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Bạn sở hữu kỹ năng Figma Long đang tìm kiếm.</span></p>
+                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Long sẵn sàng chia sẻ kỹ năng Python bạn đang cần.</span></p>
+                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Hai bạn cùng học tập tại Cơ sở TP. Hồ Chí Minh.</span></p>
               </div>
             </div>
           </div>
@@ -270,15 +270,15 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Main Core Features Grid */}
-      <section id="features" className="py-20 bg-white border-t border-slate-100 text-left">
+      <section id="features" className="py-20 bg-surface border-t border-line-soft text-left">
         <div className="max-w-7xl mx-auto px-6 space-y-12">
           
           <div className="text-center space-y-3 max-w-xl mx-auto">
-            <span className="inline-block text-[9px] font-extrabold text-slate-700 bg-slate-100 border border-slate-200 py-1 px-3.5 rounded-full uppercase tracking-wider">
+            <span className="inline-block text-meta font-extrabold text-fg-muted bg-surface-muted border border-line py-1 px-3.5 rounded-full uppercase tracking-wider">
               Môi trường phân quyền
             </span>
-            <h2 className="text-3xl font-bold text-[#0f172a] tracking-tight">Trải nghiệm phân vai trò tương tác</h2>
-            <p className="text-slate-500 text-xs sm:text-sm font-semibold leading-relaxed">
+            <h2 className="text-3xl font-bold text-fg tracking-tight">Trải nghiệm phân vai trò tương tác</h2>
+            <p className="text-fg-muted text-body sm:text-body font-semibold leading-relaxed">
               SkillSwap xây dựng ba vai trò tương thích hoàn chỉnh, mô phỏng chính xác các hoạt động kiểm duyệt và kết nối tại FPT University.
             </p>
           </div>
@@ -286,44 +286,44 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
             
             {/* Mentee card */}
-            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
-              <div className="w-9 h-9 rounded-full bg-slate-100 text-brand-primary flex items-center justify-center font-bold">
+            <div className="p-6 bg-surface border border-line rounded-card hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
+              <div className="w-9 h-9 rounded-full bg-surface-muted text-brand-primary flex items-center justify-center font-bold">
                 <Smile className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Dành cho Mentee (Học viên)</h3>
-              <ul className="space-y-2.5 text-xs text-slate-500 font-semibold">
+              <h3 className="text-base font-bold text-fg">Dành cho Mentee (Học viên)</h3>
+              <ul className="space-y-2.5 text-body text-fg-muted font-semibold">
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-brand-secondary shrink-0 mt-0.5" /> <span>Tìm kiếm, lọc danh sách Mentor theo ngành.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Xem độ tương hợp (%) và đánh giá lịch sử.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Nộp đơn xin lên làm Mentor (kèm tài liệu).</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Báo cáo kết quả và viết phản hồi công khai.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Xem độ tương hợp (%) và đánh giá lịch sử.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Nộp đơn xin lên làm Mentor (kèm tài liệu).</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Báo cáo kết quả và viết phản hồi công khai.</span></li>
               </ul>
             </div>
 
             {/* Mentor card */}
-            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
-              <div className="w-9 h-9 rounded-full bg-slate-100 text-brand-primary flex items-center justify-center font-bold">
+            <div className="p-6 bg-surface border border-line rounded-card hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
+              <div className="w-9 h-9 rounded-full bg-surface-muted text-brand-primary flex items-center justify-center font-bold">
                 <Award className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Dành cho Mentor (Người dạy)</h3>
-              <ul className="space-y-2.5 text-xs text-slate-500 font-semibold">
+              <h3 className="text-base font-bold text-fg">Dành cho Mentor (Người dạy)</h3>
+              <ul className="space-y-2.5 text-body text-fg-muted font-semibold">
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-brand-secondary shrink-0 mt-0.5" /> <span>Tạo lịch rảnh (Slots) theo ngày và giờ hẹn.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Chấp nhận hoặc từ chối lịch kèm lý do.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Cập nhật link phòng trực tuyến (Zoom/Meet).</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Cấu hình portfolio, kinh nghiệm & dịch vụ.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Chấp nhận hoặc từ chối lịch kèm lý do.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Cập nhật link phòng trực tuyến (Zoom/Meet).</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Cấu hình portfolio, kinh nghiệm & dịch vụ.</span></li>
               </ul>
             </div>
 
             {/* Admin card */}
-            <div className="p-6 bg-white border border-slate-200/80 rounded-3xl hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
-              <div className="w-9 h-9 rounded-full bg-slate-100 text-brand-primary flex items-center justify-center font-bold">
+            <div className="p-6 bg-surface border border-line rounded-card hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
+              <div className="w-9 h-9 rounded-full bg-surface-muted text-brand-primary flex items-center justify-center font-bold">
                 <Compass className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Dành cho Admin (Quản trị)</h3>
-              <ul className="space-y-2.5 text-xs text-slate-500 font-semibold">
+              <h3 className="text-base font-bold text-fg">Dành cho Admin (Quản trị)</h3>
+              <ul className="space-y-2.5 text-body text-fg-muted font-semibold">
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-brand-secondary shrink-0 mt-0.5" /> <span>Xem dashboard báo cáo chỉ số MVP vận hành.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Quản lý khóa/mở hoạt động của tài khoản.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Phê duyệt hàng chờ chứng chỉ xin lên Mentor.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-slate-800 shrink-0 mt-0.5" /> <span>Giám sát hệ thống logs đăng ký & đặt chỗ.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Quản lý khóa/mở hoạt động của tài khoản.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Phê duyệt hàng chờ chứng chỉ xin lên Mentor.</span></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Giám sát hệ thống logs đăng ký & đặt chỗ.</span></li>
               </ul>
             </div>
 
@@ -332,23 +332,23 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Top Mentors spotlight */}
-      <section id="mentors" className="py-20 bg-slate-50 text-left">
+      <section id="mentors" className="py-20 bg-surface-muted text-left">
         <div className="max-w-7xl mx-auto px-6 space-y-12">
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div className="space-y-2">
-              <span className="inline-block text-[9px] font-extrabold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 py-1 px-3.5 rounded-full uppercase tracking-wider">
+              <span className="inline-block text-meta font-extrabold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 py-1 px-3.5 rounded-full uppercase tracking-wider">
                 Đội ngũ tinh hoa
               </span>
               <h2 className="text-3xl font-bold text-brand-text tracking-tight">Mentor tiêu biểu xuất sắc</h2>
-              <p className="text-slate-500 text-xs sm:text-sm font-semibold">
+              <p className="text-fg-muted text-body sm:text-body font-semibold">
                 Các sinh viên khóa trên đạt kết quả GPA cao và có nhiều kinh nghiệm dự án thực tế.
               </p>
             </div>
             
             <Link
               to="/login"
-              className="text-xs font-bold text-brand-primary hover:text-brand-primary-hover hover:underline inline-flex items-center gap-1 shrink-0"
+              className="text-body font-bold text-brand-primary hover:text-brand-primary-hover hover:underline inline-flex items-center gap-1 shrink-0"
             >
               Xem tất cả danh sách <ArrowRight className="w-4 h-4" />
             </Link>
@@ -356,44 +356,44 @@ export const LandingPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {mockTopMentors.map((m, idx) => (
-              <div key={idx} className="bg-white border border-slate-200/80 p-6 rounded-3xl space-y-5 flex flex-col justify-between hover:border-brand-secondary hover:shadow-xs transition-all relative overflow-hidden group">
+              <div key={idx} className="bg-surface border border-line p-6 rounded-card space-y-5 flex flex-col justify-between hover:border-brand-secondary hover:shadow-xs transition-all relative overflow-hidden group">
                 <div className="space-y-4">
                   {/* Avatar & Info */}
                   <div className="flex items-start gap-3.5">
                     <img
                       src={m.avatar}
                       alt={m.name}
-                      className="w-11 h-11 rounded-xl bg-slate-50 object-cover border border-slate-200"
+                      className="w-11 h-11 rounded-field bg-surface-muted object-cover border border-line"
                     />
                     <div className="text-left space-y-0.5">
-                      <span className="text-sm font-bold text-brand-text block group-hover:text-brand-primary transition-colors">{m.name}</span>
-                      <span className="text-[10px] text-slate-400 font-extrabold uppercase block">{m.role}</span>
+                      <span className="text-body font-bold text-brand-text block group-hover:text-brand-primary transition-colors">{m.name}</span>
+                      <span className="text-meta text-fg-faint font-extrabold uppercase block">{m.role}</span>
                     </div>
                   </div>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-1 text-xs font-bold text-brand-secondary">
+                  <div className="flex items-center gap-1 text-body font-bold text-brand-secondary">
                     <Star className="w-3.5 h-3.5 fill-brand-secondary text-brand-secondary" /> {m.rating}{' '}
-                    <span className="text-slate-400 text-[10px] font-semibold">({m.reviews} đánh giá)</span>
+                    <span className="text-fg-faint text-meta font-semibold">({m.reviews} đánh giá)</span>
                   </div>
 
                   {/* Bio */}
-                  <p className="text-slate-500 text-xs leading-relaxed font-semibold line-clamp-3">
+                  <p className="text-fg-muted text-body leading-relaxed font-semibold line-clamp-3">
                     "{m.bio}"
                   </p>
 
                   {/* Skills tags */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {m.skills.map((s, sIdx) => (
-                      <span key={sIdx} className="text-[9px] bg-slate-50 border border-slate-200/85 text-slate-500 py-0.5 px-2 rounded-md font-bold">
+                      <span key={sIdx} className="text-meta bg-surface-muted border border-line/85 text-fg-muted py-0.5 px-2 rounded-md font-bold">
                         {s}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-500">
-                  <span className="text-[10px] text-green-600 flex items-center gap-1 font-bold">
+                <div className="pt-4 border-t border-line-soft flex items-center justify-between text-body font-bold text-fg-muted">
+                  <span className="text-meta text-green-600 flex items-center gap-1 font-bold">
                     <Smile className="w-4 h-4 shrink-0" /> Sẵn sàng trao đổi
                   </span>
                   
@@ -419,13 +419,13 @@ export const LandingPage: React.FC = () => {
           <h2 className="text-3xl font-bold tracking-tight leading-tight">
             Nâng cao năng lực học tập và kết nối hôm nay!
           </h2>
-          <p className="text-white/80 text-xs font-semibold max-w-md mx-auto leading-relaxed">
+          <p className="text-white/80 text-body font-semibold max-w-md mx-auto leading-relaxed">
             Đăng nhập ngay bằng Chế độ Bypass để trải nghiệm các vai trò, đặt lịch học và trao đổi kiến thức học thuật tại FPT University.
           </p>
           <div className="pt-2">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 bg-brand-secondary hover:bg-brand-secondary-hover text-white text-xs font-extrabold py-3.5 px-8 rounded-full shadow-xl shadow-brand-secondary/20 transition-all active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-brand-secondary hover:bg-brand-secondary-hover text-white text-body font-extrabold py-3.5 px-8 rounded-full shadow-xl shadow-brand-secondary/20 transition-all active:scale-95 cursor-pointer"
             >
               <span>Truy cập hệ thống ngay</span>
               <ArrowRight className="w-4.5 h-4.5" />
@@ -435,7 +435,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Public Footer */}
-      <footer className="bg-[#051138] text-slate-400 py-12 text-left text-xs">
+      <footer className="bg-[#051138] text-fg-faint py-12 text-left text-body">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
           
           <div className="space-y-4">
@@ -451,7 +451,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <span className="text-white font-bold block uppercase tracking-wider text-[10px]">Tài nguyên</span>
+            <span className="text-white font-bold block uppercase tracking-wider text-meta">Tài nguyên</span>
             <ul className="space-y-2 font-semibold">
               <li><a href="#about" className="hover:text-white transition-colors">Về chúng tôi</a></li>
               <li><a href="#features" className="hover:text-white transition-colors">Tính năng chính</a></li>
@@ -460,7 +460,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <span className="text-white font-bold block uppercase tracking-wider text-[10px]">Định hướng học tập</span>
+            <span className="text-white font-bold block uppercase tracking-wider text-meta">Định hướng học tập</span>
             <ul className="space-y-2 font-semibold">
               <li><a href="https://fpt.edu.vn" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Đại học FPT HCM</a></li>
               <li><a href="https://fpt.edu.vn" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Đại học FPT Hà Nội</a></li>
@@ -469,7 +469,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <span className="text-white font-bold block uppercase tracking-wider text-[10px]">Liên hệ & Hỗ trợ</span>
+            <span className="text-white font-bold block uppercase tracking-wider text-meta">Liên hệ & Hỗ trợ</span>
             <p className="leading-relaxed font-semibold">
               Phòng Công tác Sinh viên (SRO) - FPTU Campus Quận 9, TP. Hồ Chí Minh.<br />
               Email: sro.hcm@fpt.edu.vn
@@ -478,7 +478,7 @@ export const LandingPage: React.FC = () => {
 
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-slate-800 text-center text-[10px] text-slate-500 font-semibold">
+        <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-slate-800 text-center text-meta text-fg-muted font-semibold">
           © {new Date().getFullYear()} SkillSwap FPT. Dự án học tập thực chiến EXE101. Bảo lưu mọi quyền.
         </div>
       </footer>

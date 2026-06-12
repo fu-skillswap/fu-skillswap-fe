@@ -205,19 +205,19 @@ export const Forum: React.FC = () => {
     <div className="space-y-6 text-left">
       
       {/* Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-line pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-slate-700" /> Diễn đàn thảo luận
+          <h1 className="text-2xl font-bold text-fg tracking-tight flex items-center gap-2">
+            <MessageSquare className="w-6 h-6 text-fg-muted" /> Diễn đàn thảo luận
           </h1>
-          <p className="text-brand-text-muted text-xs font-semibold mt-1">
+          <p className="text-brand-text-muted text-body font-semibold mt-1">
             Nơi chia sẻ câu hỏi học thuật, tài liệu ôn thi môn học, và tìm bạn ghép nhóm trao đổi kỹ năng.
           </p>
         </div>
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-1.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-2.5 px-4.5 rounded-full cursor-pointer active:scale-95 shadow-xs transition-all shrink-0"
+          className="flex items-center gap-1.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-body font-bold py-2.5 px-4.5 rounded-full cursor-pointer active:scale-95 shadow-xs transition-all shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Tạo chủ đề thảo luận</span>
@@ -225,7 +225,7 @@ export const Forum: React.FC = () => {
       </div>
 
       {successMsg && (
-        <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-xs font-semibold">
+        <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 p-4 rounded-field text-body font-semibold">
           <Check className="w-4.5 h-4.5 shrink-0 mt-0.5" />
           <span>{successMsg}</span>
         </div>
@@ -236,8 +236,8 @@ export const Forum: React.FC = () => {
         
         {/* Left Column: Categories filter */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white border border-slate-200/80 p-5 rounded-3xl space-y-2.5">
-            <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2 text-left">
+          <div className="bg-surface border border-line p-5 rounded-card space-y-2.5">
+            <h3 className="text-meta font-extrabold text-fg-faint uppercase tracking-wider mb-2 text-left">
               Chuyên mục thảo luận
             </h3>
             <div className="flex flex-col gap-1.5">
@@ -245,10 +245,10 @@ export const Forum: React.FC = () => {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`w-full text-left py-2.5 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                  className={`w-full text-left py-2.5 px-3.5 text-body font-bold rounded-field transition-all cursor-pointer ${
                     selectedCategory === cat.id
                       ? 'bg-brand-primary/10 text-brand-primary font-extrabold border-l-4 border-brand-primary shadow-xs'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-brand-primary'
+                      : 'text-fg-muted hover:bg-surface-muted hover:text-brand-primary'
                   }`}
                 >
                   {cat.name}
@@ -257,11 +257,11 @@ export const Forum: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-5 rounded-3xl text-left bg-gradient-to-br from-slate-100/30 to-transparent space-y-2">
-            <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <ShieldAlert className="w-4 h-4 text-slate-700" /> Nội quy diễn đàn
+          <div className="bg-surface border border-line p-5 rounded-card text-left bg-gradient-to-br from-slate-100/30 to-transparent space-y-2">
+            <h4 className="text-body font-bold text-fg flex items-center gap-1.5">
+              <ShieldAlert className="w-4 h-4 text-fg-muted" /> Nội quy diễn đàn
             </h4>
-            <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
+            <p className="text-meta text-fg-muted leading-relaxed font-semibold">
               Vui lòng thảo luận văn minh, chỉ đăng các nội dung liên quan tới học tập tại FPTU. Không spam hoặc mua bán.
             </p>
           </div>
@@ -278,14 +278,14 @@ export const Forum: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm chủ đề thảo luận hoặc từ khóa tag..."
-              className="w-full bg-white border border-brand-border rounded-2xl py-3 pl-10 pr-4 text-xs text-brand-text focus:outline-none focus:border-brand-secondary transition-all font-semibold"
+              className="w-full bg-surface border border-brand-border rounded-card py-3 pl-10 pr-4 text-body text-brand-text focus:outline-none focus:border-brand-secondary transition-all font-semibold"
             />
           </div>
 
           {/* Discussion feed list */}
           <div className="space-y-4">
             {filteredThreads.length === 0 ? (
-              <div className="meetmind-card py-16 text-center text-brand-text-muted text-xs font-semibold rounded-3xl">
+              <div className="meetmind-card py-16 text-center text-brand-text-muted text-body font-semibold rounded-card">
                 Không tìm thấy chủ đề thảo luận nào phù hợp.
               </div>
             ) : (
@@ -293,10 +293,10 @@ export const Forum: React.FC = () => {
                 <div
                   key={t.id}
                   onClick={() => setActiveThread(t)}
-                  className="meetmind-card meetmind-card-hover p-6 rounded-3xl space-y-4 relative overflow-hidden cursor-pointer"
+                  className="meetmind-card meetmind-card-hover p-6 rounded-card space-y-4 relative overflow-hidden cursor-pointer"
                 >
                   {/* Author Header */}
-                  <div className="flex justify-between items-center text-xs">
+                  <div className="flex justify-between items-center text-body">
                     <div className="flex items-center gap-2.5">
                       <img
                         src={t.authorAvatar}
@@ -305,7 +305,7 @@ export const Forum: React.FC = () => {
                       />
                       <span className="font-bold text-brand-text">{t.authorName}</span>
                     </div>
-                    <span className="text-slate-400 font-semibold">{t.createdAt}</span>
+                    <span className="text-fg-faint font-semibold">{t.createdAt}</span>
                   </div>
 
                   {/* Body Title & Text */}
@@ -313,19 +313,19 @@ export const Forum: React.FC = () => {
                     <h3 className="text-base font-bold text-brand-text font-serif leading-tight hover:text-brand-primary transition-colors">
                       {t.title}
                     </h3>
-                    <p className="text-brand-text-muted text-xs leading-relaxed font-medium line-clamp-2">
+                    <p className="text-brand-text-muted text-body leading-relaxed font-medium line-clamp-2">
                       {t.content}
                     </p>
                   </div>
 
                   {/* Footer metadata & buttons */}
-                  <div className="flex items-center justify-between border-t border-brand-border/60 pt-3 text-xs">
+                  <div className="flex items-center justify-between border-t border-brand-border/60 pt-3 text-body">
                     {/* Tags */}
                     <div className="flex flex-wrap gap-1.5">
                       {t.tags.map((tag, idx) => (
                         <span
                           key={idx}
-                          className="inline-flex items-center gap-0.5 text-[9px] bg-slate-50 border border-slate-200 text-slate-500 font-bold py-0.5 px-2 rounded-md"
+                          className="inline-flex items-center gap-0.5 text-meta bg-surface-muted border border-line text-fg-muted font-bold py-0.5 px-2 rounded-md"
                         >
                           <Tag className="w-2.5 h-2.5" /> {tag}
                         </span>
@@ -335,15 +335,15 @@ export const Forum: React.FC = () => {
                     <div className="flex gap-4">
                       <button
                         onClick={(e) => handleUpvote(t.id, e)}
-                        className={`flex items-center gap-1.5 font-bold cursor-pointer px-3 py-1 rounded-full text-xs transition-all ${
-                          t.hasUpvoted ? 'bg-brand-secondary/15 text-brand-primary' : 'bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-brand-primary'
+                        className={`flex items-center gap-1.5 font-bold cursor-pointer px-3 py-1 rounded-full text-body transition-all ${
+                          t.hasUpvoted ? 'bg-brand-secondary/15 text-brand-primary' : 'bg-surface-muted hover:bg-surface-muted text-fg-muted hover:text-brand-primary'
                         }`}
                       >
                         <ThumbsUp className="w-3.5 h-3.5" />
                         <span>{t.upvotes} Hữu ích</span>
                       </button>
 
-                      <span className="flex items-center gap-1 font-bold text-slate-400">
+                      <span className="flex items-center gap-1 font-bold text-fg-faint">
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>{t.replies.length} Phản hồi</span>
                       </span>
@@ -362,7 +362,7 @@ export const Forum: React.FC = () => {
       {/* Expanded Thread Drawer / Detail Overlay */}
       {activeThread && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-2xl bg-white border border-brand-border rounded-3xl p-6 relative shadow-2xl flex flex-col max-h-[85vh] overflow-hidden text-left">
+          <div className="w-full max-w-2xl bg-surface border border-brand-border rounded-card p-6 relative shadow-2xl flex flex-col max-h-[85vh] overflow-hidden text-left">
             
             <button
               onClick={() => setActiveThread(null)}
@@ -376,7 +376,7 @@ export const Forum: React.FC = () => {
               
               {/* Thread Header */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2.5 text-xs">
+                <div className="flex items-center gap-2.5 text-body">
                   <img
                     src={activeThread.authorAvatar}
                     alt={activeThread.authorName}
@@ -384,7 +384,7 @@ export const Forum: React.FC = () => {
                   />
                   <div>
                     <span className="font-bold text-brand-text block">{activeThread.authorName}</span>
-                    <span className="text-[10px] text-slate-400 font-semibold block">Đăng {activeThread.createdAt}</span>
+                    <span className="text-meta text-fg-faint font-semibold block">Đăng {activeThread.createdAt}</span>
                   </div>
                 </div>
 
@@ -392,7 +392,7 @@ export const Forum: React.FC = () => {
                   {activeThread.title}
                 </h2>
                 
-                <p className="text-xs text-brand-text font-medium leading-relaxed bg-slate-50 border border-slate-200/60 p-4 rounded-2xl">
+                <p className="text-body text-brand-text font-medium leading-relaxed bg-surface-muted border border-line p-4 rounded-card">
                   {activeThread.content}
                 </p>
 
@@ -400,7 +400,7 @@ export const Forum: React.FC = () => {
                   {activeThread.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="text-[9px] bg-slate-50 border border-slate-200 text-slate-500 font-bold py-0.5 px-2 rounded-md"
+                      className="text-meta bg-surface-muted border border-line text-fg-muted font-bold py-0.5 px-2 rounded-md"
                     >
                       #{tag}
                     </span>
@@ -410,25 +410,25 @@ export const Forum: React.FC = () => {
 
               {/* Replies/Comments List */}
               <div className="space-y-4 border-t border-brand-border/60 pt-4">
-                <h3 className="text-xs font-extrabold text-brand-text-muted uppercase tracking-wider">
+                <h3 className="text-body font-extrabold text-brand-text-muted uppercase tracking-wider">
                   Ý kiến thảo luận ({activeThread.replies.length})
                 </h3>
 
                 {activeThread.replies.length === 0 ? (
-                  <p className="text-xs text-brand-text-muted font-medium py-4">Chưa có bình luận nào. Hãy là người đầu tiên thảo luận!</p>
+                  <p className="text-body text-brand-text-muted font-medium py-4">Chưa có bình luận nào. Hãy là người đầu tiên thảo luận!</p>
                 ) : (
                   <div className="space-y-3.5">
                     {activeThread.replies.map((rep) => (
-                      <div key={rep.id} className="flex gap-3 items-start bg-slate-50/50 border border-slate-100 p-3.5 rounded-2xl">
+                      <div key={rep.id} className="flex gap-3 items-start bg-surface-muted/50 border border-line-soft p-3.5 rounded-card">
                         <img
                           src={rep.authorAvatar}
                           alt={rep.authorName}
                           className="w-8 h-8 rounded-lg object-cover border border-brand-border mt-0.5"
                         />
-                        <div className="flex-1 space-y-1 text-xs">
+                        <div className="flex-1 space-y-1 text-body">
                           <div className="flex justify-between items-center font-bold">
                             <span className="text-brand-text">{rep.authorName}</span>
-                            <span className="text-[10px] text-slate-400 font-normal">{rep.createdAt}</span>
+                            <span className="text-meta text-fg-faint font-normal">{rep.createdAt}</span>
                           </div>
                           <p className="text-brand-text-muted font-medium leading-relaxed">
                             {rep.content}
@@ -455,13 +455,13 @@ export const Forum: React.FC = () => {
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Nhập ý kiến thảo luận của bạn..."
                   rows={2}
-                  className="flex-1 bg-slate-50 border border-brand-border rounded-2xl py-2 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-secondary resize-none font-medium placeholder-slate-400"
+                  className="flex-1 bg-surface-muted border border-brand-border rounded-card py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-secondary resize-none font-medium placeholder-fg-faint"
                 />
               </div>
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-2 px-4.5 rounded-full cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                  className="bg-brand-primary hover:bg-brand-primary-hover text-white text-body font-bold py-2 px-4.5 rounded-full cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                 >
                   <Smile className="w-3.5 h-3.5" />
                   <span>Trả lời</span>
@@ -476,7 +476,7 @@ export const Forum: React.FC = () => {
       {/* Create Thread Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white border border-brand-border rounded-3xl p-6 relative shadow-2xl text-left space-y-4">
+          <div className="w-full max-w-lg bg-surface border border-brand-border rounded-card p-6 relative shadow-2xl text-left space-y-4">
             
             <button
               onClick={() => setShowCreateModal(false)}
@@ -487,29 +487,29 @@ export const Forum: React.FC = () => {
 
             <div>
               <h3 className="text-lg font-bold font-serif text-brand-text">Tạo chủ đề thảo luận mới</h3>
-              <p className="text-brand-text-muted text-xs font-medium">Đặt câu hỏi học thuật hoặc kêu gọi thành lập nhóm học chéo.</p>
+              <p className="text-brand-text-muted text-body font-medium">Đặt câu hỏi học thuật hoặc kêu gọi thành lập nhóm học chéo.</p>
             </div>
 
             <form onSubmit={handleCreateThreadSubmit} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1.5">Tiêu đề thảo luận (Súc tích)</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Tiêu đề thảo luận (Súc tích)</label>
                 <input
                   type="text"
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ví dụ: Xin đề mẫu môn AIL302 Practical Exam..."
-                  className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-secondary font-semibold"
+                  className="w-full bg-surface-muted border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-secondary font-semibold"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1.5">Chuyên mục chính</label>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Chuyên mục chính</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full bg-brand-bg border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-primary font-semibold cursor-pointer"
+                    className="w-full bg-brand-bg border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-primary font-semibold cursor-pointer"
                   >
                     <option value="WEB">Lập trình Web</option>
                     <option value="AI">Trí tuệ nhân tạo</option>
@@ -518,32 +518,32 @@ export const Forum: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1.5">Tags (Phân tách bằng dấu phẩy)</label>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Tags (Phân tách bằng dấu phẩy)</label>
                   <input
                     type="text"
                     value={newTags}
                     onChange={(e) => setNewTags(e.target.value)}
                     placeholder="Ví dụ: AI, Python, K19"
-                    className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-secondary font-medium"
+                    className="w-full bg-surface-muted border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-secondary font-medium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1.5">Nội dung chi tiết</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Nội dung chi tiết</label>
                 <textarea
                   required
                   rows={4}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   placeholder="Gợi ý: Hãy mô tả cụ thể câu hỏi hoặc điểm bạn cần được mentor hướng dẫn chéo, và kỹ năng bạn có thể trao lại..."
-                  className="w-full bg-slate-50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-secondary resize-none font-medium placeholder-slate-400"
+                  className="w-full bg-surface-muted border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-secondary resize-none font-medium placeholder-fg-faint"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold py-3.5 px-4 rounded-full cursor-pointer active:scale-[0.98] transition-all"
+                className="w-full bg-brand-primary hover:bg-brand-primary-hover text-white text-body font-bold py-3.5 px-4 rounded-full cursor-pointer active:scale-[0.98] transition-all"
               >
                 Đăng bài thảo luận
               </button>

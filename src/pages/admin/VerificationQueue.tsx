@@ -151,25 +151,25 @@ export const VerificationQueue: React.FC = () => {
         <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight flex items-center gap-2">
           <FileCheck className="w-8 h-8 text-brand-terracotta" /> Hồ sơ chờ xác thực
         </h1>
-        <p className="text-brand-text-muted text-sm font-medium">
+        <p className="text-brand-text-muted text-body font-medium">
           Duyệt danh sách đơn xin làm Mentor của sinh viên FPTU. Kiểm tra tài liệu chứng minh và phê duyệt quyền.
         </p>
       </div>
 
       {successMsg && (
-        <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl text-xs font-semibold">
+        <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 p-4 rounded-field text-body font-semibold">
           <Check className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Grid */}
-      <div className="meetmind-card rounded-3xl overflow-hidden shadow-sm">
+      <div className="meetmind-card rounded-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
+          <table className="w-full text-body text-left border-collapse">
             
             <thead>
-              <tr className="bg-brand-bg border-b border-brand-border text-brand-text-muted font-bold text-[10px] uppercase tracking-wider">
+              <tr className="bg-brand-bg border-b border-brand-border text-brand-text-muted font-bold text-meta uppercase tracking-wider">
                 <th className="py-4 px-6">Ứng viên</th>
                 <th className="py-4 px-4">Chuyên ngành xin Mentor</th>
                 <th className="py-4 px-4">Tài liệu đính kèm</th>
@@ -193,12 +193,12 @@ export const VerificationQueue: React.FC = () => {
                     {/* Applicant details */}
                     <td className="py-4 px-6 font-bold text-brand-text text-left">
                       <div>{r.applicantName}</div>
-                      <span className="text-[10px] text-brand-text-muted font-semibold">{r.email}</span>
+                      <span className="text-meta text-brand-text-muted font-semibold">{r.email}</span>
                     </td>
 
                     {/* Specialization */}
                     <td className="py-4 px-4 font-semibold">
-                      <span className="text-brand-terracotta bg-brand-terracotta/10 border border-brand-terracotta/20 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                      <span className="text-brand-terracotta bg-brand-terracotta/10 border border-brand-terracotta/20 px-2 py-0.5 rounded-lg text-meta font-bold">
                         {r.specialization} ({r.campus})
                       </span>
                     </td>
@@ -219,7 +219,7 @@ export const VerificationQueue: React.FC = () => {
 
                     {/* Status */}
                     <td className="py-4 px-4">
-                      <span className={`inline-block text-[10px] font-bold py-0.5 px-2 rounded-lg ${
+                      <span className={`inline-block text-meta font-bold py-0.5 px-2 rounded-lg ${
                         r.status === 'PENDING'
                           ? 'bg-amber-100 text-amber-850 border border-amber-200'
                           : r.status === 'APPROVED'
@@ -229,7 +229,7 @@ export const VerificationQueue: React.FC = () => {
                         {r.status === 'PENDING' ? 'Chờ duyệt' : r.status === 'APPROVED' ? 'Đã duyệt' : 'Từ chối'}
                       </span>
                       {r.status === 'REJECTED' && r.rejectionReason && (
-                        <p className="text-[9px] text-red-500 font-semibold mt-1">Lý do: {r.rejectionReason}</p>
+                        <p className="text-meta text-red-500 font-semibold mt-1">Lý do: {r.rejectionReason}</p>
                       )}
                     </td>
 
@@ -253,7 +253,7 @@ export const VerificationQueue: React.FC = () => {
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-brand-text-muted font-bold">-</span>
+                        <span className="text-meta text-brand-text-muted font-bold">-</span>
                       )}
                     </td>
 
@@ -269,7 +269,7 @@ export const VerificationQueue: React.FC = () => {
       {/* Document Review Modal */}
       {showDocModal && activeRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white border border-brand-border rounded-3xl p-6 relative">
+          <div className="w-full max-w-lg bg-surface border border-brand-border rounded-card p-6 relative">
             <button
               onClick={() => setShowDocModal(false)}
               className="absolute top-4 right-4 p-1.5 rounded-full bg-brand-bg hover:bg-brand-bg/85 border border-brand-border text-brand-text-muted hover:text-brand-text cursor-pointer transition-all"
@@ -280,21 +280,21 @@ export const VerificationQueue: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-bold font-serif text-brand-text text-left">Xem tài liệu minh chứng</h3>
               
-              <div className="bg-brand-bg border border-brand-border rounded-2xl p-3 text-left">
-                <span className="text-xs text-brand-text-muted font-bold block">Tên tệp:</span>
-                <span className="text-sm text-brand-text font-bold flex items-center gap-1.5 mt-0.5">
+              <div className="bg-brand-bg border border-brand-border rounded-card p-3 text-left">
+                <span className="text-body text-brand-text-muted font-bold block">Tên tệp:</span>
+                <span className="text-body text-brand-text font-bold flex items-center gap-1.5 mt-0.5">
                   <FileText className="w-4 h-4 text-brand-terracotta" /> {activeRequest.documentName}
                 </span>
               </div>
 
               {/* Simulated Document Preview */}
-              <div className="w-full h-64 bg-brand-bg border border-brand-border rounded-2xl flex flex-col items-center justify-center p-6 text-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-white border border-brand-border flex items-center justify-center text-brand-terracotta shadow-sm">
+              <div className="w-full h-64 bg-brand-bg border border-brand-border rounded-card flex flex-col items-center justify-center p-6 text-center space-y-3">
+                <div className="w-14 h-14 rounded-card bg-surface border border-brand-border flex items-center justify-center text-brand-terracotta shadow-sm">
                   <HelpCircle className="w-8 h-8 animate-pulse" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-brand-text">Xem trước tài liệu minh chứng</p>
-                  <p className="text-xs text-brand-text-muted font-semibold mt-1">
+                  <p className="text-body font-bold text-brand-text">Xem trước tài liệu minh chứng</p>
+                  <p className="text-body text-brand-text-muted font-semibold mt-1">
                     Bằng chứng học tập / Chứng chỉ chuyên ngành của {activeRequest.applicantName}
                   </p>
                 </div>
@@ -306,7 +306,7 @@ export const VerificationQueue: React.FC = () => {
                     handleApprove(activeRequest.id);
                     setShowDocModal(false);
                   }}
-                  className="flex-1 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-xs font-bold py-2.5 px-4 rounded-xl cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-[0.98]"
+                  className="flex-1 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-[0.98]"
                 >
                   Duyệt hồ sơ này
                 </button>
@@ -315,7 +315,7 @@ export const VerificationQueue: React.FC = () => {
                     setShowDocModal(false);
                     handleOpenReject(activeRequest);
                   }}
-                  className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-xs font-bold py-2.5 px-4 rounded-xl cursor-pointer transition-all active:scale-[0.98]"
+                  className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all active:scale-[0.98]"
                 >
                   Từ chối
                 </button>
@@ -328,7 +328,7 @@ export const VerificationQueue: React.FC = () => {
       {/* Reject Reason Modal */}
       {showRejectModal && activeRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white border border-brand-border rounded-3xl p-6 relative">
+          <div className="w-full max-w-md bg-surface border border-brand-border rounded-card p-6 relative">
             <button
               onClick={() => setShowRejectModal(false)}
               className="absolute top-4 right-4 p-1.5 rounded-full bg-brand-bg hover:bg-brand-bg/85 border border-brand-border text-brand-text-muted hover:text-brand-text cursor-pointer transition-all"
@@ -339,26 +339,26 @@ export const VerificationQueue: React.FC = () => {
             <form onSubmit={handleRejectSubmit} className="space-y-4">
               <div className="text-left">
                 <h3 className="text-lg font-bold font-serif text-brand-text">Từ chối hồ sơ Mentor</h3>
-                <p className="text-brand-text-muted text-xs font-semibold mt-0.5">
+                <p className="text-brand-text-muted text-body font-semibold mt-0.5">
                   Vui lòng cung cấp lý do để ứng viên biết cần bổ sung gì.
                 </p>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1.5">Lý do từ chối (bắt buộc)</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Lý do từ chối (bắt buộc)</label>
                 <textarea
                   required
                   rows={4}
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   placeholder="Ví dụ: Tài liệu minh chứng bị mờ, vui lòng chụp rõ nét hơn hoặc cung cấp bảng điểm chính thức..."
-                  className="w-full bg-brand-bg border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
+                  className="w-full bg-brand-bg border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer active:scale-[0.98] transition-all"
+                className="w-full bg-red-600 hover:bg-red-700 text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer active:scale-[0.98] transition-all"
               >
                 Gửi phản hồi Từ chối
               </button>

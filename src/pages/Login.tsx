@@ -49,23 +49,23 @@ export const Login: React.FC = () => {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(21,16,13,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(21,16,13,0.015)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] pointer-events-none"></div>
 
       {/* Login Card (Warm Light Glassmorphism) */}
-      <div className="relative w-full max-w-md bg-white/80 border border-brand-border backdrop-blur-xl rounded-3xl p-8 lg:p-10 z-10 shadow-xl shadow-brand-text/5">
+      <div className="relative w-full max-w-md bg-surface/80 border border-brand-border backdrop-blur-xl rounded-card p-8 lg:p-10 z-10 shadow-xl shadow-brand-text/5">
         
         {/* Brand Logo & Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-brand-terracotta flex items-center justify-center shadow-lg shadow-brand-terracotta/25 mb-4">
+          <div className="w-14 h-14 rounded-card bg-brand-terracotta flex items-center justify-center shadow-lg shadow-brand-terracotta/25 mb-4">
             <ArrowLeftRight className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight font-serif text-brand-text mb-2">
             Skill<span className="text-brand-terracotta">Swap</span>
           </h1>
-          <p className="text-brand-text-muted text-xs font-medium max-w-xs leading-relaxed">
+          <p className="text-brand-text-muted text-body font-medium max-w-xs leading-relaxed">
             Nền tảng trao đổi kỹ năng học thuật dành riêng cho sinh viên FPT University
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-2xl text-xs text-left">
+          <div className="mb-6 flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-card text-body text-left">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -76,7 +76,7 @@ export const Login: React.FC = () => {
           <button
             onClick={handleGoogleLogin}
             disabled={loadingGoogle}
-            className="w-full flex items-center justify-center gap-3 bg-white text-brand-text font-bold py-3.5 px-6 rounded-2xl border border-brand-border hover:bg-brand-bg/50 active:scale-[0.98] transition-all cursor-pointer shadow-sm shadow-brand-text/2"
+            className="w-full flex items-center justify-center gap-3 bg-surface text-brand-text font-bold py-3.5 px-6 rounded-card border border-brand-border hover:bg-brand-bg/50 active:scale-[0.98] transition-all cursor-pointer shadow-sm shadow-brand-text/2"
           >
             {loadingGoogle ? (
               <div className="w-5 h-5 border-2 border-brand-text border-t-transparent rounded-full animate-spin"></div>
@@ -103,7 +103,7 @@ export const Login: React.FC = () => {
             <span>Đăng nhập với Google @fpt.edu.vn</span>
           </button>
 
-          <p className="text-[10px] text-center text-brand-text-muted leading-normal">
+          <p className="text-meta text-center text-brand-text-muted leading-normal">
             Bằng cách đăng nhập, bạn đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật của chúng tôi.
           </p>
         </div>
@@ -113,8 +113,8 @@ export const Login: React.FC = () => {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-brand-border"></div>
           </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-3 text-brand-text-muted uppercase tracking-widest font-bold text-[9px]">
+          <div className="relative flex justify-center text-body">
+            <span className="bg-surface px-3 text-brand-text-muted uppercase tracking-widest font-bold text-meta">
               Hoặc thử nghiệm
             </span>
           </div>
@@ -124,41 +124,41 @@ export const Login: React.FC = () => {
         <div className="mt-4 text-left">
           <button
             onClick={() => setShowDevBypass(!showDevBypass)}
-            className="w-full flex items-center justify-between py-2.5 px-4 rounded-xl bg-brand-bg/50 hover:bg-brand-bg text-brand-text-muted hover:text-brand-text border border-brand-border transition-all text-xs font-semibold cursor-pointer"
+            className="w-full flex items-center justify-between py-2.5 px-4 rounded-field bg-brand-bg/50 hover:bg-brand-bg text-brand-text-muted hover:text-brand-text border border-brand-border transition-all text-body font-semibold cursor-pointer"
           >
             <span className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-brand-terracotta" />
               Chế độ nhà phát triển (Bypass)
             </span>
-            <span className="text-brand-text-muted text-[10px] bg-white border border-brand-border px-2 py-0.5 rounded-md font-bold">
+            <span className="text-brand-text-muted text-meta bg-surface border border-brand-border px-2 py-0.5 rounded-md font-bold">
               {showDevBypass ? 'Đóng' : 'Mở'}
             </span>
           </button>
 
           {showDevBypass && (
-            <div className="mt-3 bg-brand-bg/30 border border-brand-border rounded-2xl p-4 space-y-3">
-              <div className="flex items-start gap-2 text-[10px] text-brand-text-muted">
+            <div className="mt-3 bg-brand-bg/30 border border-brand-border rounded-card p-4 space-y-3">
+              <div className="flex items-start gap-2 text-meta text-brand-text-muted">
                 <HelpCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-brand-terracotta" />
                 <span>Chọn vai trò demo bên dưới để đăng nhập trực tiếp mà không cần ID Google Token thực tế. Bạn sẽ được chuyển tới trang thiết lập hồ sơ học thuật.</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => handleDevLogin('MENTEE')}
-                  className="flex flex-col items-center gap-1.5 bg-brand-blue/10 hover:bg-brand-blue/20 border border-brand-blue/20 py-2.5 px-2 rounded-xl text-[11px] font-bold text-brand-blue transition-all cursor-pointer"
+                  className="flex flex-col items-center gap-1.5 bg-brand-blue/10 hover:bg-brand-blue/20 border border-brand-blue/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-blue transition-all cursor-pointer"
                 >
                   <User className="w-3.5 h-3.5" />
                   <span>Sinh viên</span>
                 </button>
                 <button
                   onClick={() => handleDevLogin('MENTOR')}
-                  className="flex flex-col items-center gap-1.5 bg-brand-terracotta/10 hover:bg-brand-terracotta/20 border border-brand-terracotta/20 py-2.5 px-2 rounded-xl text-[11px] font-bold text-brand-terracotta transition-all cursor-pointer"
+                  className="flex flex-col items-center gap-1.5 bg-brand-terracotta/10 hover:bg-brand-terracotta/20 border border-brand-terracotta/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-terracotta transition-all cursor-pointer"
                 >
                   <Shield className="w-3.5 h-3.5" />
                   <span>Mentor</span>
                 </button>
                 <button
                   onClick={() => handleDevLogin('ADMIN')}
-                  className="flex flex-col items-center gap-1.5 bg-brand-sidebar/10 hover:bg-brand-sidebar/20 border border-brand-sidebar/20 py-2.5 px-2 rounded-xl text-[11px] font-bold text-brand-sidebar/80 transition-all cursor-pointer"
+                  className="flex flex-col items-center gap-1.5 bg-brand-sidebar/10 hover:bg-brand-sidebar/20 border border-brand-sidebar/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-sidebar/80 transition-all cursor-pointer"
                 >
                   <Shield className="w-3.5 h-3.5" />
                   <span>Admin</span>

@@ -12,13 +12,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-app flex flex-col items-center justify-center">
         {/* Loading Spinner */}
         <div className="relative w-16 h-16">
-          <div className="absolute inset-0 border-4 border-brand-purple/20 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-t-brand-teal rounded-full animate-spin"></div>
+          <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-t-primary rounded-full animate-spin"></div>
         </div>
-        <p className="mt-4 text-gray-400 font-medium animate-pulse">Đang tải dữ liệu...</p>
+        <p className="mt-4 text-fg-faint font-medium animate-pulse">Đang tải dữ liệu...</p>
       </div>
     );
   }

@@ -175,15 +175,15 @@ export const Chat: React.FC = () => {
   );
 
   return (
-    <div className="meetmind-card rounded-3xl overflow-hidden flex h-[78vh] border border-slate-200/80 bg-white">
+    <div className="meetmind-card rounded-card overflow-hidden flex h-[78vh] border border-line bg-surface">
       
       {/* Left panel: Inbox chat list */}
-      <div className="w-full sm:w-80 md:w-96 border-r border-brand-border flex flex-col shrink-0 bg-slate-50/50">
+      <div className="w-full sm:w-80 md:w-96 border-r border-brand-border flex flex-col shrink-0 bg-surface-muted/50">
         {/* Inbox header / Search */}
-        <div className="p-4 border-b border-brand-border space-y-3 bg-white">
+        <div className="p-4 border-b border-brand-border space-y-3 bg-surface">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-1.5">
-              <Sparkles className="w-5 h-5 text-slate-700 animate-pulse" /> Hộp thư trò chuyện
+            <h2 className="text-lg font-bold text-fg flex items-center gap-1.5">
+              <Sparkles className="w-5 h-5 text-fg-muted animate-pulse" /> Hộp thư trò chuyện
             </h2>
           </div>
           
@@ -194,15 +194,15 @@ export const Chat: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm đối tác chat..."
-              className="w-full bg-slate-50 border border-brand-border rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none focus:border-brand-secondary font-semibold"
+              className="w-full bg-surface-muted border border-brand-border rounded-field py-2 pl-9 pr-3 text-body focus:outline-none focus:border-brand-secondary font-semibold"
             />
           </div>
         </div>
 
         {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-brand-border bg-white">
+        <div className="flex-1 overflow-y-auto divide-y divide-brand-border bg-surface">
           {filteredInbox.length === 0 ? (
-            <div className="py-8 text-center text-xs text-brand-text-muted font-bold">
+            <div className="py-8 text-center text-body text-brand-text-muted font-bold">
               Không tìm thấy cuộc hội thoại nào.
             </div>
           ) : (
@@ -213,7 +213,7 @@ export const Chat: React.FC = () => {
                 className={`w-full p-4 flex gap-3 text-left transition-colors cursor-pointer ${
                   activePartnerId === partner.id
                     ? 'bg-brand-primary/10 border-l-4 border-brand-primary shadow-xs'
-                    : 'hover:bg-slate-50'
+                    : 'hover:bg-surface-muted'
                 }`}
               >
                 {/* Avatar */}
@@ -221,7 +221,7 @@ export const Chat: React.FC = () => {
                   <img
                     src={partner.avatarUrl}
                     alt={partner.name}
-                    className="w-11 h-11 rounded-xl object-cover border border-brand-border"
+                    className="w-11 h-11 rounded-field object-cover border border-brand-border"
                   />
                   {partner.status === 'ONLINE' && (
                     <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dot-glow-green" />
@@ -231,11 +231,11 @@ export const Chat: React.FC = () => {
                 {/* Info summary */}
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-baseline justify-between gap-1">
-                    <span className="text-xs font-bold text-brand-text truncate">{partner.name}</span>
-                    <span className="text-[9px] text-slate-400 font-semibold shrink-0">{partner.time}</span>
+                    <span className="text-body font-bold text-brand-text truncate">{partner.name}</span>
+                    <span className="text-meta text-fg-faint font-semibold shrink-0">{partner.time}</span>
                   </div>
-                  <span className="text-[9px] text-slate-700 font-extrabold block truncate uppercase leading-none">{partner.role}</span>
-                  <p className={`text-[10px] truncate leading-tight font-medium ${
+                  <span className="text-meta text-fg-muted font-extrabold block truncate uppercase leading-none">{partner.role}</span>
+                  <p className={`text-meta truncate leading-tight font-medium ${
                     partner.unread && activePartnerId !== partner.id
                       ? 'text-brand-text font-extrabold'
                       : 'text-brand-text-muted'
@@ -250,40 +250,40 @@ export const Chat: React.FC = () => {
       </div>
 
       {/* Right panel: Chat messages window */}
-      <div className="flex-1 flex flex-col justify-between bg-white text-left">
+      <div className="flex-1 flex flex-col justify-between bg-surface text-left">
         {/* Active conversation Header */}
-        <div className="p-4 border-b border-brand-border flex items-center justify-between bg-white shrink-0">
+        <div className="p-4 border-b border-brand-border flex items-center justify-between bg-surface shrink-0">
           <div className="flex items-center gap-3">
             <img
               src={activePartner.avatarUrl}
               alt={activePartner.name}
-              className="w-10 h-10 rounded-xl object-cover border border-brand-border"
+              className="w-10 h-10 rounded-field object-cover border border-brand-border"
             />
             <div>
-              <span className="text-xs font-bold text-brand-text block">{activePartner.name}</span>
+              <span className="text-body font-bold text-brand-text block">{activePartner.name}</span>
               <div className="flex items-center gap-1.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${activePartner.status === 'ONLINE' ? 'bg-green-500' : 'bg-brand-grey'}`} />
-                <span className="text-[10px] text-brand-text-muted font-bold uppercase leading-none">{activePartner.role}</span>
+                <span className="text-meta text-brand-text-muted font-bold uppercase leading-none">{activePartner.role}</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-xl border border-brand-border bg-slate-50 hover:bg-slate-100 text-slate-500 transition-all cursor-pointer">
+            <button className="p-2 rounded-field border border-brand-border bg-surface-muted hover:bg-surface-muted text-fg-muted transition-all cursor-pointer">
               <Phone className="w-4 h-4" />
             </button>
-            <button className="p-2 rounded-xl border border-brand-border bg-slate-50 hover:bg-slate-100 text-slate-500 transition-all cursor-pointer">
+            <button className="p-2 rounded-field border border-brand-border bg-surface-muted hover:bg-surface-muted text-fg-muted transition-all cursor-pointer">
               <Video className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Messaging Timeline area */}
-        <div className="flex-1 p-5 overflow-y-auto bg-slate-50/20 space-y-4">
+        <div className="flex-1 p-5 overflow-y-auto bg-surface-muted/20 space-y-4">
           
           {/* Disclaimer details */}
-          <div className="max-w-md mx-auto p-3.5 bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-semibold rounded-2xl flex items-start gap-2 leading-relaxed">
-            <ShieldAlert className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+          <div className="max-w-md mx-auto p-3.5 bg-surface-muted border border-line text-fg-muted text-meta font-semibold rounded-card flex items-start gap-2 leading-relaxed">
+            <ShieldAlert className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" />
             <span>Tin nhắn được mã hóa bảo mật. Mọi giao dịch đặt lịch và trao đổi học tập đều tuân thủ Quy tắc ứng xử FPTU.</span>
           </div>
 
@@ -306,26 +306,26 @@ export const Chat: React.FC = () => {
                 {/* Message Bubble container */}
                 <div className="space-y-1">
                   <div
-                    className={`p-3.5 rounded-2xl text-xs font-semibold leading-relaxed ${
+                    className={`p-3.5 rounded-card text-body font-semibold leading-relaxed ${
                       isMe
                         ? 'bg-brand-primary text-white rounded-br-none shadow-sm'
-                        : 'bg-slate-100 text-slate-800 rounded-bl-none border border-slate-200/50'
+                        : 'bg-surface-muted text-fg rounded-bl-none border border-line/50'
                     }`}
                   >
                     {msg.text}
                   </div>
                   
                   {/* Status Indicator / Timestamp */}
-                  <div className={`text-[9px] text-slate-400 font-semibold flex items-center gap-1 justify-end`}>
+                  <div className={`text-meta text-fg-faint font-semibold flex items-center gap-1 justify-end`}>
                     <span>{msg.time}</span>
                     {isMe && (
-                      <span className="text-slate-800">
+                      <span className="text-fg">
                         {msg.status === 'READ' ? (
                           <CheckCheck className="w-3 h-3" />
                         ) : msg.status === 'DELIVERED' ? (
-                          <CheckCheck className="w-3 h-3 text-slate-350" />
+                          <CheckCheck className="w-3 h-3 text-fg-faint" />
                         ) : (
-                          <Check className="w-3 h-3 text-slate-350" />
+                          <Check className="w-3 h-3 text-fg-faint" />
                         )}
                       </span>
                     )}
@@ -339,18 +339,18 @@ export const Chat: React.FC = () => {
         </div>
 
         {/* Message Input composer area */}
-        <div className="p-4 border-t border-brand-border bg-white shrink-0">
+        <div className="p-4 border-t border-brand-border bg-surface shrink-0">
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={`Nhắn tin cho ${activePartner.name}...`}
-              className="flex-1 bg-slate-50 border border-brand-border rounded-xl py-3 px-4 text-xs focus:outline-none focus:border-brand-secondary font-semibold"
+              className="flex-1 bg-surface-muted border border-brand-border rounded-field py-3 px-4 text-body focus:outline-none focus:border-brand-secondary font-semibold"
             />
             <button
               type="submit"
-              className="p-3 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl cursor-pointer active:scale-95 shadow-xs transition-all flex items-center justify-center shrink-0"
+              className="p-3 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-field cursor-pointer active:scale-95 shadow-xs transition-all flex items-center justify-center shrink-0"
               title="Gửi tin nhắn"
             >
               <Send className="w-4 h-4" />

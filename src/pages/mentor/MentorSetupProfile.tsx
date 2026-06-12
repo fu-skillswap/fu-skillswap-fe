@@ -132,20 +132,20 @@ export const MentorSetupProfile: React.FC = () => {
         <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight flex items-center gap-2">
           <Settings className="w-8 h-8 text-brand-terracotta" /> Cấu hình hồ sơ chuyên môn
         </h1>
-        <p className="text-brand-text-muted text-sm font-medium">
+        <p className="text-brand-text-muted text-body font-medium">
           Tối ưu hóa các thông số kỹ năng, lịch sử làm việc và các gói hỗ trợ để tăng độ uy tín với sinh viên.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-xl text-xs font-semibold">
+        <div className="flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-field text-body font-semibold">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="flex items-start gap-3 bg-green-500/5 border border-green-200 text-green-600 p-4 rounded-xl text-xs font-semibold">
+        <div className="flex items-start gap-3 bg-green-500/5 border border-green-200 text-green-600 p-4 rounded-field text-body font-semibold">
           <Check className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{success}</span>
         </div>
@@ -157,49 +157,49 @@ export const MentorSetupProfile: React.FC = () => {
         <div className="lg:col-span-1 space-y-6">
           
           {/* Card Info */}
-          <div className="meetmind-card p-6 rounded-3xl space-y-4">
-            <h3 className="text-sm font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+          <div className="meetmind-card p-6 rounded-card space-y-4">
+            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Sliders className="w-4.5 h-4.5 text-brand-terracotta" /> 1. Mô tả năng lực
             </h3>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1">Headline ngắn</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Headline ngắn</label>
                 <input
                   type="text"
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
-                  className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1">Giới thiệu chi tiết</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Giới thiệu chi tiết</label>
                 <textarea
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-brand-bg/50 border border-brand-border rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta resize-none font-medium"
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none font-medium"
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1">Phong cách mentoring</label>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Phong cách mentoring</label>
                   <input
                     type="text"
                     value={mentoringStyle}
                     onChange={(e) => setMentoringStyle(e.target.value)}
-                    className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
+                    className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-brand-text-muted uppercase mb-1">Đối tượng hỗ trợ</label>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Đối tượng hỗ trợ</label>
                   <input
                     type="text"
                     value={targetMentees}
                     onChange={(e) => setTargetMentees(e.target.value)}
-                    className="w-full bg-brand-bg/50 border border-brand-border rounded-xl py-2 px-3 text-xs text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
+                    className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
                   />
                 </div>
               </div>
@@ -207,15 +207,15 @@ export const MentorSetupProfile: React.FC = () => {
 
             <button
               onClick={handleSaveProfile}
-              className="w-full bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-xs font-bold py-2.5 px-4 rounded-xl cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all"
+              className="w-full bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all"
             >
               Lưu thông tin mô tả
             </button>
           </div>
 
           {/* Expert Tags */}
-          <div className="meetmind-card p-6 rounded-3xl space-y-3">
-            <h3 className="text-sm font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+          <div className="meetmind-card p-6 rounded-card space-y-3">
+            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Tags className="w-4.5 h-4.5 text-brand-blue" /> 2. Kỹ năng chuyên môn
             </h3>
 
@@ -226,7 +226,7 @@ export const MentorSetupProfile: React.FC = () => {
                   <button
                     key={tag}
                     onClick={() => handleToggleTag(tag)}
-                    className={`text-[10px] font-bold py-1 px-3 rounded-lg border transition-all cursor-pointer ${
+                    className={`text-meta font-bold py-1 px-3 rounded-lg border transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-brand-terracotta/15 text-brand-terracotta border-brand-terracotta/20'
                         : 'bg-brand-bg border-brand-border text-brand-text-muted hover:bg-brand-bg/80'
@@ -238,7 +238,7 @@ export const MentorSetupProfile: React.FC = () => {
               })}
             </div>
             
-            <p className="text-[9px] text-brand-text-muted font-semibold leading-normal pt-1">
+            <p className="text-meta text-brand-text-muted font-semibold leading-normal pt-1">
               * Vui lòng chọn ít nhất 1 kỹ năng chủ đạo (Primary tag) trùng khớp với chuyên ngành của bạn.
             </p>
           </div>
@@ -249,25 +249,25 @@ export const MentorSetupProfile: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Work experiences */}
-          <div className="meetmind-card p-6 rounded-3xl space-y-4">
-            <h3 className="text-sm font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+          <div className="meetmind-card p-6 rounded-card space-y-4">
+            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Briefcase className="w-4.5 h-4.5 text-brand-terracotta" /> 3. Lịch sử kinh nghiệm & Học vấn
             </h3>
 
             {/* List experiences */}
             <div className="space-y-3">
               {experiences.map((exp) => (
-                <div key={exp.id} className="flex justify-between items-center bg-brand-bg/40 border border-brand-border p-3.5 rounded-2xl">
+                <div key={exp.id} className="flex justify-between items-center bg-brand-bg/40 border border-brand-border p-3.5 rounded-card">
                   <div className="text-left">
-                    <span className="text-xs font-bold text-brand-text block">{exp.positionTitle}</span>
-                    <span className="text-[10px] text-brand-text-muted font-bold block">{exp.companyName}</span>
-                    <span className="text-[9px] text-brand-grey font-semibold">
+                    <span className="text-body font-bold text-brand-text block">{exp.positionTitle}</span>
+                    <span className="text-meta text-brand-text-muted font-bold block">{exp.companyName}</span>
+                    <span className="text-meta text-brand-grey font-semibold">
                       {exp.startDate} - {exp.isCurrent ? 'Hiện tại' : exp.endDate}
                     </span>
                   </div>
                   <button
                     onClick={() => handleDeleteExperience(exp.id)}
-                    className="p-1.5 hover:bg-red-50 text-brand-text-muted hover:text-red-600 rounded-xl transition-all cursor-pointer"
+                    className="p-1.5 hover:bg-red-50 text-brand-text-muted hover:text-red-600 rounded-field transition-all cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -276,22 +276,22 @@ export const MentorSetupProfile: React.FC = () => {
             </div>
 
             {/* Add Exp Form */}
-            <form onSubmit={handleAddExperience} className="bg-brand-bg/30 border border-brand-border p-4 rounded-2xl space-y-3">
-              <span className="text-[10px] font-bold text-brand-text uppercase block mb-1">Thêm kinh nghiệm mới</span>
+            <form onSubmit={handleAddExperience} className="bg-brand-bg/30 border border-brand-border p-4 rounded-card space-y-3">
+              <span className="text-meta font-bold text-brand-text uppercase block mb-1">Thêm kinh nghiệm mới</span>
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
                   placeholder="Tên công ty (Ví dụ: FPT Software)"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  className="bg-white border border-brand-border rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-brand-terracotta"
+                  className="bg-surface border border-brand-border rounded-field py-2 px-3 text-body focus:outline-none focus:border-brand-terracotta"
                 />
                 <input
                   type="text"
                   placeholder="Vị trí (Ví dụ: React Developer)"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="bg-white border border-brand-border rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-brand-terracotta"
+                  className="bg-surface border border-brand-border rounded-field py-2 px-3 text-body focus:outline-none focus:border-brand-terracotta"
                 />
               </div>
 
@@ -301,7 +301,7 @@ export const MentorSetupProfile: React.FC = () => {
                     type="month"
                     value={expStart}
                     onChange={(e) => setExpStart(e.target.value)}
-                    className="bg-white border border-brand-border rounded-xl py-2 px-2 text-xs focus:outline-none focus:border-brand-terracotta cursor-pointer"
+                    className="bg-surface border border-brand-border rounded-field py-2 px-2 text-body focus:outline-none focus:border-brand-terracotta cursor-pointer"
                     title="Bắt đầu"
                   />
                   <input
@@ -309,7 +309,7 @@ export const MentorSetupProfile: React.FC = () => {
                     disabled={isCurrent}
                     value={expEnd}
                     onChange={(e) => setExpEnd(e.target.value)}
-                    className="bg-white border border-brand-border rounded-xl py-2 px-2 text-xs focus:outline-none focus:border-brand-terracotta disabled:opacity-40 cursor-pointer"
+                    className="bg-surface border border-brand-border rounded-field py-2 px-2 text-body focus:outline-none focus:border-brand-terracotta disabled:opacity-40 cursor-pointer"
                     title="Kết thúc"
                   />
                 </div>
@@ -321,7 +321,7 @@ export const MentorSetupProfile: React.FC = () => {
                     onChange={(e) => setIsCurrent(e.target.checked)}
                     className="cursor-pointer"
                   />
-                  <label htmlFor="isCurrent" className="text-[10px] font-bold text-brand-text-muted cursor-pointer">
+                  <label htmlFor="isCurrent" className="text-meta font-bold text-brand-text-muted cursor-pointer">
                     Đang làm việc tại đây
                   </label>
                 </div>
@@ -329,7 +329,7 @@ export const MentorSetupProfile: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full bg-brand-bg hover:bg-brand-terracotta hover:text-white border border-brand-border hover:border-brand-terracotta text-brand-text text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer"
+                className="w-full bg-brand-bg hover:bg-brand-terracotta hover:text-white border border-brand-border hover:border-brand-terracotta text-brand-text text-meta font-bold py-2 rounded-field transition-all cursor-pointer"
               >
                 + Lưu kinh nghiệm
               </button>
@@ -337,24 +337,24 @@ export const MentorSetupProfile: React.FC = () => {
           </div>
 
           {/* Mentoring services */}
-          <div className="meetmind-card p-6 rounded-3xl space-y-4">
-            <h3 className="text-sm font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+          <div className="meetmind-card p-6 rounded-card space-y-4">
+            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Sliders className="w-4.5 h-4.5 text-brand-blue" /> 4. Thiết lập Gói dịch vụ hỗ trợ (Miễn phí cho MVP)
             </h3>
 
             <div className="space-y-3">
               {services.map((ser) => (
-                <div key={ser.id} className="flex justify-between items-start bg-brand-bg/40 border border-brand-border p-4 rounded-2xl">
+                <div key={ser.id} className="flex justify-between items-start bg-brand-bg/40 border border-brand-border p-4 rounded-card">
                   <div className="text-left space-y-1">
-                    <span className="text-xs font-bold text-brand-text block">{ser.title}</span>
-                    <p className="text-[10px] text-brand-text-muted font-medium">{ser.description}</p>
-                    <span className="inline-block text-[9px] font-extrabold text-brand-blue bg-brand-blue/15 border border-brand-blue/20 px-2 py-0.5 rounded-lg">
+                    <span className="text-body font-bold text-brand-text block">{ser.title}</span>
+                    <p className="text-meta text-brand-text-muted font-medium">{ser.description}</p>
+                    <span className="inline-block text-meta font-extrabold text-brand-blue bg-brand-blue/15 border border-brand-blue/20 px-2 py-0.5 rounded-lg">
                       Thời lượng: {ser.durationMinutes} phút
                     </span>
                   </div>
                   <button
                     onClick={() => handleDeleteService(ser.id)}
-                    className="p-1.5 hover:bg-red-50 text-brand-text-muted hover:text-red-600 rounded-xl transition-all cursor-pointer shrink-0 ml-4"
+                    className="p-1.5 hover:bg-red-50 text-brand-text-muted hover:text-red-600 rounded-field transition-all cursor-pointer shrink-0 ml-4"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -363,8 +363,8 @@ export const MentorSetupProfile: React.FC = () => {
             </div>
 
             {/* Add Service Form */}
-            <form onSubmit={handleAddService} className="bg-brand-bg/30 border border-brand-border p-4 rounded-2xl space-y-3">
-              <span className="text-[10px] font-bold text-brand-text uppercase block mb-1">Thêm dịch vụ hỗ trợ mới</span>
+            <form onSubmit={handleAddService} className="bg-brand-bg/30 border border-brand-border p-4 rounded-card space-y-3">
+              <span className="text-meta font-bold text-brand-text uppercase block mb-1">Thêm dịch vụ hỗ trợ mới</span>
               
               <div className="grid grid-cols-3 gap-3">
                 <input
@@ -373,12 +373,12 @@ export const MentorSetupProfile: React.FC = () => {
                   placeholder="Tên gói hỗ trợ (Ví dụ: Mock Interview SE)"
                   value={serTitle}
                   onChange={(e) => setSerTitle(e.target.value)}
-                  className="col-span-2 bg-white border border-brand-border rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-brand-terracotta"
+                  className="col-span-2 bg-surface border border-brand-border rounded-field py-2 px-3 text-body focus:outline-none focus:border-brand-terracotta"
                 />
                 <select
                   value={serDuration}
                   onChange={(e) => setSerDuration(Number(e.target.value))}
-                  className="col-span-1 bg-white border border-brand-border rounded-xl py-2 px-2 text-xs focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
+                  className="col-span-1 bg-surface border border-brand-border rounded-field py-2 px-2 text-body focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
                 >
                   <option value={30}>30 phút</option>
                   <option value={45}>45 phút</option>
@@ -393,12 +393,12 @@ export const MentorSetupProfile: React.FC = () => {
                 placeholder="Mô tả nội dung chi tiết buổi học và những gì mentee cần chuẩn bị trước..."
                 value={serDesc}
                 onChange={(e) => setSerDesc(e.target.value)}
-                className="w-full bg-white border border-brand-border rounded-xl p-3 text-xs focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
+                className="w-full bg-surface border border-brand-border rounded-field p-3 text-body focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
               />
 
               <button
                 type="submit"
-                className="w-full bg-brand-bg hover:bg-brand-terracotta hover:text-white border border-brand-border hover:border-brand-terracotta text-brand-text text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer"
+                className="w-full bg-brand-bg hover:bg-brand-terracotta hover:text-white border border-brand-border hover:border-brand-terracotta text-brand-text text-meta font-bold py-2 rounded-field transition-all cursor-pointer"
               >
                 + Thêm gói hỗ trợ
               </button>

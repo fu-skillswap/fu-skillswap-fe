@@ -190,21 +190,21 @@ export const CompleteProfile: React.FC = () => {
       <div className="absolute -top-[10%] -left-[10%] w-[45vw] h-[45vw] rounded-full bg-brand-terracotta/4 blur-[130px] pointer-events-none"></div>
       <div className="absolute -bottom-[10%] -right-[10%] w-[45vw] h-[45vw] rounded-full bg-brand-blue/3 blur-[130px] pointer-events-none"></div>
 
-      <div className="relative w-full max-w-2xl bg-white/85 border border-brand-border backdrop-blur-xl rounded-3xl p-8 lg:p-10 z-10 shadow-xl shadow-brand-text/5">
+      <div className="relative w-full max-w-2xl bg-surface/85 border border-brand-border backdrop-blur-xl rounded-card p-8 lg:p-10 z-10 shadow-xl shadow-brand-text/5">
         
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-brand-terracotta flex items-center justify-center shadow-lg shadow-brand-terracotta/20 mb-3">
+          <div className="w-12 h-12 rounded-field bg-brand-terracotta flex items-center justify-center shadow-lg shadow-brand-terracotta/20 mb-3">
             <GraduationCap className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-2xl font-bold font-serif text-brand-text">Hoàn thiện hồ sơ học thuật</h2>
-          <p className="text-brand-text-muted text-xs font-semibold mt-1">
+          <p className="text-brand-text-muted text-body font-semibold mt-1">
             Vui lòng điền thông tin chi tiết để hệ thống đề xuất trao đổi kỹ năng phù hợp
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-2xl text-xs">
+          <div className="mb-6 flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-card text-body">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -214,31 +214,31 @@ export const CompleteProfile: React.FC = () => {
           
           {/* Section: Personal Details */}
           <div className="space-y-4">
-            <h3 className="text-xs font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
+            <h3 className="text-body font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
               <User className="w-4 h-4" /> 1. Thông tin cá nhân
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Tên hiển thị</label>
+                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Tên hiển thị</label>
                 <input
                   type="text"
                   required
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-4 text-xs text-brand-text focus:outline-none transition-all"
+                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
                   placeholder="Nguyễn Văn A"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Mã số sinh viên (MSSV)</label>
+                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Mã số sinh viên (MSSV)</label>
                 <input
                   type="text"
                   required
                   value={studentCode}
                   onChange={(e) => setStudentCode(e.target.value)}
-                  className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-4 text-xs text-brand-text focus:outline-none transition-all placeholder-brand-grey font-bold"
+                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all placeholder-brand-grey font-bold"
                   placeholder="Ví dụ: SE192621"
                 />
               </div>
@@ -247,18 +247,18 @@ export const CompleteProfile: React.FC = () => {
 
           {/* Section: Academic Details */}
           <div className="space-y-4 pt-2">
-            <h3 className="text-xs font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
+            <h3 className="text-body font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
               <School className="w-4 h-4" /> 2. Cơ sở & Ngành học FPT
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Cơ sở học tập</label>
+                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Cơ sở học tập</label>
                 <select
                   required
                   value={selectedCampus}
                   onChange={(e) => setSelectedCampus(e.target.value)}
-                  className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-3 text-xs text-brand-text focus:outline-none transition-all cursor-pointer font-semibold"
+                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none transition-all cursor-pointer font-semibold"
                 >
                   <option value="">-- Chọn cơ sở --</option>
                   {campuses.map((c) => (
@@ -270,12 +270,12 @@ export const CompleteProfile: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Ngành học (Major)</label>
+                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Ngành học (Major)</label>
                 <select
                   required
                   value={selectedProgram}
                   onChange={(e) => setSelectedProgram(e.target.value)}
-                  className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-3 text-xs text-brand-text focus:outline-none transition-all cursor-pointer font-semibold"
+                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none transition-all cursor-pointer font-semibold"
                 >
                   <option value="">-- Chọn ngành học --</option>
                   {programs.map((p) => (
@@ -287,13 +287,13 @@ export const CompleteProfile: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Chuyên ngành</label>
+                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Chuyên ngành</label>
                 <select
                   required
                   disabled={!selectedProgram}
                   value={selectedSpecialization}
                   onChange={(e) => setSelectedSpecialization(e.target.value)}
-                  className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-3 text-xs text-brand-text focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-semibold"
+                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-semibold"
                 >
                   <option value="">-- Chọn chuyên ngành --</option>
                   {specializations.map((s) => (
@@ -307,7 +307,7 @@ export const CompleteProfile: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Học kỳ hiện tại</label>
+                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Học kỳ hiện tại</label>
                 <input
                   type="number"
                   required
@@ -315,13 +315,13 @@ export const CompleteProfile: React.FC = () => {
                   max={12}
                   value={semester}
                   onChange={(e) => setSemester(Number(e.target.value))}
-                  className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-4 text-xs text-brand-text focus:outline-none transition-all"
+                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
                   placeholder="Ví dụ: 5"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Năm nhập học</label>
+                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Năm nhập học</label>
                 <input
                   type="number"
                   required
@@ -329,7 +329,7 @@ export const CompleteProfile: React.FC = () => {
                   max={2030}
                   value={intakeYear}
                   onChange={(e) => setIntakeYear(Number(e.target.value))}
-                  className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-4 text-xs text-brand-text focus:outline-none transition-all"
+                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
                   placeholder="Ví dụ: 2022"
                 />
               </div>
@@ -344,14 +344,14 @@ export const CompleteProfile: React.FC = () => {
                   onChange={(e) => setIsAlumni(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-brand-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-terracotta"></div>
-                <span className="ml-3 text-xs font-bold text-brand-text-muted">Tôi là Cựu sinh viên (Alumni) đã tốt nghiệp</span>
+                <div className="w-9 h-5 bg-brand-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-terracotta"></div>
+                <span className="ml-3 text-body font-bold text-brand-text-muted">Tôi là Cựu sinh viên (Alumni) đã tốt nghiệp</span>
               </label>
             </div>
 
             {isAlumni && (
               <div className="mt-3">
-                <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Năm tốt nghiệp</label>
+                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Năm tốt nghiệp</label>
                 <input
                   type="number"
                   required={isAlumni}
@@ -359,7 +359,7 @@ export const CompleteProfile: React.FC = () => {
                   max={2030}
                   value={graduationYear}
                   onChange={(e) => setGraduationYear(Number(e.target.value))}
-                  className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-4 text-xs text-brand-text focus:outline-none transition-all"
+                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
                 />
               </div>
             )}
@@ -367,16 +367,16 @@ export const CompleteProfile: React.FC = () => {
 
           {/* Section: Biography */}
           <div className="space-y-4 pt-2">
-            <h3 className="text-xs font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
+            <h3 className="text-body font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
               <FileText className="w-4 h-4" /> 3. Giới thiệu bản thân
             </h3>
             <div>
-              <label className="block text-xs font-bold text-brand-text-muted mb-1.5">Bio / Kỹ năng nổi bật</label>
+              <label className="block text-body font-bold text-brand-text-muted mb-1.5">Bio / Kỹ năng nổi bật</label>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
-                className="w-full bg-white border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-xl py-2.5 px-4 text-xs text-brand-text focus:outline-none transition-all resize-none placeholder-brand-grey font-medium"
+                className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all resize-none placeholder-brand-grey font-medium"
                 placeholder="Giới thiệu bản thân, kỹ năng bạn muốn chia sẻ (Ví dụ: React, Java) hoặc kỹ năng bạn đang tìm kiếm (Ví dụ: Python, UI/UX design)..."
               />
             </div>
@@ -387,7 +387,7 @@ export const CompleteProfile: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white font-bold py-3 px-6 rounded-2xl cursor-pointer shadow-lg shadow-brand-terracotta/20 active:scale-[0.99] transition-all"
+              className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white font-bold py-3 px-6 rounded-card cursor-pointer shadow-lg shadow-brand-terracotta/20 active:scale-[0.99] transition-all"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
