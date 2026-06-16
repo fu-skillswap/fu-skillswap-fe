@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trash2, Check, AlertCircle, Briefcase, Sliders, Tags, Settings } from 'lucide-react';
+import { mentorProfileApi } from '../../api/mentorProfile';
 
 interface Experience {
   id: string;
@@ -17,6 +18,23 @@ interface MentoringService {
   durationMinutes: number;
 }
 
+const TAG_ID_MAP: Record<string, string> = {
+  'React': 'tag-react-uuid-001',
+  'Node.js': 'tag-nodejs-uuid-002',
+  'TypeScript': 'tag-typescript-uuid-003',
+  'Python': 'tag-python-uuid-004',
+  'AI/ML': 'tag-aiml-uuid-005',
+  'Figma': 'tag-figma-uuid-006',
+  'UI/UX': 'tag-uiux-uuid-007',
+  'SEO': 'tag-seo-uuid-008',
+  'Docker': 'tag-docker-uuid-009',
+};
+
+const TAG_NAME_MAP: Record<string, string> = Object.entries(TAG_ID_MAP).reduce(
+  (acc, [name, id]) => ({ ...acc, [id]: name }),
+  {} as Record<string, string>
+);
+
 export const MentorSetupProfile: React.FC = () => {
   // Profile settings
   const [headline, setHeadline] = useState('Chuyên gia phát triển Web Fullstack | Hỗ trợ đồ án K18/K19');
@@ -27,6 +45,34 @@ export const MentorSetupProfile: React.FC = () => {
   // Tags
   const [availableTags] = useState(['React', 'Node.js', 'TypeScript', 'Python', 'AI/ML', 'Figma', 'UI/UX', 'SEO', 'Docker']);
   const [selectedTags, setSelectedTags] = useState<string[]>(['React', 'Node.js', 'TypeScript']);
+
+  // Loading state
+  const [loading, setLoading] = useState(false);
+
+  // Fetch mentor profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const profile = await mentorProfileApi.get();
+        if (profile) {
+          if (profile.headline) setHeadline(profile.headline);
+          if (profile.bio) setDescription(profile.bio);
+          // Set expertise tags if available
+          if (profile.expertiseTagIds && profile.expertiseTagIds.length > 0) {
+            const tags = profile.expertiseTagIds
+              .map(id => TAG_NAME_MAP[id] || id)
+              .filter(Boolean);
+            if (tags.length > 0) {
+              setSelectedTags(tags);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch mentor profile from backend, using mock data.', err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // Experience state
   const [experiences, setExperiences] = useState<Experience[]>([
@@ -119,8 +165,47 @@ export const MentorSetupProfile: React.FC = () => {
     setServices(services.filter((s) => s.id !== id));
   };
 
-  const handleSaveProfile = () => {
-    setSuccess('Hồ sơ năng lực Mentor đã được cập nhật thành công!');
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await mentorProfileApi.updateBasic({
+        headline,
+        bio: description,
+        isAvailable: true,
+      });
+      setSuccess('Lưu thông tin mô tả thành công!');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu thông tin mô tả.');
+    } finally {
+      setLoading(false);
+    }
+    setTimeout(() => setSuccess(null), 3000);
+  };
+
+  const handleSaveExpertise = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const tagIds = selectedTags.map((tag) => TAG_ID_MAP[tag] || tag);
+      await mentorProfileApi.updateExpertise({
+        expertiseTagIds: tagIds,
+        helpTopicIds: [], // Empty or mock
+        yearsOfExperience: 2,
+        industry: 'Software Development',
+        expertiseSummary: description,
+        linkedinUrl: '',
+        githubUrl: '',
+        portfolioUrl: '',
+      });
+      setSuccess('Lưu kỹ năng chuyên môn thành công!');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu kỹ năng chuyên môn.');
+    } finally {
+      setLoading(false);
+    }
     setTimeout(() => setSuccess(null), 3000);
   };
 
@@ -206,10 +291,11 @@ export const MentorSetupProfile: React.FC = () => {
             </div>
 
             <button
+              disabled={loading}
               onClick={handleSaveProfile}
-              className="w-full bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all"
+              className="w-full bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all disabled:opacity-50"
             >
-              Lưu thông tin mô tả
+              {loading ? 'Đang lưu...' : 'Lưu thông tin mô tả'}
             </button>
           </div>
 
@@ -238,9 +324,17 @@ export const MentorSetupProfile: React.FC = () => {
               })}
             </div>
             
-            <p className="text-meta text-brand-text-muted font-semibold leading-normal pt-1">
+            <p className="text-meta text-brand-text-muted font-semibold leading-normal pt-1 mb-3">
               * Vui lòng chọn ít nhất 1 kỹ năng chủ đạo (Primary tag) trùng khớp với chuyên ngành của bạn.
             </p>
+
+            <button
+              disabled={loading}
+              onClick={handleSaveExpertise}
+              className="w-full bg-brand-blue hover:bg-brand-blue/80 text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md transition-all disabled:opacity-50"
+            >
+              {loading ? 'Đang lưu...' : 'Lưu kỹ năng chuyên môn'}
+            </button>
           </div>
 
         </div>

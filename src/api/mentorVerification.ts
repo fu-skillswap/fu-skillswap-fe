@@ -1,0 +1,49 @@
+// =====================================================================
+// src/api/mentorVerification.ts — Mentor Verification, user side (4.6)
+// =====================================================================
+import { http } from './http';
+import { apiClient } from './client';
+import type { VerificationRequest, VerificationDocument, TimelineEvent, DocumentType } from './types';
+
+export const mentorVerificationApi = {
+  /** POST /api/me/mentor-verification/request — khởi tạo hoặc lấy hồ sơ active */
+  createOrGetRequest: () =>
+    http.post<VerificationRequest>('/api/me/mentor-verification/request'),
+
+  /** GET /api/me/mentor-verification — request hiện tại */
+  getCurrent: () =>
+    http.get<VerificationRequest>('/api/me/mentor-verification'),
+
+  /** GET /api/me/mentor-verification/timeline */
+  getTimeline: () =>
+    http.get<TimelineEvent[]>('/api/me/mentor-verification/timeline'),
+
+  /** GET /api/me/mentor-verification/documents/{documentId} */
+  getDocument: (documentId: string) =>
+    http.get<VerificationDocument>(`/api/me/mentor-verification/documents/${documentId}`),
+
+  /** POST /api/me/mentor-verification/documents — multipart upload */
+  uploadDocument: (params: { documentType: DocumentType; isPrimary: boolean; file: File }) => {
+    const form = new FormData();
+    form.append('documentType', params.documentType);
+    form.append('isPrimary', String(params.isPrimary));
+    form.append('file', params.file);
+    return http.post<VerificationDocument>('/api/me/mentor-verification/documents', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /** DELETE /api/me/mentor-verification/documents/{documentId} — xóa mềm */
+  deleteDocument: (documentId: string) =>
+    http.del<void>(`/api/me/mentor-verification/documents/${documentId}`),
+
+  /** POST /api/me/mentor-verification/submit */
+  submit: (submitNote?: string) =>
+    http.post<VerificationRequest>('/api/me/mentor-verification/submit', { submitNote }),
+
+  /** POST /api/me/mentor-verification/withdraw */
+  withdraw: () =>
+    http.post<VerificationRequest>('/api/me/mentor-verification/withdraw'),
+};
+
+export { apiClient };

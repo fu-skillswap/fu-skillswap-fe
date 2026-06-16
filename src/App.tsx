@@ -20,6 +20,7 @@ import { VerificationQueue } from './pages/admin/VerificationQueue';
 import { AvailabilitySlots } from './pages/mentor/AvailabilitySlots';
 import { MentorBookings } from './pages/mentor/MentorBookings';
 import { MentorSetupProfile } from './pages/mentor/MentorSetupProfile';
+import { MentorVerification } from './pages/mentor/MentorVerification';
 
 // Mentee Pages
 import { MenteeBookings } from './pages/MenteeBookings';
@@ -70,6 +71,7 @@ function App() {
             <Route path="/mentor/slots" element={<AvailabilitySlots />} />
             <Route path="/mentor/bookings" element={<MentorBookings />} />
             <Route path="/mentor/profile-setup" element={<MentorSetupProfile />} />
+            <Route path="/mentor/verification" element={<MentorVerification />} />
 
             {/* Mentee Workspaces */}
             <Route path="/mentee/bookings" element={<MenteeBookings />} />

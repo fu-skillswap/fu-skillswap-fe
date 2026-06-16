@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   UserCheck, X, BarChart3, Users, FileCheck, Calendar,
-  ListTodo, Sliders, Bookmark, MessageSquare, Send, Home, User,
+  ListTodo, Sliders, Bookmark, MessageSquare, Send, Home, User, ShieldCheck,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -58,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
       { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
       { path: '/mentee/bookings', label: 'Lịch học của tôi', icon: <Bookmark className="w-5 h-5" /> },
+      { path: '/mentor/verification', label: 'Xác thực Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
       { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
     ];
   };
