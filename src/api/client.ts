@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://103.200.23.169:8080';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (
+  typeof window !== 'undefined' && window.location.protocol === 'https:'
+    ? ''
+    : 'http://103.200.23.169:8080'
+);
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
