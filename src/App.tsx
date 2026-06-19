@@ -15,6 +15,8 @@ import { LandingPage } from './pages/LandingPage';
 import { AdminMetrics } from './pages/admin/AdminMetrics';
 import { UserManagement } from './pages/admin/UserManagement';
 import { VerificationQueue } from './pages/admin/VerificationQueue';
+import AdminMentorVerificationQueuePage from './app/admin/mentor-verification/page';
+import AdminMentorVerificationDetailPage from './app/admin/mentor-verification/[requestId]/page';
 
 // Mentor Pages
 import { AvailabilitySlots } from './pages/mentor/AvailabilitySlots';
@@ -62,10 +64,12 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
 
-            {/* Admin Workspaces */}
-            <Route path="/admin/metrics" element={<AdminMetrics />} />
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/verifications" element={<VerificationQueue />} />
+{/* Admin Workspaces */}
+             <Route path="/admin/metrics" element={<AdminMetrics />} />
+             <Route path="/admin/users" element={<UserManagement />} />
+             <Route path="/admin/verifications" element={<VerificationQueue />} />
+             <Route path="/admin/mentor-verification" element={<AdminMentorVerificationQueuePage />} />
+             <Route path="/admin/mentor-verification/:requestId" element={<AdminMentorVerificationDetailPage />} />
 
             {/* Mentor Workspaces */}
             <Route path="/mentor/slots" element={<AvailabilitySlots />} />
