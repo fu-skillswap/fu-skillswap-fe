@@ -539,9 +539,9 @@ export const Profile: React.FC = () => {
         </div>
 
         <div className="px-7 pb-6">
-          <div className="flex items-end justify-between gap-4 flex-wrap -mt-11">
-            <div className="rounded-card ring-4 ring-surface bg-surface shrink-0" style={{ width: 96, height: 96 }}>
-              <img src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'} alt="" className="w-full h-full object-cover rounded-card bg-surface-muted" />
+          <div className="relative z-10 flex items-end justify-between gap-4 flex-wrap -mt-8">
+            <div className="relative overflow-hidden rounded-card ring-4 ring-surface bg-surface shrink-0" style={{ width: 96, height: 96 }}>
+              <img src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'} alt="" className="w-full h-full object-cover object-top rounded-card bg-surface-muted" />
             </div>
             <button onClick={() => setMode('edit')} className="shrink-0 mb-1 inline-flex items-center gap-2 bg-surface border border-line text-fg hover:bg-surface-muted text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all">
               <Pencil className="w-4 h-4" /> Chỉnh sửa
