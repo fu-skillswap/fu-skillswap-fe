@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   UserCheck, X, BarChart3, Users, FileCheck, Calendar,
-  ListTodo, Sliders, Bookmark, MessageSquare, Send, Home, User, ShieldCheck,
+  ListTodo, Bookmark, MessageSquare, Send, Home, User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -34,13 +34,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/admin/verifications', label: 'Yêu cầu phê duyệt', icon: <FileCheck className="w-5 h-5" /> },
   ];
 
+  // Hồ sơ chuyên môn & xác thực mentor đã gộp vào tab "Hồ sơ Mentor" trong /profile,
+  // nên cả 2 vai trò đều chỉ cần 1 mục "Hồ sơ cá nhân" duy nhất.
   const mentorLinks = [
     { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
     { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
     { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
     { path: '/mentor/slots', label: 'Khung giờ rảnh', icon: <Calendar className="w-5 h-5" /> },
     { path: '/bookings', label: 'Lịch của tôi', icon: <ListTodo className="w-5 h-5" /> },
-    { path: '/mentor/profile-setup', label: 'Cấu hình chuyên môn', icon: <Sliders className="w-5 h-5" /> },
     { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
   ];
 
@@ -50,7 +51,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
     { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
     { path: '/bookings', label: 'Lịch của tôi', icon: <Bookmark className="w-5 h-5" /> },
-    { path: '/mentor/verification', label: 'Xác thực Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
     { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
   ];
 

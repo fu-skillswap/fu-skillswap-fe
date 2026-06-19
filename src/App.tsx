@@ -20,8 +20,6 @@ import AdminMentorVerificationDetailPage from './app/admin/mentor-verification/[
 
 // Mentor Pages
 import { AvailabilitySlots } from './pages/mentor/AvailabilitySlots';
-import { MentorSetupProfile } from './pages/mentor/MentorSetupProfile';
-import { MentorVerification } from './pages/mentor/MentorVerification';
 
 // Lịch của tôi (hợp nhất mentor + mentee)
 import { MyBookings } from './pages/MyBookings';
@@ -73,8 +71,9 @@ function App() {
 
             {/* Mentor Workspaces */}
             <Route path="/mentor/slots" element={<AvailabilitySlots />} />
-            <Route path="/mentor/profile-setup" element={<MentorSetupProfile />} />
-            <Route path="/mentor/verification" element={<MentorVerification />} />
+            {/* Hồ sơ + xác thực mentor đã gộp vào tab "Hồ sơ Mentor" trong /profile */}
+            <Route path="/mentor/profile-setup" element={<Navigate to="/profile" replace />} />
+            <Route path="/mentor/verification" element={<Navigate to="/profile" replace />} />
 
             {/* Lịch của tôi (hợp nhất mentor + mentee) */}
             <Route path="/bookings" element={<MyBookings />} />

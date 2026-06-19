@@ -1,22 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { studentProfileApi } from '../api/studentProfile';
 import { catalogApi } from '../api/catalog';
-import { mentorProfileApi, helpTopicApi } from '../api/mentorProfile';
-import type { Campus, AcademicProgram, Specialization, MentorProfile, HelpTopic, TeachingMode } from '../api/types';
+import type { Campus, AcademicProgram, Specialization } from '../api/types';
 import {
   Check, AlertCircle, User, Camera, Loader2,
   Hash, GraduationCap, MapPin, Building2, BookOpen, CalendarDays, Clock, Award,
-  Pencil, ShieldCheck, Briefcase, Link2, Code, Globe, ExternalLink, Lightbulb, Monitor,
+  Pencil, ShieldCheck,
 } from 'lucide-react';
 import { useImageUpload } from '../hooks/useImageUpload';
-
-const TEACHING_MODE_LABELS: Record<TeachingMode, string> = {
-  ONLINE: 'Trực tuyến',
-  OFFLINE: 'Trực tiếp',
-  HYBRID: 'Kết hợp',
-};
+import { MentorPanel } from './mentor/MentorPanel';
 
 // ---------- building blocks (view mode) ----------
 const MetaItem: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
@@ -37,7 +30,6 @@ const FactRow: React.FC<{ icon: React.ReactNode; label: string; value: React.Rea
 
 export const Profile: React.FC = () => {
   const { user, refreshUser, isDevBypass } = useAuth();
-  const navigate = useNavigate();
 
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [viewTab, setViewTab] = useState<'academic' | 'mentor'>('academic');
@@ -60,10 +52,9 @@ export const Profile: React.FC = () => {
   const [programs, setPrograms] = useState<AcademicProgram[]>([]);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
 
-  // Mentor profile (chỉ có ý nghĩa khi user có role MENTOR)
+  // Badge "Mentor đã xác thực" trên hero — phần còn lại của lifecycle mentor (đăng ký,
+  // soạn hồ sơ, nộp duyệt, chờ phê duyệt, đã duyệt) nằm trọn trong <MentorPanel /> ở tab riêng.
   const isMentor = !!user?.roles?.includes('MENTOR');
-  const [mentorProfile, setMentorProfile] = useState<MentorProfile | null>(null);
-  const [helpTopicsCatalog, setHelpTopicsCatalog] = useState<HelpTopic[]>([]);
 
   // UI States
   const [fetching, setFetching] = useState(true);
@@ -148,23 +139,6 @@ export const Profile: React.FC = () => {
           }
           setDisplayName(user?.fullName || '');
           setAvatarUrl(user?.avatarUrl || '');
-        }
-
-        // Fetch hồ sơ mentor (nếu user đã là mentor)
-        if (isMentor) {
-          try {
-            const topics = await helpTopicApi.list();
-            setHelpTopicsCatalog(topics || []);
-          } catch (err) {
-            console.warn('Không tải được danh sách help topics.', err);
-          }
-          try {
-            const mp = await mentorProfileApi.get();
-            setMentorProfile(mp || null);
-          } catch (err) {
-            console.warn('Chưa có hồ sơ mentor.', err);
-            setMentorProfile(null);
-          }
         }
       } catch (err: any) {
         console.error('Failed to load profile data', err);
@@ -263,22 +237,12 @@ export const Profile: React.FC = () => {
   const programName = programs.find((p) => p.id === selectedProgram)?.nameVi || 'Chưa cập nhật';
   const specializationName = specializations.find((s) => s.id === selectedSpecialization)?.nameVi || 'Chưa cập nhật';
 
-  const supportingSubjectTags = (mentorProfile?.supportingSubjects || '')
-    .split(/[,;]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const resolvedHelpTopics: HelpTopic[] = (mentorProfile?.helpTopicIds || [])
-    .map((id) => helpTopicsCatalog.find((t) => t.id === id))
-    .filter((t): t is HelpTopic => !!t);
-
-  const TOPIC_ICON: Record<string, React.ReactNode> = {};
-  const topicIcon = (code?: string) => (code && TOPIC_ICON[code]) || <Lightbulb className="w-4 h-4" />;
-
+  // 2 tab cố định: Hồ sơ cá nhân & Hồ sơ Mentor. Tab Mentor tự thân quyết định hiển thị gì
+  // (nút đăng ký, form soạn hồ sơ, hay trạng thái chờ/đã duyệt) bên trong <MentorPanel />.
   const SEG: { id: 'academic' | 'mentor'; label: string; icon: React.ReactNode }[] = [
-    { id: 'academic', label: 'Học thuật', icon: <GraduationCap className="w-4 h-4" /> },
+    { id: 'academic', label: 'Hồ sơ cá nhân', icon: <GraduationCap className="w-4 h-4" /> },
+    { id: 'mentor', label: 'Hồ sơ Mentor', icon: <Award className="w-4 h-4" /> },
   ];
-  if (isMentor) SEG.push({ id: 'mentor', label: 'Hồ sơ Mentor', icon: <Award className="w-4 h-4" /> });
 
   // ===========================================================================
   // EDIT MODE — giữ nguyên form chỉnh sửa hồ sơ học thuật hiện có
@@ -598,29 +562,18 @@ export const Profile: React.FC = () => {
             </div>
           </div>
 
-          {isMentor && mentorProfile && (
-            <div className="mt-5 pt-5 border-t border-line-soft flex items-start gap-3">
-              <div className="w-9 h-9 rounded-field bg-accent/12 text-accent flex items-center justify-center shrink-0"><Briefcase className="w-4 h-4" /></div>
-              <div>
-                <p className="text-body font-bold text-fg leading-snug">{mentorProfile.headline}</p>
-                <p className="text-meta text-fg-muted font-medium mt-0.5">{TEACHING_MODE_LABELS[mentorProfile.teachingMode]} · {mentorProfile.sessionDuration} phút/buổi</p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       {/* ============ SEGMENTED SWITCH ============ */}
-      {SEG.length > 1 && (
-        <div className="flex p-1 bg-surface-muted rounded-pill w-full sm:w-fit gap-1">
-          {SEG.map((s) => (
-            <button key={s.id} onClick={() => setViewTab(s.id)}
-              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-body font-bold transition-all cursor-pointer ${viewTab === s.id ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}>
-              <span className={viewTab === s.id ? 'text-primary' : ''}>{s.icon}</span>{s.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex p-1 bg-surface-muted rounded-pill w-full sm:w-fit gap-1">
+        {SEG.map((s) => (
+          <button key={s.id} onClick={() => setViewTab(s.id)}
+            className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-body font-bold transition-all cursor-pointer ${viewTab === s.id ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}>
+            <span className={viewTab === s.id ? 'text-primary' : ''}>{s.icon}</span>{s.label}
+          </button>
+        ))}
+      </div>
 
       {/* ============ ACADEMIC ============ */}
       {viewTab === 'academic' && (
@@ -646,95 +599,10 @@ export const Profile: React.FC = () => {
       )}
 
       {/* ============ MENTOR ============ */}
-      {viewTab === 'mentor' && isMentor && (
-        !mentorProfile ? (
-          <div className="meetmind-card p-7 rounded-card text-center space-y-3">
-            <p className="text-body font-bold text-fg">Bạn chưa cấu hình hồ sơ mentor.</p>
-            <button onClick={() => navigate('/mentor/profile-setup')} className="inline-flex items-center gap-1.5 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all">
-              <Pencil className="w-4 h-4" /> Cấu hình ngay
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-7">
-            {/* highlight stats */}
-            <div className="grid sm:grid-cols-3 gap-4">
-              {[
-                { icon: <Monitor className="w-4.5 h-4.5" />, label: 'Hình thức', value: TEACHING_MODE_LABELS[mentorProfile.teachingMode] },
-                { icon: <Clock className="w-4.5 h-4.5" />, label: 'Thời lượng', value: `${mentorProfile.sessionDuration} phút/buổi` },
-                { icon: <Briefcase className="w-4.5 h-4.5" />, label: 'Trạng thái', value: mentorProfile.isAvailable ? 'Đang nhận mentee' : 'Tạm ngưng', avail: mentorProfile.isAvailable },
-              ].map((s) => (
-                <div key={s.label} className="meetmind-card p-5 rounded-card">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-field flex items-center justify-center shrink-0 ${s.avail ? 'bg-success/10 text-success' : 'bg-primary-soft text-primary'}`}>{s.icon}</div>
-                    <div>
-                      <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">{s.label}</p>
-                      <p className="text-title font-extrabold text-fg leading-tight mt-0.5">{s.value}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="meetmind-card p-7 rounded-card space-y-6">
-              <div className="flex items-center justify-between gap-3 border-b border-line-soft pb-2.5">
-                <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Award className="w-5 h-5 text-primary" /> Hồ sơ Mentor</h3>
-                <button onClick={() => navigate('/mentor/profile-setup')} className="inline-flex items-center gap-1.5 bg-primary-soft text-primary hover:bg-primary/15 text-meta font-bold py-2 px-3 rounded-field cursor-pointer transition-all"><Pencil className="w-3.5 h-3.5" /> Cấu hình</button>
-              </div>
-
-              <p className="text-body text-fg-muted font-medium leading-relaxed" style={{ textWrap: 'pretty' }}>{mentorProfile.expertiseDescription}</p>
-
-              {/* môn học hỗ trợ */}
-              {supportingSubjectTags.length > 0 && (
-                <div>
-                  <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Môn học hỗ trợ</p>
-                  <div className="flex flex-wrap gap-2">
-                    {supportingSubjectTags.map((t) => (
-                      <span key={t} className="inline-flex items-center gap-2 py-2 px-3.5 rounded-pill bg-primary-soft text-primary border border-primary/15 text-meta font-extrabold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />{t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* help topics */}
-              {resolvedHelpTopics.length > 0 && (
-                <div>
-                  <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Chủ đề có thể hỗ trợ</p>
-                  <div className="grid sm:grid-cols-2 gap-2.5">
-                    {resolvedHelpTopics.map((t) => (
-                      <div key={t.id} className="flex items-center gap-3 p-3 rounded-field border border-line bg-surface-muted/40">
-                        <div className="w-9 h-9 rounded-field bg-accent/12 text-accent flex items-center justify-center shrink-0">{topicIcon(t.code)}</div>
-                        <p className="text-body font-bold text-fg">{t.name}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* social */}
-              <div className="pt-5 border-t border-line-soft">
-                <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Liên kết</p>
-                <div className="flex flex-wrap gap-2.5">
-                  {[
-                    { icon: <Link2 className="w-4 h-4" />, label: 'LinkedIn', url: mentorProfile.linkedinUrl },
-                    { icon: <Code className="w-4 h-4" />, label: 'GitHub', url: mentorProfile.githubUrl },
-                    { icon: <Globe className="w-4 h-4" />, label: 'Portfolio', url: mentorProfile.portfolioUrl },
-                  ].filter((l) => l.url).map((l) => (
-                    <a key={l.label} href={l.url} target="_blank" rel="noreferrer"
-                      className="inline-flex items-center gap-2 py-2 px-3.5 rounded-field border border-line bg-surface text-body font-bold text-fg-muted hover:text-primary hover:border-primary/40 transition-all">
-                      {l.icon}{l.label}<ExternalLink className="w-3 h-3 text-fg-faint" />
-                    </a>
-                  ))}
-                  {!mentorProfile.linkedinUrl && !mentorProfile.githubUrl && !mentorProfile.portfolioUrl && (
-                    <p className="text-meta text-fg-faint font-medium">Chưa cập nhật liên kết.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      )}
+      {/* Toàn bộ lifecycle (đăng ký → soạn hồ sơ + minh chứng → nộp duyệt → chờ duyệt →
+          đã duyệt/từ chối) do BE quyết định qua status/checklist/allowedActions thật,
+          MentorPanel chỉ render đúng theo đó — không tự suy luận ở FE. */}
+      {viewTab === 'mentor' && <MentorPanel />}
     </div>
   );
 };
