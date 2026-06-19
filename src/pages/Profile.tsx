@@ -1,33 +1,46 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { apiClient } from '../api/client';
-import { Check, AlertCircle, User, Camera, Loader2 } from 'lucide-react';
+import { studentProfileApi } from '../api/studentProfile';
+import { catalogApi } from '../api/catalog';
+import { mentorProfileApi, helpTopicApi } from '../api/mentorProfile';
+import type { Campus, AcademicProgram, Specialization, MentorProfile, HelpTopic, TeachingMode } from '../api/types';
+import {
+  Check, AlertCircle, User, Camera, Loader2,
+  Hash, GraduationCap, MapPin, Building2, BookOpen, CalendarDays, Clock, Award,
+  Pencil, ShieldCheck, Briefcase, Link2, Code, Globe, ExternalLink, Lightbulb, Monitor,
+} from 'lucide-react';
 import { useImageUpload } from '../hooks/useImageUpload';
 
-interface Campus {
-  id: string;
-  code: string;
-  name: string;
-  city: string;
-}
+const TEACHING_MODE_LABELS: Record<TeachingMode, string> = {
+  ONLINE: 'Trực tuyến',
+  OFFLINE: 'Trực tiếp',
+  HYBRID: 'Kết hợp',
+};
 
-interface AcademicProgram {
-  id: string;
-  code: string;
-  nameVi: string;
-  nameEn: string;
-}
+// ---------- building blocks (view mode) ----------
+const MetaItem: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
+  <span className="inline-flex items-center gap-1.5 text-meta font-semibold text-fg-muted">
+    <span className="text-fg-faint">{icon}</span>{children}
+  </span>
+);
 
-interface Specialization {
-  id: string;
-  programId: string;
-  code: string;
-  nameVi: string;
-  nameEn: string;
-}
+const FactRow: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode }> = ({ icon, label, value }) => (
+  <div className="flex items-start gap-3">
+    <div className="w-9 h-9 rounded-field bg-primary-soft text-primary flex items-center justify-center shrink-0">{icon}</div>
+    <div className="min-w-0">
+      <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">{label}</p>
+      <p className="text-body font-bold text-fg leading-snug mt-0.5">{value}</p>
+    </div>
+  </div>
+);
 
 export const Profile: React.FC = () => {
   const { user, refreshUser, isDevBypass } = useAuth();
+  const navigate = useNavigate();
+
+  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const [viewTab, setViewTab] = useState<'academic' | 'mentor'>('academic');
 
   // Academic Profile Form states
   const [studentCode, setStudentCode] = useState('');
@@ -46,6 +59,11 @@ export const Profile: React.FC = () => {
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [programs, setPrograms] = useState<AcademicProgram[]>([]);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
+
+  // Mentor profile (chỉ có ý nghĩa khi user có role MENTOR)
+  const isMentor = !!user?.roles?.includes('MENTOR');
+  const [mentorProfile, setMentorProfile] = useState<MentorProfile | null>(null);
+  const [helpTopicsCatalog, setHelpTopicsCatalog] = useState<HelpTopic[]>([]);
 
   // UI States
   const [fetching, setFetching] = useState(true);
@@ -67,31 +85,31 @@ export const Profile: React.FC = () => {
   };
 
   // Fallback demo data
-  const fallbackCampuses = [
-    { id: 'c1', code: 'HCM', name: 'FPT University TP. Hồ Chí Minh', city: 'TP. HCM' },
-    { id: 'c2', code: 'HA_NOI', name: 'FPT University Hà Nội', city: 'Hà Nội' },
+  const fallbackCampuses: Campus[] = [
+    { id: 'c1', code: 'HCM', name: 'FPT University TP. Hồ Chí Minh' },
+    { id: 'c2', code: 'HA_NOI', name: 'FPT University Hà Nội' },
   ];
-  const fallbackPrograms = [
+  const fallbackPrograms: AcademicProgram[] = [
     { id: 'p1', code: 'SE', nameVi: 'Kỹ thuật phần mềm', nameEn: 'Software Engineering' },
   ];
-  const fallbackSpecializations = [
+  const fallbackSpecializations: Specialization[] = [
     { id: 's1', programId: 'p1', code: 'SE_JS', nameVi: 'Lập trình Fullstack', nameEn: 'Fullstack Development' },
     { id: 's2', programId: 'p1', code: 'SE_AI', nameVi: 'Trí tuệ nhân tạo', nameEn: 'Artificial Intelligence' },
     { id: 's3', programId: 'p1', code: 'SE_IS', nameVi: 'An toàn thông tin', nameEn: 'Information Security' },
   ];
 
-  // Load profile data and mentor request status
+  // Load profile data (học thuật + mentor nếu có)
   useEffect(() => {
     const loadProfileData = async () => {
       setFetching(true);
       setError(null);
 
       try {
-        const campusRes = await apiClient.get('/api/campuses');
-        setCampuses(campusRes.data.data?.length ? campusRes.data.data : fallbackCampuses);
+        const campusList = await catalogApi.getCampuses();
+        setCampuses(campusList?.length ? campusList : fallbackCampuses);
 
-        const programRes = await apiClient.get('/api/academic-programs');
-        setPrograms(programRes.data.data?.length ? programRes.data.data : fallbackPrograms);
+        const programList = await catalogApi.getPrograms();
+        setPrograms(programList?.length ? programList : fallbackPrograms);
 
         if (isDevBypass) {
           setStudentCode('SE192621');
@@ -108,21 +126,19 @@ export const Profile: React.FC = () => {
           return;
         }
 
-        // Fetch user profile
+        // Fetch học thuật
         try {
-          const profileRes = await apiClient.get('/api/me/student-profile');
-          const data = profileRes.data.data;
-          
+          const data = await studentProfileApi.get();
           if (data) {
             setStudentCode(data.studentCode || '');
             setDisplayName(data.displayName || user?.fullName || '');
             setAvatarUrl(data.avatarUrl || user?.avatarUrl || '');
-            setSelectedCampus(data.campus?.id || '');
-            setSelectedProgram(data.program?.id || '');
-            setSelectedSpecialization(data.specialization?.id || '');
+            setSelectedCampus(data.campusId || '');
+            setSelectedProgram(data.programId || '');
+            setSelectedSpecialization(data.specializationId || '');
             setSemester(data.semester || 1);
             setIntakeYear(data.intakeYear || 2022);
-            setIsAlumni(data.alumni || false);
+            setIsAlumni(data.isAlumni || false);
             setGraduationYear(data.graduationYear || 2026);
             setBio(data.bio || '');
           }
@@ -132,6 +148,23 @@ export const Profile: React.FC = () => {
           }
           setDisplayName(user?.fullName || '');
           setAvatarUrl(user?.avatarUrl || '');
+        }
+
+        // Fetch hồ sơ mentor (nếu user đã là mentor)
+        if (isMentor) {
+          try {
+            const topics = await helpTopicApi.list();
+            setHelpTopicsCatalog(topics || []);
+          } catch (err) {
+            console.warn('Không tải được danh sách help topics.', err);
+          }
+          try {
+            const mp = await mentorProfileApi.get();
+            setMentorProfile(mp || null);
+          } catch (err) {
+            console.warn('Chưa có hồ sơ mentor.', err);
+            setMentorProfile(null);
+          }
         }
       } catch (err: any) {
         console.error('Failed to load profile data', err);
@@ -145,7 +178,8 @@ export const Profile: React.FC = () => {
     };
 
     loadProfileData();
-  }, [user, isDevBypass]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isDevBypass, isMentor]);
 
   // Load specializations when program changes
   useEffect(() => {
@@ -156,8 +190,8 @@ export const Profile: React.FC = () => {
 
     const fetchSpecializations = async () => {
       try {
-        const specRes = await apiClient.get(`/api/academic-programs/${selectedProgram}/specializations`);
-        setSpecializations(specRes.data.data?.length ? specRes.data.data : fallbackSpecializations);
+        const specList = await catalogApi.getSpecializationsByProgram(selectedProgram);
+        setSpecializations(specList?.length ? specList : fallbackSpecializations);
       } catch (err) {
         console.warn('Failed to load specializations, using mock.', err);
         setSpecializations(fallbackSpecializations);
@@ -165,6 +199,7 @@ export const Profile: React.FC = () => {
     };
 
     fetchSpecializations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProgram]);
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -197,10 +232,11 @@ export const Profile: React.FC = () => {
 
     try {
       if (!isDevBypass) {
-        await apiClient.put('/api/me/student-profile', payload);
+        await studentProfileApi.upsert(payload);
       }
       await refreshUser();
       setSuccess('Cập nhật hồ sơ học thuật thành công!');
+      setMode('view');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       console.error(err);
@@ -222,13 +258,45 @@ export const Profile: React.FC = () => {
     );
   }
 
-  return (
-    <div className="space-y-6 text-left">
+  // ---------- view-model cho phần hiển thị ----------
+  const campusName = campuses.find((c) => c.id === selectedCampus)?.name || 'Chưa cập nhật';
+  const programName = programs.find((p) => p.id === selectedProgram)?.nameVi || 'Chưa cập nhật';
+  const specializationName = specializations.find((s) => s.id === selectedSpecialization)?.nameVi || 'Chưa cập nhật';
 
-      {/* Card Sidebar Info */}
-      <div className="meetmind-card p-6 text-center relative overflow-hidden">
+  const supportingSubjectTags = (mentorProfile?.supportingSubjects || '')
+    .split(/[,;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const resolvedHelpTopics: HelpTopic[] = (mentorProfile?.helpTopicIds || [])
+    .map((id) => helpTopicsCatalog.find((t) => t.id === id))
+    .filter((t): t is HelpTopic => !!t);
+
+  const TOPIC_ICON: Record<string, React.ReactNode> = {};
+  const topicIcon = (code?: string) => (code && TOPIC_ICON[code]) || <Lightbulb className="w-4 h-4" />;
+
+  const SEG: { id: 'academic' | 'mentor'; label: string; icon: React.ReactNode }[] = [
+    { id: 'academic', label: 'Học thuật', icon: <GraduationCap className="w-4 h-4" /> },
+  ];
+  if (isMentor) SEG.push({ id: 'mentor', label: 'Hồ sơ Mentor', icon: <Award className="w-4 h-4" /> });
+
+  // ===========================================================================
+  // EDIT MODE — giữ nguyên form chỉnh sửa hồ sơ học thuật hiện có
+  // ===========================================================================
+  if (mode === 'edit') {
+    return (
+      <div className="space-y-6 text-left">
+        <button
+          onClick={() => setMode('view')}
+          className="text-meta font-bold text-brand-text-muted hover:text-brand-terracotta cursor-pointer"
+        >
+          ← Quay lại hồ sơ
+        </button>
+
+        {/* Card Sidebar Info */}
+        <div className="meetmind-card p-6 text-center relative overflow-hidden">
           <div className="absolute -top-10 -left-10 w-24 h-24 bg-brand-terracotta/5 rounded-full blur-2xl"></div>
-          
+
           <div className="relative inline-block mt-4 mb-4">
             <img
               src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
@@ -279,7 +347,7 @@ export const Profile: React.FC = () => {
             <div className="space-y-0.5">
               <span className="text-meta text-brand-text-muted uppercase font-bold tracking-wider">Cơ sở</span>
               <p className="text-body font-bold text-brand-blue">
-                {campuses.find(c => c.id === selectedCampus)?.name.split(' ').pop() || 'TP. HCM'}
+                {campuses.find((c) => c.id === selectedCampus)?.name.split(' ').pop() || 'TP. HCM'}
               </p>
             </div>
             <div className="space-y-0.5">
@@ -287,35 +355,34 @@ export const Profile: React.FC = () => {
               <p className="text-body font-bold text-brand-text">{studentCode || 'Chưa cập nhật'}</p>
             </div>
           </div>
+        </div>
 
-      </div>
+        {/* Form Editors */}
+        <div className="space-y-6">
 
-      {/* Form Editors */}
-      <div className="space-y-6">
+          {/* Global Notifications */}
+          {error && (
+            <div className="flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-field text-body">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
 
-        {/* Global Notifications */}
-        {error && (
-          <div className="flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-field text-body">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
+          {success && (
+            <div className="flex items-start gap-3 bg-green-500/5 border border-green-200 text-green-700 p-4 rounded-field text-body">
+              <Check className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{success}</span>
+            </div>
+          )}
 
-        {success && (
-          <div className="flex items-start gap-3 bg-green-500/5 border border-green-200 text-green-700 p-4 rounded-field text-body">
-            <Check className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{success}</span>
-          </div>
-        )}
-
-        {/* Academic Profile Form */}
-        <div className="meetmind-card p-6 lg:p-8 rounded-card">
+          {/* Academic Profile Form */}
+          <div className="meetmind-card p-6 lg:p-8 rounded-card">
             <h2 className="text-lg font-bold text-brand-text font-serif tracking-tight border-b border-brand-border pb-3 flex items-center gap-2">
               <User className="w-5 h-5 text-brand-terracotta" /> Thông tin học tập chuyên sâu
             </h2>
 
             <form onSubmit={handleUpdate} className="space-y-6 mt-6">
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-body font-bold text-brand-text-muted mb-1.5">Tên hiển thị</label>
@@ -475,10 +542,199 @@ export const Profile: React.FC = () => {
               </button>
 
             </form>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // ===========================================================================
+  // VIEW MODE — hero + segmented Học thuật / Hồ sơ Mentor
+  // ===========================================================================
+  return (
+    <div className="max-w-4xl mx-auto space-y-7 text-left">
+
+      {error && (
+        <div className="flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-field text-body">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+      {success && (
+        <div className="flex items-start gap-3 bg-green-500/5 border border-green-200 text-green-700 p-4 rounded-field text-body">
+          <Check className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{success}</span>
+        </div>
+      )}
+
+      {/* ============ HERO ============ */}
+      <div className="meetmind-card rounded-card overflow-hidden">
+        <div className="h-24 relative" style={{ background: 'linear-gradient(110deg, var(--primary-hover) 0%, var(--primary) 48%, var(--accent) 130%)' }}>
+          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.16) 1px, transparent 1.4px)', backgroundSize: '15px 15px' }} />
         </div>
 
+        <div className="px-7 pb-6">
+          <div className="flex items-end justify-between gap-4 flex-wrap -mt-11">
+            <div className="rounded-card ring-4 ring-surface bg-surface shrink-0" style={{ width: 96, height: 96 }}>
+              <img src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'} alt="" className="w-full h-full object-cover rounded-card bg-surface-muted" />
+            </div>
+            <button onClick={() => setMode('edit')} className="shrink-0 mb-1 inline-flex items-center gap-2 bg-surface border border-line text-fg hover:bg-surface-muted text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all">
+              <Pencil className="w-4 h-4" /> Chỉnh sửa
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-display font-extrabold text-fg tracking-tight leading-none">{displayName || user?.fullName}</h1>
+              {isMentor
+                ? <span className="inline-flex items-center gap-1 text-meta font-extrabold py-0.5 px-2 rounded-lg border bg-success/10 text-success border-success/20"><ShieldCheck className="w-3.5 h-3.5" /> Mentor đã xác thực</span>
+                : <span className="inline-flex items-center gap-1 text-meta font-extrabold py-0.5 px-2 rounded-lg border bg-surface-muted text-fg-muted border-line"><User className="w-3.5 h-3.5" /> Mentee</span>}
+            </div>
+            <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap mt-2.5">
+              <MetaItem icon={<Hash className="w-3.5 h-3.5" />}>{studentCode || 'Chưa cập nhật'}</MetaItem>
+              <MetaItem icon={<GraduationCap className="w-3.5 h-3.5" />}>{programName}</MetaItem>
+              <MetaItem icon={<MapPin className="w-3.5 h-3.5" />}>{campusName}</MetaItem>
+            </div>
+          </div>
+
+          {isMentor && mentorProfile && (
+            <div className="mt-5 pt-5 border-t border-line-soft flex items-start gap-3">
+              <div className="w-9 h-9 rounded-field bg-accent/12 text-accent flex items-center justify-center shrink-0"><Briefcase className="w-4 h-4" /></div>
+              <div>
+                <p className="text-body font-bold text-fg leading-snug">{mentorProfile.headline}</p>
+                <p className="text-meta text-fg-muted font-medium mt-0.5">{TEACHING_MODE_LABELS[mentorProfile.teachingMode]} · {mentorProfile.sessionDuration} phút/buổi</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* ============ SEGMENTED SWITCH ============ */}
+      {SEG.length > 1 && (
+        <div className="flex p-1 bg-surface-muted rounded-pill w-full sm:w-fit gap-1">
+          {SEG.map((s) => (
+            <button key={s.id} onClick={() => setViewTab(s.id)}
+              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-body font-bold transition-all cursor-pointer ${viewTab === s.id ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}>
+              <span className={viewTab === s.id ? 'text-primary' : ''}>{s.icon}</span>{s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ============ ACADEMIC ============ */}
+      {viewTab === 'academic' && (
+        <div className="space-y-7">
+          <div className="meetmind-card p-7 rounded-card">
+            <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5 mb-4"><GraduationCap className="w-5 h-5 text-primary" /> Thông tin học thuật</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-7 gap-y-6">
+              <FactRow icon={<Hash className="w-4 h-4" />} label="Mã sinh viên" value={studentCode || 'Chưa cập nhật'} />
+              <FactRow icon={<Building2 className="w-4 h-4" />} label="Cơ sở" value={campusName} />
+              <FactRow icon={<GraduationCap className="w-4 h-4" />} label="Ngành học" value={programName} />
+              <FactRow icon={<BookOpen className="w-4 h-4" />} label="Chuyên ngành" value={specializationName} />
+              <FactRow icon={<CalendarDays className="w-4 h-4" />} label="Học kỳ hiện tại" value={`Kỳ ${semester}`} />
+              <FactRow icon={<Clock className="w-4 h-4" />} label="Năm nhập học" value={intakeYear} />
+              <FactRow icon={<Award className="w-4 h-4" />} label="Cựu sinh viên" value={isAlumni ? 'Có' : 'Không'} />
+            </div>
+          </div>
+
+          <div className="meetmind-card p-7 rounded-card">
+            <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5 mb-4"><User className="w-5 h-5 text-primary" /> Giới thiệu</h3>
+            <p className="text-body text-fg-muted font-medium leading-relaxed" style={{ textWrap: 'pretty' }}>{bio || 'Chưa có giới thiệu.'}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ============ MENTOR ============ */}
+      {viewTab === 'mentor' && isMentor && (
+        !mentorProfile ? (
+          <div className="meetmind-card p-7 rounded-card text-center space-y-3">
+            <p className="text-body font-bold text-fg">Bạn chưa cấu hình hồ sơ mentor.</p>
+            <button onClick={() => navigate('/mentor/profile-setup')} className="inline-flex items-center gap-1.5 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all">
+              <Pencil className="w-4 h-4" /> Cấu hình ngay
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-7">
+            {/* highlight stats */}
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { icon: <Monitor className="w-4.5 h-4.5" />, label: 'Hình thức', value: TEACHING_MODE_LABELS[mentorProfile.teachingMode] },
+                { icon: <Clock className="w-4.5 h-4.5" />, label: 'Thời lượng', value: `${mentorProfile.sessionDuration} phút/buổi` },
+                { icon: <Briefcase className="w-4.5 h-4.5" />, label: 'Trạng thái', value: mentorProfile.isAvailable ? 'Đang nhận mentee' : 'Tạm ngưng', avail: mentorProfile.isAvailable },
+              ].map((s) => (
+                <div key={s.label} className="meetmind-card p-5 rounded-card">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-field flex items-center justify-center shrink-0 ${s.avail ? 'bg-success/10 text-success' : 'bg-primary-soft text-primary'}`}>{s.icon}</div>
+                    <div>
+                      <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">{s.label}</p>
+                      <p className="text-title font-extrabold text-fg leading-tight mt-0.5">{s.value}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="meetmind-card p-7 rounded-card space-y-6">
+              <div className="flex items-center justify-between gap-3 border-b border-line-soft pb-2.5">
+                <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Award className="w-5 h-5 text-primary" /> Hồ sơ Mentor</h3>
+                <button onClick={() => navigate('/mentor/profile-setup')} className="inline-flex items-center gap-1.5 bg-primary-soft text-primary hover:bg-primary/15 text-meta font-bold py-2 px-3 rounded-field cursor-pointer transition-all"><Pencil className="w-3.5 h-3.5" /> Cấu hình</button>
+              </div>
+
+              <p className="text-body text-fg-muted font-medium leading-relaxed" style={{ textWrap: 'pretty' }}>{mentorProfile.expertiseDescription}</p>
+
+              {/* môn học hỗ trợ */}
+              {supportingSubjectTags.length > 0 && (
+                <div>
+                  <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Môn học hỗ trợ</p>
+                  <div className="flex flex-wrap gap-2">
+                    {supportingSubjectTags.map((t) => (
+                      <span key={t} className="inline-flex items-center gap-2 py-2 px-3.5 rounded-pill bg-primary-soft text-primary border border-primary/15 text-meta font-extrabold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />{t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* help topics */}
+              {resolvedHelpTopics.length > 0 && (
+                <div>
+                  <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Chủ đề có thể hỗ trợ</p>
+                  <div className="grid sm:grid-cols-2 gap-2.5">
+                    {resolvedHelpTopics.map((t) => (
+                      <div key={t.id} className="flex items-center gap-3 p-3 rounded-field border border-line bg-surface-muted/40">
+                        <div className="w-9 h-9 rounded-field bg-accent/12 text-accent flex items-center justify-center shrink-0">{topicIcon(t.code)}</div>
+                        <p className="text-body font-bold text-fg">{t.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* social */}
+              <div className="pt-5 border-t border-line-soft">
+                <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Liên kết</p>
+                <div className="flex flex-wrap gap-2.5">
+                  {[
+                    { icon: <Link2 className="w-4 h-4" />, label: 'LinkedIn', url: mentorProfile.linkedinUrl },
+                    { icon: <Code className="w-4 h-4" />, label: 'GitHub', url: mentorProfile.githubUrl },
+                    { icon: <Globe className="w-4 h-4" />, label: 'Portfolio', url: mentorProfile.portfolioUrl },
+                  ].filter((l) => l.url).map((l) => (
+                    <a key={l.label} href={l.url} target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-2 py-2 px-3.5 rounded-field border border-line bg-surface text-body font-bold text-fg-muted hover:text-primary hover:border-primary/40 transition-all">
+                      {l.icon}{l.label}<ExternalLink className="w-3 h-3 text-fg-faint" />
+                    </a>
+                  ))}
+                  {!mentorProfile.linkedinUrl && !mentorProfile.githubUrl && !mentorProfile.portfolioUrl && (
+                    <p className="text-meta text-fg-faint font-medium">Chưa cập nhật liên kết.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      )}
     </div>
   );
 };
