@@ -230,9 +230,9 @@ export const MentorVerification: React.FC = () => {
         </div>
       )}
 
-      <div className="grid md:grid-cols-3 gap-6 items-start">
+      <div className="space-y-6">
         {/* Documents */}
-        <div className="md:col-span-2 space-y-5">
+        <div className="space-y-5">
           <div className="meetmind-card p-6 rounded-card space-y-4">
             <div className="flex items-center justify-between border-b border-brand-border pb-2.5">
               <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2"><Paperclip className="w-4.5 h-4.5 text-brand-terracotta" /> Minh chứng</h3>

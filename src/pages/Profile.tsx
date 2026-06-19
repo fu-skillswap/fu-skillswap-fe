@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/client';
-import { Check, AlertCircle, User, Award, UploadCloud, FileText, ChevronRight, Clock, X, Camera, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Check, AlertCircle, User, Camera, Loader2 } from 'lucide-react';
 import { useImageUpload } from '../hooks/useImageUpload';
 
 interface Campus {
@@ -27,19 +26,8 @@ interface Specialization {
   nameEn: string;
 }
 
-interface MentorRequestState {
-  status: 'NOT_SUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
-  specialization?: string;
-  documentName?: string;
-  submittedAt?: string;
-  rejectionReason?: string;
-}
-
 export const Profile: React.FC = () => {
   const { user, refreshUser, isDevBypass } = useAuth();
-
-  // Tab State
-  const [activeTab, setActiveTab] = useState<'ACADEMIC' | 'BECOME_MENTOR'>('ACADEMIC');
 
   // Academic Profile Form states
   const [studentCode, setStudentCode] = useState('');
@@ -53,13 +41,6 @@ export const Profile: React.FC = () => {
   const [isAlumni, setIsAlumni] = useState(false);
   const [graduationYear, setGraduationYear] = useState(2026);
   const [bio, setBio] = useState('');
-
-  // Become a Mentor states
-  const [mentorSpecialization, setMentorSpecialization] = useState('');
-  const [mentorNote, setMentorNote] = useState('');
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [uploadedFileName, setUploadedFileName] = useState('');
-  const [mentorRequest, setMentorRequest] = useState<MentorRequestState>({ status: 'NOT_SUBMITTED' });
 
   // Dropdown lists
   const [campuses, setCampuses] = useState<Campus[]>([]);
@@ -104,20 +85,6 @@ export const Profile: React.FC = () => {
     const loadProfileData = async () => {
       setFetching(true);
       setError(null);
-
-      // Load mentor request status from localStorage
-      const storedRequest = localStorage.getItem('mockMentorRequest');
-      if (storedRequest) {
-        try {
-          setMentorRequest(JSON.parse(storedRequest));
-        } catch (e) {
-          console.error('Failed to parse mentor request', e);
-        }
-      } else if (user?.roles?.includes('MENTOR')) {
-        setMentorRequest({ status: 'APPROVED' });
-      } else {
-        setMentorRequest({ status: 'NOT_SUBMITTED' });
-      }
 
       try {
         const campusRes = await apiClient.get('/api/campuses');
@@ -243,102 +210,6 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg'];
-      const extension = file.name.split('.').pop()?.toLowerCase();
-      if (!extension || !allowedExtensions.includes(extension)) {
-        setError('Tệp đính kèm không hợp lệ. Chỉ nhận tệp PDF, PNG, JPG, JPEG.');
-        return;
-      }
-
-      setUploadedFileName(file.name);
-      setUploadProgress(0);
-
-      // Simulate file upload progress indicator
-      let prog = 0;
-      const interval = setInterval(() => {
-        prog += 20;
-        setUploadProgress(prog);
-        if (prog >= 100) {
-          clearInterval(interval);
-        }
-      }, 150);
-    }
-  };
-
-  const handleMentorSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!mentorSpecialization) {
-      setError('Vui lòng chọn chuyên ngành đăng ký Mentor.');
-      return;
-    }
-    if (!uploadedFileName) {
-      setError('Vui lòng tải lên tài liệu minh chứng.');
-      return;
-    }
-
-    // Find specialization name
-    const specObj = specializations.find(s => s.id === mentorSpecialization) || 
-                    fallbackSpecializations.find(s => s.id === mentorSpecialization);
-    const specName = specObj ? specObj.nameVi : 'Chuyên môn khác';
-
-    const newRequest: MentorRequestState = {
-      status: 'PENDING',
-      specialization: specName,
-      documentName: uploadedFileName,
-      submittedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-    };
-
-    // Save student application locally
-    localStorage.setItem('mockMentorRequest', JSON.stringify(newRequest));
-    setMentorRequest(newRequest);
-
-    // Save to the admin requests queue
-    const adminReqsStr = localStorage.getItem('mockMentorRequests');
-    let adminReqs = [];
-    if (adminReqsStr) {
-      try {
-        adminReqs = JSON.parse(adminReqsStr);
-      } catch (err) {
-        adminReqs = [];
-      }
-    }
-    
-    // Remove duplicates from same user email
-    adminReqs = adminReqs.filter((r: any) => r.email !== user?.email);
-
-    adminReqs.unshift({
-      id: 'req_' + Date.now(),
-      applicantName: displayName || user?.fullName || 'Demo User',
-      email: user?.email || 'demo.mentee@fpt.edu.vn',
-      campus: campuses.find(c => c.id === selectedCampus)?.code || 'HCM',
-      specialization: specName,
-      documentName: uploadedFileName,
-      submittedAt: newRequest.submittedAt,
-      status: 'PENDING'
-    });
-
-    localStorage.setItem('mockMentorRequests', JSON.stringify(adminReqs));
-
-    setSuccess('Đã gửi yêu cầu đăng ký làm Mentor thành công!');
-    setTimeout(() => setSuccess(null), 3000);
-  };
-
-  const handleReapply = () => {
-    const freshState: MentorRequestState = { status: 'NOT_SUBMITTED' };
-    localStorage.setItem('mockMentorRequest', JSON.stringify(freshState));
-    setMentorRequest(freshState);
-    setMentorSpecialization('');
-    setMentorNote('');
-    setUploadedFileName('');
-    setUploadProgress(null);
-  };
-
   if (fetching) {
     return (
       <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center">
@@ -352,11 +223,10 @@ export const Profile: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
-      
+    <div className="space-y-6 text-left">
+
       {/* Card Sidebar Info */}
-      <div className="space-y-6">
-        <div className="meetmind-card p-6 text-center relative overflow-hidden">
+      <div className="meetmind-card p-6 text-center relative overflow-hidden">
           <div className="absolute -top-10 -left-10 w-24 h-24 bg-brand-terracotta/5 rounded-full blur-2xl"></div>
           
           <div className="relative inline-block mt-4 mb-4">
@@ -418,38 +288,10 @@ export const Profile: React.FC = () => {
             </div>
           </div>
 
-        </div>
       </div>
 
-      {/* Tabs Layout & Form Editors */}
-      <div className="lg:col-span-2 space-y-6">
-        
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-brand-border gap-2">
-          <button
-            onClick={() => setActiveTab('ACADEMIC')}
-            className={`py-3 px-4 text-body font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'ACADEMIC'
-                ? 'border-brand-terracotta text-brand-terracotta font-extrabold'
-                : 'border-transparent text-brand-text-muted hover:text-brand-text'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>Hồ sơ học thuật</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('BECOME_MENTOR')}
-            className={`py-3 px-4 text-body font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'BECOME_MENTOR'
-                ? 'border-brand-terracotta text-brand-terracotta font-extrabold'
-                : 'border-transparent text-brand-text-muted hover:text-brand-text'
-            }`}
-          >
-            <Award className="w-4 h-4" />
-            <span>Trở thành Mentor</span>
-          </button>
-        </div>
+      {/* Form Editors */}
+      <div className="space-y-6">
 
         {/* Global Notifications */}
         {error && (
@@ -466,9 +308,8 @@ export const Profile: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 1: Academic Profile Form */}
-        {activeTab === 'ACADEMIC' && (
-          <div className="meetmind-card p-6 lg:p-8 rounded-card">
+        {/* Academic Profile Form */}
+        <div className="meetmind-card p-6 lg:p-8 rounded-card">
             <h2 className="text-lg font-bold text-brand-text font-serif tracking-tight border-b border-brand-border pb-3 flex items-center gap-2">
               <User className="w-5 h-5 text-brand-terracotta" /> Thông tin học tập chuyên sâu
             </h2>
@@ -634,229 +475,7 @@ export const Profile: React.FC = () => {
               </button>
 
             </form>
-          </div>
-        )}
-
-        {/* Tab 2: Become a Mentor Tab */}
-        {activeTab === 'BECOME_MENTOR' && (
-          <div className="space-y-6">
-            
-            {/* View 1: User is already Approved / is Mentor */}
-            {mentorRequest.status === 'APPROVED' && (
-              <div className="meetmind-card p-8 text-center space-y-4 rounded-card relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl"></div>
-                <div className="w-16 h-16 rounded-full bg-green-50 border border-green-200 text-green-600 flex items-center justify-center mx-auto shadow-sm">
-                  <Award className="w-8 h-8" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold font-serif text-brand-text">Bạn đã là Mentor chính thức!</h3>
-                  <p className="text-brand-text-muted text-body font-semibold max-w-md mx-auto leading-relaxed">
-                    Hồ sơ của bạn đã được xác thực thành công. Bạn đã có quyền tạo lịch hẹn và nhận các yêu cầu trao đổi học tập từ Mentees khác.
-                  </p>
-                </div>
-                <div className="pt-4 flex justify-center gap-4">
-                  <Link
-                    to="/mentor/profile-setup"
-                    className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-3 px-6 rounded-card cursor-pointer transition-all active:scale-[0.98] shadow-md shadow-brand-terracotta/20"
-                  >
-                    <span>Cấu hình Chuyên môn</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                  <Link
-                    to="/mentor/slots"
-                    className="flex items-center gap-1 bg-surface hover:bg-brand-bg border border-brand-border text-brand-text text-body font-bold py-3 px-6 rounded-card cursor-pointer transition-all active:scale-[0.98]"
-                  >
-                    <span>Tạo Khung giờ rảnh</span>
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* View 2: Application is Pending approval */}
-            {mentorRequest.status === 'PENDING' && (
-              <div className="meetmind-card p-8 space-y-5 rounded-card relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl"></div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-field bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
-                    <Clock className="w-6 h-6 animate-pulse" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-bold font-serif text-brand-text">Đơn ứng tuyển đang được xét duyệt</h3>
-                    <p className="text-brand-text-muted text-body font-semibold">
-                      Phòng Công tác Sinh viên FPTU (Admin) đang xác minh chứng chỉ của bạn.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-brand-bg border border-brand-border p-4 rounded-card text-body font-semibold space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
-                    <span className="text-brand-text-muted">Chuyên ngành đăng ký:</span>
-                    <span className="col-span-2 text-brand-text font-bold">{mentorRequest.specialization}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <span className="text-brand-text-muted">Tài liệu đính kèm:</span>
-                    <span className="col-span-2 text-brand-blue font-bold flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5" /> {mentorRequest.documentName}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <span className="text-brand-text-muted">Thời gian gửi đơn:</span>
-                    <span className="col-span-2 text-brand-text font-bold">{mentorRequest.submittedAt}</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-amber-50/50 border border-amber-200 text-amber-800 rounded-card text-meta font-semibold leading-relaxed">
-                  💡 Bạn có thể dùng <strong>Dev Bypass (Role selector)</strong> ở trang Đăng nhập để chuyển sang vai trò <strong>ADMIN</strong> để tự phê duyệt yêu cầu này trong <strong>"Hàng chờ duyệt"</strong>.
-                </div>
-              </div>
-            )}
-
-            {/* View 3: Application is Rejected */}
-            {mentorRequest.status === 'REJECTED' && (
-              <div className="meetmind-card p-8 space-y-5 rounded-card relative overflow-hidden border-red-200 bg-red-50/10">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl"></div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-field bg-red-50 border border-red-200 text-red-600 flex items-center justify-center shrink-0">
-                    <X className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-bold font-serif text-brand-text">Đơn ứng tuyển không được phê duyệt</h3>
-                    <p className="text-brand-text-muted text-body font-semibold text-red-600">
-                      Rất tiếc, yêu cầu bị từ chối bởi Phòng Công tác Sinh viên.
-                    </p>
-                  </div>
-                </div>
-
-                {mentorRequest.rejectionReason && (
-                  <div className="bg-red-50 border border-red-200 p-4 rounded-card text-body text-red-800 font-bold">
-                    Lý do từ chối: {mentorRequest.rejectionReason}
-                  </div>
-                )}
-
-                <div className="pt-2">
-                  <button
-                    onClick={handleReapply}
-                    className="bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-3 px-6 rounded-card cursor-pointer transition-all active:scale-[0.98] shadow-md shadow-brand-terracotta/20"
-                  >
-                    Nộp đơn ứng tuyển mới
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* View 4: Submit New Application Form */}
-            {mentorRequest.status === 'NOT_SUBMITTED' && (
-              <div className="meetmind-card p-6 lg:p-8 rounded-card">
-                <h2 className="text-lg font-bold text-brand-text font-serif tracking-tight border-b border-brand-border pb-3 flex items-center gap-2">
-                  <Award className="w-5 h-5 text-brand-terracotta" /> Đăng ký trở thành Mentor học thuật
-                </h2>
-                
-                <p className="text-brand-text-muted text-body font-semibold mt-3 leading-relaxed">
-                  Để trở thành Mentor chính thức, bạn cần đạt học lực khá trở lên trong chuyên ngành, hoặc có các chứng chỉ chuyên môn liên quan. Hãy tải lên tài liệu minh chứng (bảng điểm, chứng chỉ ngoại ngữ, chứng chỉ IT...) để được phê duyệt.
-                </p>
-
-                <form onSubmit={handleMentorSubmit} className="space-y-6 mt-6">
-                  
-                  {/* Select Mentor Specialization */}
-                  <div>
-                    <label className="block text-body font-bold text-brand-text-muted mb-1.5">Chuyên ngành muốn dạy học / chia sẻ</label>
-                    <select
-                      required
-                      value={mentorSpecialization}
-                      onChange={(e) => setMentorSpecialization(e.target.value)}
-                      className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none transition-all cursor-pointer font-semibold"
-                    >
-                      <option value="">Chọn chuyên ngành Mentor</option>
-                      {specializations.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.nameVi}
-                        </option>
-                      ))}
-                      {/* Fallbacks if program not selected yet */}
-                      {specializations.length === 0 && fallbackSpecializations.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.nameVi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Mentor Motivation note */}
-                  <div>
-                    <label className="block text-body font-bold text-brand-text-muted mb-1.5">Mục tiêu & Điểm mạnh (Giới thiệu ngắn gọn để xét duyệt)</label>
-                    <textarea
-                      required
-                      value={mentorNote}
-                      onChange={(e) => setMentorNote(e.target.value)}
-                      rows={3}
-                      className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all resize-none placeholder-brand-grey font-medium"
-                      placeholder="Ví dụ: Đã hoàn thành môn PRF192 và PRO192 điểm 9.0+, đạt chứng chỉ IELTS 7.0..."
-                    />
-                  </div>
-
-                  {/* File Upload Simulation */}
-                  <div>
-                    <label className="block text-body font-bold text-brand-text-muted mb-2">Tài liệu minh chứng (Bảng điểm / Chứng chỉ - PDF/PNG/JPG)</label>
-                    
-                    <div className="border-2 border-dashed border-brand-border hover:border-brand-terracotta rounded-card p-6 text-center cursor-pointer transition-colors relative bg-brand-bg/20">
-                      <input
-                        type="file"
-                        onChange={handleFileChange}
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                      />
-                      
-                      <div className="space-y-2">
-                        <UploadCloud className="w-8 h-8 text-brand-terracotta mx-auto" />
-                        <div>
-                          <p className="text-body font-bold text-brand-text">Kéo thả tệp hoặc click để tải lên</p>
-                          <p className="text-meta text-brand-text-muted mt-1">Hỗ trợ tệp PDF, PNG, JPG, JPEG tối đa 10MB</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Progress upload indicator */}
-                    {uploadProgress !== null && (
-                      <div className="mt-4 p-3 bg-brand-bg border border-brand-border rounded-field flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <FileText className="w-5 h-5 text-brand-terracotta shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-meta text-brand-text font-bold block truncate">{uploadedFileName}</span>
-                            <div className="w-full bg-brand-border h-1.5 rounded-full overflow-hidden mt-1">
-                              <div
-                                className="bg-brand-terracotta h-full transition-all duration-300"
-                                style={{ width: `${uploadProgress}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-body font-bold text-brand-terracotta shrink-0">{uploadProgress}%</span>
-                      </div>
-                    )}
-
-                    {uploadProgress === 100 && (
-                      <div className="mt-2 text-meta text-green-700 font-bold flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Tải lên thành công! Tài liệu sẵn sàng gửi.
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white font-bold py-3 px-6 rounded-card cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all shadow-md shadow-brand-terracotta/25"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>Nộp đơn Đăng ký</span>
-                  </button>
-
-                </form>
-              </div>
-            )}
-
-          </div>
-        )}
+        </div>
 
       </div>
 

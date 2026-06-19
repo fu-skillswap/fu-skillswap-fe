@@ -155,9 +155,7 @@ export const MentorSetupProfile: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Description */}
-        <div className="lg:col-span-1 space-y-6">
+      <div className="space-y-6">
           <div className="meetmind-card p-6 rounded-card space-y-4">
             <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Settings className="w-4.5 h-4.5 text-brand-terracotta" /> 1. Mô tả năng lực
@@ -247,10 +245,7 @@ export const MentorSetupProfile: React.FC = () => {
               />
             </div>
           </div>
-        </div>
 
-        {/* Right Column: Help topics + teaching mode/duration */}
-        <div className="lg:col-span-2 space-y-6">
           <div className="meetmind-card p-6 rounded-card space-y-3">
             <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Tags className="w-4.5 h-4.5 text-brand-blue" /> 3. Chủ đề hỗ trợ ({helpTopicIds.length}/{HELP_TOPICS_MAX})
@@ -324,7 +319,6 @@ export const MentorSetupProfile: React.FC = () => {
               {loading ? 'Đang lưu...' : 'Lưu hồ sơ mentor'}
             </button>
           </div>
-        </div>
       </div>
     </div>
   );
