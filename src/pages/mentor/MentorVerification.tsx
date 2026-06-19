@@ -45,6 +45,32 @@ const buildMock = (status: VerificationStatus): VerificationRequest => ({
   ] as TimelineEvent[],
 });
 
+interface BannerProps {
+  status: VerificationStatus;
+  reviewNote: string | null;
+}
+
+const Banner: React.FC<BannerProps> = ({ status, reviewNote }) => {
+  const map: Record<VerificationStatus, { title: string; desc: string; cls: string; icon: React.ReactNode }> = {
+    DRAFT: { title: 'Hồ sơ đang ở bản nháp', desc: 'Tải tối thiểu 1 minh chứng liên kết FPTU rồi nộp để admin duyệt.', cls: 'bg-brand-bg border-brand-border text-brand-text', icon: <FileText className="w-5 h-5" /> },
+    PENDING_REVIEW: { title: 'Đang chờ admin duyệt', desc: 'Hồ sơ đã nộp. Bạn sẽ nhận thông báo khi có kết quả.', cls: 'bg-amber-50 border-amber-200 text-amber-700', icon: <Clock className="w-5 h-5" /> },
+    NEEDS_REVISION: { title: 'Admin yêu cầu chỉnh sửa', desc: reviewNote || 'Vui lòng cập nhật theo ghi chú của admin và nộp lại.', cls: 'bg-blue-50 border-blue-200 text-blue-700', icon: <AlertTriangle className="w-5 h-5" /> },
+    APPROVED: { title: 'Hồ sơ đã được duyệt 🎉', desc: 'Bạn đã chính thức là Mentor. Hồ sơ đã hiển thị công khai.', cls: 'bg-green-50 border-green-200 text-green-700', icon: <CheckCircle2 className="w-5 h-5" /> },
+    REJECTED: { title: 'Hồ sơ bị từ chối', desc: reviewNote || 'Hồ sơ chưa đạt yêu cầu. Tạo hồ sơ mới để nộp lại.', cls: 'bg-red-50 border-red-200 text-red-700', icon: <XCircle className="w-5 h-5" /> },
+    WITHDRAWN: { title: 'Bạn đã rút hồ sơ', desc: 'Hồ sơ xác thực đã được rút. Bạn có thể tạo hồ sơ mới bất cứ lúc nào.', cls: 'bg-brand-bg border-brand-border text-brand-text-muted', icon: <Undo2 className="w-5 h-5" /> },
+  };
+  const b = map[status];
+  return (
+    <div className={`flex items-start gap-3 border rounded-card p-4 ${b.cls}`}>
+      <span className="shrink-0 mt-0.5">{b.icon}</span>
+      <div>
+        <p className="text-body font-extrabold">{b.title}</p>
+        <p className="text-meta font-medium mt-0.5 opacity-90">{b.desc}</p>
+      </div>
+    </div>
+  );
+};
+
 export const MentorVerification: React.FC = () => {
   const navigate = useNavigate();
   const [req, setReq] = useState<VerificationRequest | null>(null);
@@ -138,25 +164,6 @@ export const MentorVerification: React.FC = () => {
     } finally { setBusy(false); }
   };
 
-  // -------------------- render helpers --------------------
-  const Banner = () => {
-    const map: Record<VerificationStatus, { title: string; desc: string; cls: string; icon: React.ReactNode }> = {
-      DRAFT: { title: 'Hồ sơ đang ở bản nháp', desc: 'Tải tối thiểu 1 minh chứng liên kết FPTU rồi nộp để admin duyệt.', cls: 'bg-brand-bg border-brand-border text-brand-text', icon: <FileText className="w-5 h-5" /> },
-      PENDING_REVIEW: { title: 'Đang chờ admin duyệt', desc: 'Hồ sơ đã nộp. Bạn sẽ nhận thông báo khi có kết quả.', cls: 'bg-amber-50 border-amber-200 text-amber-700', icon: <Clock className="w-5 h-5" /> },
-      NEEDS_REVISION: { title: 'Admin yêu cầu chỉnh sửa', desc: req?.reviewNote || 'Vui lòng cập nhật theo ghi chú của admin và nộp lại.', cls: 'bg-blue-50 border-blue-200 text-blue-700', icon: <AlertTriangle className="w-5 h-5" /> },
-      APPROVED: { title: 'Hồ sơ đã được duyệt 🎉', desc: 'Bạn đã chính thức là Mentor. Hồ sơ đã hiển thị công khai.', cls: 'bg-green-50 border-green-200 text-green-700', icon: <CheckCircle2 className="w-5 h-5" /> },
-      REJECTED: { title: 'Hồ sơ bị từ chối', desc: req?.reviewNote || 'Hồ sơ chưa đạt yêu cầu. Tạo hồ sơ mới để nộp lại.', cls: 'bg-red-50 border-red-200 text-red-700', icon: <XCircle className="w-5 h-5" /> },
-      WITHDRAWN: { title: 'Bạn đã rút hồ sơ', desc: 'Hồ sơ xác thực đã được rút. Bạn có thể tạo hồ sơ mới bất cứ lúc nào.', cls: 'bg-brand-bg border-brand-border text-brand-text-muted', icon: <Undo2 className="w-5 h-5" /> },
-    };
-    const b = map[status];
-    return (
-      <div className={`flex items-start gap-3 border rounded-card p-4 ${b.cls}`}>
-        <span className="shrink-0 mt-0.5">{b.icon}</span>
-        <div><p className="text-body font-extrabold">{b.title}</p><p className="text-meta font-medium mt-0.5 opacity-90">{b.desc}</p></div>
-      </div>
-    );
-  };
-
   if (loading) {
     return <div className="py-20 flex justify-center"><div className="w-7 h-7 border-2 border-brand-terracotta border-t-transparent rounded-full animate-spin" /></div>;
   }
@@ -181,7 +188,7 @@ export const MentorVerification: React.FC = () => {
       )}
       {msg && <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 p-3 rounded-field text-body font-semibold"><CheckCircle2 className="w-4 h-4" />{msg}</div>}
 
-      <Banner />
+      <Banner status={status} reviewNote={req?.reviewNote ?? null} />
 
       {/* Approved / Rejected / Withdrawn actions */}
       {status === 'APPROVED' && (

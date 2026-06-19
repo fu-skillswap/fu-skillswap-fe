@@ -4,8 +4,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useNavigate } from "react-router-dom";
 import { getVerificationDetail, refreshLock, approveVerification, rejectVerification, requestRevision } from "@/lib/api/adminMentorVerificationApi";
+import ReviewActionModal from "@/components/admin/ReviewActionModal";
 
 interface AdminMentorProfile {
   headline: string;
@@ -87,13 +88,18 @@ interface AdminVerificationDetail {
 export default function AdminMentorVerificationDetailPage() {
   const params = useParams();
   const requestId = params.requestId as string;
-  const navigate = useRouter();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AdminVerificationDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // States for ReviewActionModal Integration
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalAction, setModalAction] = useState<"APPROVE" | "REJECT" | "REQUEST_REVISION" | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -111,7 +117,7 @@ export default function AdminMentorVerificationDetailPage() {
     }
   };
 
-  const refreshLock = async () => {
+  const handleRefreshLock = async () => {
     try {
       setRefreshing(true);
       await refreshLock(requestId);
@@ -131,7 +137,7 @@ export default function AdminMentorVerificationDetailPage() {
     const startInterval = () => {
       intervalRef.current = setInterval(() => {
         if (detail && detail.canReview && detail.status === "PENDING_REVIEW") {
-          refreshLock();
+          handleRefreshLock();
         }
       }, 3 * 60 * 1000);
     };
@@ -157,7 +163,7 @@ export default function AdminMentorVerificationDetailPage() {
     }
 
     intervalRef.current = setInterval(() => {
-      refreshLock();
+      handleRefreshLock();
     }, 3 * 60 * 1000);
 
     return () => {
@@ -166,6 +172,35 @@ export default function AdminMentorVerificationDetailPage() {
       }
     };
   }, [detail]);
+
+  const openActionModal = (action: "APPROVE" | "REJECT" | "REQUEST_REVISION") => {
+    setModalAction(action);
+    setModalOpen(true);
+  };
+
+  const handleModalSubmit = async (note: string) => {
+    if (!modalAction) return;
+    try {
+      setActionLoading(true);
+      setError(null);
+      let updated: AdminVerificationDetail;
+      if (modalAction === "APPROVE") {
+        updated = await approveVerification(requestId, note || undefined);
+      } else if (modalAction === "REJECT") {
+        updated = await rejectVerification(requestId, note);
+      } else {
+        updated = await requestRevision(requestId, note);
+      }
+      setDetail(updated);
+      setModalOpen(false);
+      navigate("/admin/mentor-verification");
+    } catch (err) {
+      console.error(err);
+      setError(`Failed to perform action: ${modalAction}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const formatDateTime = (isoString: string | null) => {
     if (!isoString) return "-";
@@ -215,7 +250,7 @@ export default function AdminMentorVerificationDetailPage() {
       {/* Lock Banners */}
       {processing && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-field font-semibold">
-          You are currently processing this request.
+          You are currently processing this request. {refreshing && "(refreshing lock...)"}
         </div>
       )}
       {!detail.canReview && detail.lockedByAdminEmail && (
@@ -459,7 +494,7 @@ export default function AdminMentorVerificationDetailPage() {
       <div className="meetmind-card rounded-card shadow-sm">
         <h2 className="text-xl font-bold text-brand-text font-serif mb-4">
           Checklist
-        </div>
+        </h2>
         {detail.checklist && detail.checklist.length > 0 ? (
           <div className="space-y-3">
             {detail.checklist.map((item) => (
@@ -483,25 +518,33 @@ export default function AdminMentorVerificationDetailPage() {
       {canAct && (
         <div className="flex items-center gap-3 pt-4 border-t border-brand-border">
           <button
-            onClick={() => approveVerification(requestId)}
-            className="px-4 py-2 bg-green-600 text-white font-bold rounded-field hover:bg-green-700"
+            onClick={() => openActionModal("APPROVE")}
+            className="px-4 py-2 bg-green-600 text-white font-bold rounded-field hover:bg-green-700 cursor-pointer"
           >
             Approve
           </button>
           <button
-            onClick={() => rejectVerification(requestId, note)}
-            className="px-4 py-2 bg-red-600 text-white font-bold rounded-field hover:bg-red-700"
+            onClick={() => openActionModal("REJECT")}
+            className="px-4 py-2 bg-red-600 text-white font-bold rounded-field hover:bg-red-700 cursor-pointer"
           >
             Reject
           </button>
           <button
-            onClick={() => requestRevision(requestId, note)}
-            className="px-4 py-2 bg-brand-terracotta text-white font-bold rounded-field hover:bg-brand-terracotta-hover"
+            onClick={() => openActionModal("REQUEST_REVISION")}
+            className="px-4 py-2 bg-brand-terracotta text-white font-bold rounded-field hover:bg-brand-terracotta-hover cursor-pointer"
           >
             Request Revision
           </button>
         </div>
       )}
+
+      <ReviewActionModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleModalSubmit}
+        actionType={modalAction}
+        isLoading={actionLoading}
+      />
     </div>
   );
 }
