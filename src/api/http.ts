@@ -1,0 +1,19 @@
+// =====================================================================
+// src/api/http.ts — helper unwrap ApiResponse<T>
+// =====================================================================
+import { apiClient } from './client';
+import type { ApiResponse } from './types';
+import type { AxiosRequestConfig } from 'axios';
+
+/** Gọi API và trả thẳng phần `data` đã unwrap khỏi ApiResponse. */
+export async function unwrap<T>(p: Promise<{ data: ApiResponse<T> }>): Promise<T> {
+  const res = await p;
+  return res.data.data;
+}
+
+export const http = {
+  get: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(apiClient.get(url, config)),
+  post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(apiClient.post(url, body, config)),
+  put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(apiClient.put(url, body, config)),
+  del: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(apiClient.delete(url, config)),
+};
