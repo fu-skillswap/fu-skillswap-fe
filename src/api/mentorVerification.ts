@@ -30,6 +30,7 @@ export const mentorVerificationApi = {
     const form = new FormData();
     form.append('documentType', params.documentType);
     form.append('isPrimary', String(params.isPrimary));
+    form.append('sizeBytes', String(params.file.size));
     form.append('file', params.file);
     return http.post<VerificationDocument>('/api/me/mentor-verification/documents', form);
   },
