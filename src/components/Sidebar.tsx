@@ -29,41 +29,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     window.dispatchEvent(new CustomEvent('open-post-composer'));
   };
 
-  const getNavLinks = () => {
-    const role = user?.roles?.[0] || 'MENTEE';
+  const roles = user?.roles ?? [];
+  const isAdmin = roles.includes('ADMIN');
+  const isMentor = roles.includes('MENTOR');
 
-    if (role === 'ADMIN') {
-      return [
-        { path: '/admin/metrics', label: 'Chỉ số hệ thống', icon: <BarChart3 className="w-5 h-5" /> },
-        { path: '/admin/users', label: 'Quản lý người dùng', icon: <Users className="w-5 h-5" /> },
-        { path: '/admin/verifications', label: 'Yêu cầu phê duyệt', icon: <FileCheck className="w-5 h-5" /> },
-      ];
-    }
+  const adminLinks = [
+    { path: '/admin/metrics', label: 'Chỉ số hệ thống', icon: <BarChart3 className="w-5 h-5" /> },
+    { path: '/admin/users', label: 'Quản lý người dùng', icon: <Users className="w-5 h-5" /> },
+    { path: '/admin/verifications', label: 'Yêu cầu phê duyệt', icon: <FileCheck className="w-5 h-5" /> },
+  ];
 
-    if (role === 'MENTOR') {
-      return [
-        { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
-        { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
-        { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
-        { path: '/mentor/slots', label: 'Khung giờ rảnh', icon: <Calendar className="w-5 h-5" /> },
-        { path: '/mentor/bookings', label: 'Lịch dạy của tôi', icon: <ListTodo className="w-5 h-5" /> },
-        { path: '/mentor/profile-setup', label: 'Cấu hình chuyên môn', icon: <Sliders className="w-5 h-5" /> },
-        { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
-      ];
-    }
+  const mentorLinks = [
+    { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
+    { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
+    { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
+    { path: '/mentor/slots', label: 'Khung giờ rảnh', icon: <Calendar className="w-5 h-5" /> },
+    { path: '/mentor/bookings', label: 'Lịch dạy của tôi', icon: <ListTodo className="w-5 h-5" /> },
+    { path: '/mentor/profile-setup', label: 'Cấu hình chuyên môn', icon: <Sliders className="w-5 h-5" /> },
+    { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
+  ];
 
-    return [
-      { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
-      { path: '/mentors', label: 'Khám phá Mentor', icon: <UserCheck className="w-5 h-5" /> },
-      { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
-      { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
-      { path: '/mentee/bookings', label: 'Lịch học của tôi', icon: <Bookmark className="w-5 h-5" /> },
-      { path: '/mentor/verification', label: 'Xác thực Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
-      { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
-    ];
-  };
+  const menteeLinks = [
+    { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
+    { path: '/mentors', label: 'Khám phá Mentor', icon: <UserCheck className="w-5 h-5" /> },
+    { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
+    { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
+    { path: '/mentee/bookings', label: 'Lịch học của tôi', icon: <Bookmark className="w-5 h-5" /> },
+    { path: '/mentor/verification', label: 'Xác thực Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
+    { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
+  ];
 
-  const navLinks = getNavLinks();
+  // Base nav theo vai trò hoạt động (mentor hoặc mentee). Nếu account còn có role
+  // ADMIN, các tab quản trị sẽ được hiện thêm bên dưới, không thay thế nav gốc.
+  const navLinks = isMentor ? mentorLinks : menteeLinks;
 
   return (
     <>
@@ -103,13 +101,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               </Link>
             ))}
 
-            {user?.roles?.[0] !== 'ADMIN' && (
-              <button
-                onClick={handlePostClick}
-                className="w-full bg-action hover:bg-action-hover text-on-action rounded-pill py-3.5 px-4 text-body font-bold transition-all active:scale-95 cursor-pointer mt-5"
-              >
-                Đăng tin
-              </button>
+            <button
+              onClick={handlePostClick}
+              className="w-full bg-action hover:bg-action-hover text-on-action rounded-pill py-3.5 px-4 text-body font-bold transition-all active:scale-95 cursor-pointer mt-5"
+            >
+              Đăng tin
+            </button>
+
+            {isAdmin && (
+              <>
+                <p className="mt-5 mb-1 px-4 text-small font-bold uppercase tracking-wide text-fg-muted">
+                  Quản trị
+                </p>
+                {adminLinks.map((link) => (
+                  <Link key={link.path} to={link.path} onClick={onClose} className={linkClass(link.path)}>
+                    {link.icon}
+                    <span>{link.label}</span>
+                  </Link>
+                ))}
+              </>
             )}
           </nav>
         </div>
