@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   UserCheck, X, BarChart3, Users, FileCheck, Calendar,
-  ListTodo, Bookmark, MessageSquare, Send, Home, User, ShieldCheck,
+  ListTodo, Bookmark, MessageSquare, Send, Home, User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -42,7 +42,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
     { path: '/mentor/slots', label: 'Khung giờ rảnh', icon: <Calendar className="w-5 h-5" /> },
     { path: '/bookings', label: 'Lịch của tôi', icon: <ListTodo className="w-5 h-5" /> },
-    { path: '/mentor/verification', label: 'Xác thực Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
     { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
   ];
 
@@ -52,12 +51,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
     { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
     { path: '/bookings', label: 'Lịch của tôi', icon: <Bookmark className="w-5 h-5" /> },
-    { path: '/mentor/verification', label: 'Đăng ký Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
     { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
   ];
 
   // Base nav theo vai trò hoạt động. Nếu là ADMIN, chỉ hiển thị các tab quản trị.
-  const navLinks = isAdmin ? adminLinks : (isMentor ? mentorLinks : menteeLinks);
+  // Base nav theo vai trò hoạt động (mentor hoặc mentee). Nếu account còn có role
+  // ADMIN, các tab quản trị sẽ được hiện thêm bên dưới, không thay thế nav gốc.
+  const navLinks = isMentor ? mentorLinks : menteeLinks;
 
   return (
     <>
@@ -96,6 +96,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <span>{link.label}</span>
               </Link>
             ))}
+
+            {isAdmin && (
+              <>
+                <p className="mt-5 mb-1 px-4 text-small font-bold uppercase tracking-wide text-fg-muted">
+                  Quản trị
+                </p>
+                {adminLinks.map((link) => (
+                  <Link key={link.path} to={link.path} onClick={onClose} className={linkClass(link.path)}>
+                    {link.icon}
+                    <span>{link.label}</span>
+                  </Link>
+                ))}
+              </>
+            )}
           </nav>
         </div>
 
