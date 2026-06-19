@@ -85,7 +85,7 @@ export interface MentorProfilePayload {
   portfolioUrl?: string;
 }
 
-export interface MentorProfile extends MentorProfilePayload {}
+export type MentorProfile = MentorProfilePayload;
 
 // ---------- Mentor verification ----------
 export type VerificationStatus =

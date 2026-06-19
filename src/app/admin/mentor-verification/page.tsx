@@ -1,10 +1,12 @@
 // =====================================================================
 // src/app/admin/mentor-verification/page.tsx — Admin Verification Queue
 // =====================================================================
+"use client";
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
-import { getVerificationQueue, type AdminVerificationQueueItem } from '../../../lib/api/adminMentorVerificationApi';
+import { useAuth } from '@/context/AuthContext';
+import { getVerificationQueue, type AdminVerificationQueueItem } from '@/lib/api/adminMentorVerificationApi';
 
 export default function AdminMentorVerificationQueuePage() {
   const navigate = useNavigate();
@@ -24,7 +26,6 @@ export default function AdminMentorVerificationQueuePage() {
     sortBy: 'submittedAt',
     direction: 'DESC',
   });
-
   useEffect(() => {
     if (!isAdmin) {
       navigate('/dashboard');

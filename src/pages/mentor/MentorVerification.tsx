@@ -85,7 +85,6 @@ const RequirementRow: React.FC<{ met: boolean; label: string; hint: string; opti
     </div>
   </div>
 );
-
 export const MentorVerification: React.FC = () => {
   const navigate = useNavigate();
   const [req, setReq] = useState<VerificationRequest | null>(null);

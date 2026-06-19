@@ -1,6 +1,8 @@
 // =====================================================================
 // src/app/admin/mentor-verification/[requestId]/page.tsx — Admin Verification Detail
 // =====================================================================
+"use client";
+
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -10,7 +12,7 @@ import {
   rejectVerification,
   requestRevision,
   type AdminVerificationDetail,
-} from '../../../../lib/api/adminMentorVerificationApi';
+} from '@/lib/api/adminMentorVerificationApi';
 
 export default function AdminMentorVerificationDetailPage() {
   const params = useParams<{ requestId: string }>();
@@ -22,6 +24,8 @@ export default function AdminMentorVerificationDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [note, setNote] = useState('');
+
+
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -38,7 +42,7 @@ export default function AdminMentorVerificationDetailPage() {
     }
   }, [requestId]);
 
-  const refreshLock = useCallback(async () => {
+  const handleRefreshLock = useCallback(async () => {
     try {
       await refreshLockApi(requestId);
     } catch (err) {
@@ -63,7 +67,7 @@ export default function AdminMentorVerificationDetailPage() {
     }
 
     intervalRef.current = setInterval(() => {
-      refreshLock();
+      handleRefreshLock();
     }, 3 * 60 * 1000);
 
     return () => {
@@ -72,7 +76,9 @@ export default function AdminMentorVerificationDetailPage() {
         intervalRef.current = null;
       }
     };
-  }, [detail, refreshLock]);
+  }, [detail, handleRefreshLock]);
+
+
 
   const formatDateTime = (isoString: string | null) => {
     if (!isoString) return '-';
@@ -499,6 +505,7 @@ export default function AdminMentorVerificationDetailPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
