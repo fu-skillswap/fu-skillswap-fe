@@ -3,6 +3,7 @@
 // =====================================================================
 import { http } from './http';
 import { apiClient } from './client';
+import { uploadToCloudinary } from '../lib/cloudinary';
 import type { VerificationRequest, VerificationDocument, TimelineEvent, DocumentType } from './types';
 
 export const mentorVerificationApi = {
@@ -23,18 +24,22 @@ export const mentorVerificationApi = {
     http.get<VerificationDocument>(`/api/me/mentor-verification/documents/${documentId}`),
 
   /**
-   * POST /api/me/mentor-verification/documents — multipart upload.
-   * Không tự set Content-Type: để browser tự sinh boundary của multipart/form-data.
+   * POST /api/me/mentor-verification/documents
+   * BE không nhận file thô — file được upload thẳng lên Cloudinary (unsigned)
+   * trước, sau đó gửi metadata (fileUrl, publicId, sizeBytes, contentType,
+   * originalFilename...) về BE để lưu vào DB, giống luồng avatar/forum.
    */
-  uploadDocument: (params: { documentType: DocumentType; isPrimary: boolean; file: File }) => {
-    const form = new FormData();
-    form.append('documentType', params.documentType);
-    form.append('isPrimary', String(params.isPrimary));
-    form.append('sizeBytes', String(params.file.size));
-    form.append('contentType', params.file.type || 'application/octet-stream');
-    form.append('originalFilename', params.file.name);
-    form.append('file', params.file);
-    return http.post<VerificationDocument>('/api/me/mentor-verification/documents', form);
+  uploadDocument: async (params: { documentType: DocumentType; isPrimary: boolean; file: File }) => {
+    const result = await uploadToCloudinary(params.file, { resourceType: 'auto' });
+    return http.post<VerificationDocument>('/api/me/mentor-verification/documents', {
+      documentType: params.documentType,
+      isPrimary: params.isPrimary,
+      fileUrl: result.fileUrl,
+      publicId: result.publicId,
+      sizeBytes: result.sizeBytes,
+      contentType: result.contentType,
+      originalFilename: result.originalFilename,
+    });
   },
 
   /** DELETE /api/me/mentor-verification/documents/{documentId} — xóa mềm */
