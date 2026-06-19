@@ -1,158 +1,64 @@
 // =====================================================================
 // src/app/admin/mentor-verification/[requestId]/page.tsx — Admin Verification Detail
 // =====================================================================
-"use client";
-
-import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { getVerificationDetail, refreshLock, approveVerification, rejectVerification, requestRevision } from "@/lib/api/adminMentorVerificationApi";
-
-interface AdminMentorProfile {
-  headline: string;
-  currentPosition?: string;
-  currentCompany?: string;
-  avatarUrl?: string;
-  bio?: string;
-  isAvailable: boolean;
-  expertiseTagIds: string[];
-  helpTopicIds: string[];
-  yearsOfExperience: number;
-  industry?: string;
-  expertiseSummary?: string;
-  linkedinUrl?: string;
-  githubUrl?: string;
-  portfolioUrl?: string;
-  teachingMode?: string;
-}
-
-interface AdminStudentProfile {
-  studentCode: string;
-  displayName: string;
-  avatarUrl?: string;
-  campusId: string;
-  programId: string;
-  specializationId: string;
-  semester: number;
-  intakeYear: number;
-  isAlumni: boolean;
-  graduationYear?: number | null;
-  bio?: string;
-}
-
-interface AdminDocument {
-  documentId: string;
-  documentType: string;
-  isPrimary: boolean;
-  fileName: string;
-  mime?: string;
-  sizeKb?: number;
-  uploadedAt?: string;
-  fileUrl?: string;
-}
-
-interface AdminTimelineEvent {
-  event: string;
-  label?: string;
-  at: string;
-  by?: string;
-  note?: string;
-}
-
-interface AdminChecklistItem {
-  checkId: string;
-  label: string;
-  passed: boolean;
-  evidence?: string;
-}
-
-interface AdminVerificationDetail {
-  requestId: string;
-  status: string;
-  mentorFullName: string;
-  mentorEmail: string;
-  revisionCount: number;
-  submittedAt: string | null;
-  updatedAt: string | null;
-  submitNote: string | null;
-  reviewNote: string | null;
-  canReview: boolean;
-  lockedByAdminEmail: string | null;
-  documents: AdminDocument[];
-  checklist: AdminChecklistItem[];
-  timeline: AdminTimelineEvent[];
-  studentProfile: AdminStudentProfile | null;
-  mentorProfile: AdminMentorProfile | null;
-}
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  getVerificationDetail,
+  refreshLock as refreshLockApi,
+  approveVerification,
+  rejectVerification,
+  requestRevision,
+  type AdminVerificationDetail,
+} from '../../../../lib/api/adminMentorVerificationApi';
 
 export default function AdminMentorVerificationDetailPage() {
-  const params = useParams();
+  const params = useParams<{ requestId: string }>();
   const requestId = params.requestId as string;
-  const navigate = useRouter();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AdminVerificationDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [note, setNote] = useState('');
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchDetail = async () => {
+  const fetchDetail = useCallback(async () => {
     try {
       setError(null);
       const data = await getVerificationDetail(requestId);
       setDetail(data);
-      setProcessing(data.status === "PENDING_REVIEW" && data.canReview);
     } catch (err) {
-      setError("Failed to load verification detail.");
+      setError('Failed to load verification detail.');
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [requestId]);
 
-  const refreshLock = async () => {
+  const refreshLock = useCallback(async () => {
     try {
-      setRefreshing(true);
-      await refreshLock(requestId);
+      await refreshLockApi(requestId);
     } catch (err) {
-      console.error("Failed to refresh lock, fetching detail again:", err);
+      console.error('Failed to refresh lock, fetching detail again:', err);
       await fetchDetail();
-    } finally {
-      setRefreshing(false);
     }
-  };
+  }, [requestId, fetchDetail]);
 
   useEffect(() => {
     if (!requestId) return;
-
     fetchDetail();
-
-    const startInterval = () => {
-      intervalRef.current = setInterval(() => {
-        if (detail && detail.canReview && detail.status === "PENDING_REVIEW") {
-          refreshLock();
-        }
-      }, 3 * 60 * 1000);
-    };
-
-    startInterval();
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [requestId]);
+  }, [requestId, fetchDetail]);
 
   useEffect(() => {
-    if (!detail) return;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
 
-    if (!(detail.canReview && detail.status === "PENDING_REVIEW")) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+    if (!detail || !(detail.canReview && detail.status === 'PENDING_REVIEW')) {
       return;
     }
 
@@ -163,16 +69,68 @@ export default function AdminMentorVerificationDetailPage() {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [detail]);
+  }, [detail, refreshLock]);
 
   const formatDateTime = (isoString: string | null) => {
-    if (!isoString) return "-";
+    if (!isoString) return '-';
     return new Date(isoString).toLocaleString();
   };
 
-  const canAct = detail && detail.status === "PENDING_REVIEW" && detail.canReview;
+  const canAct = !!detail && detail.status === 'PENDING_REVIEW' && detail.canReview;
+
+  const handleApprove = async () => {
+    if (!requestId) return;
+    setProcessing(true);
+    try {
+      await approveVerification(requestId, note || undefined);
+      await fetchDetail();
+      setNote('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to approve request.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!requestId || !note.trim()) {
+      setError('Vui lòng nhập lý do từ chối.');
+      return;
+    }
+    setProcessing(true);
+    try {
+      await rejectVerification(requestId, note);
+      await fetchDetail();
+      setNote('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to reject request.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRequestRevision = async () => {
+    if (!requestId || !note.trim()) {
+      setError('Vui lòng nhập nội dung cần chỉnh sửa.');
+      return;
+    }
+    setProcessing(true);
+    try {
+      await requestRevision(requestId, note);
+      await fetchDetail();
+      setNote('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to request revision.');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -182,11 +140,21 @@ export default function AdminMentorVerificationDetailPage() {
     );
   }
 
-  if (error || !detail) {
+  if (error && !detail) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-field font-semibold">
-          {error || "Verification request not found."}
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-field font-semibold">
+          Verification request not found.
         </div>
       </div>
     );
@@ -194,6 +162,14 @@ export default function AdminMentorVerificationDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* Back */}
+      <button
+        onClick={() => navigate('/admin/mentor-verification')}
+        className="text-meta font-bold text-brand-text-muted hover:text-brand-text"
+      >
+        ← Back to queue
+      </button>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight">
@@ -212,8 +188,14 @@ export default function AdminMentorVerificationDetailPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-field font-semibold">
+          {error}
+        </div>
+      )}
+
       {/* Lock Banners */}
-      {processing && (
+      {canAct && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-field font-semibold">
           You are currently processing this request.
         </div>
@@ -276,7 +258,7 @@ export default function AdminMentorVerificationDetailPage() {
             <div>
               <span className="text-brand-text-muted font-bold">Is Alumni:</span>
               <span className="ml-2 text-brand-text font-semibold">
-                {detail.studentProfile.isAlumni ? "Yes" : "No"}
+                {detail.studentProfile.isAlumni ? 'Yes' : 'No'}
               </span>
             </div>
             {detail.studentProfile.graduationYear !== null && detail.studentProfile.graduationYear !== undefined && (
@@ -459,13 +441,13 @@ export default function AdminMentorVerificationDetailPage() {
       <div className="meetmind-card rounded-card shadow-sm">
         <h2 className="text-xl font-bold text-brand-text font-serif mb-4">
           Checklist
-        </div>
+        </h2>
         {detail.checklist && detail.checklist.length > 0 ? (
           <div className="space-y-3">
             {detail.checklist.map((item) => (
               <div key={item.checkId} className="flex items-start gap-3">
-                <span className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${item.passed ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                  {item.passed ? "Y" : "N"}
+                <span className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${item.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {item.passed ? 'Y' : 'N'}
                 </span>
                 <div>
                   <p className="text-brand-text font-bold">{item.label}</p>
@@ -481,25 +463,40 @@ export default function AdminMentorVerificationDetailPage() {
 
       {/* Action Buttons */}
       {canAct && (
-        <div className="flex items-center gap-3 pt-4 border-t border-brand-border">
-          <button
-            onClick={() => approveVerification(requestId)}
-            className="px-4 py-2 bg-green-600 text-white font-bold rounded-field hover:bg-green-700"
-          >
-            Approve
-          </button>
-          <button
-            onClick={() => rejectVerification(requestId, note)}
-            className="px-4 py-2 bg-red-600 text-white font-bold rounded-field hover:bg-red-700"
-          >
-            Reject
-          </button>
-          <button
-            onClick={() => requestRevision(requestId, note)}
-            className="px-4 py-2 bg-brand-terracotta text-white font-bold rounded-field hover:bg-brand-terracotta-hover"
-          >
-            Request Revision
-          </button>
+        <div className="meetmind-card rounded-card shadow-sm space-y-3">
+          <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">
+            Ghi chú (bắt buộc khi từ chối / yêu cầu chỉnh sửa)
+          </label>
+          <textarea
+            rows={3}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Nhập ghi chú/lý do..."
+            className="w-full bg-brand-bg/50 border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none font-medium"
+          />
+          <div className="flex items-center gap-3 pt-2 border-t border-brand-border">
+            <button
+              disabled={processing}
+              onClick={handleApprove}
+              className="px-4 py-2 bg-green-600 text-white font-bold rounded-field hover:bg-green-700 disabled:opacity-50"
+            >
+              Approve
+            </button>
+            <button
+              disabled={processing}
+              onClick={handleReject}
+              className="px-4 py-2 bg-red-600 text-white font-bold rounded-field hover:bg-red-700 disabled:opacity-50"
+            >
+              Reject
+            </button>
+            <button
+              disabled={processing}
+              onClick={handleRequestRevision}
+              className="px-4 py-2 bg-brand-terracotta text-white font-bold rounded-field hover:bg-brand-terracotta-hover disabled:opacity-50"
+            >
+              Request Revision
+            </button>
+          </div>
         </div>
       )}
     </div>

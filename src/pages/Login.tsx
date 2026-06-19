@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, getPostLoginRedirect } from '../context/AuthContext';
 import { AlertCircle, Shield, User, HelpCircle, Terminal, ArrowLeftRight } from 'lucide-react';
 
 // Client ID dự án Google Cloud Console, cấu hình qua biến môi trường VITE_GOOGLE_CLIENT_ID.
@@ -31,7 +31,7 @@ function getErrorMessage(err: unknown, fallback: string): string {
 }
 
 export const Login: React.FC = () => {
-  const { loginWithGoogle, loginWithDevBypass, isAuthenticated } = useAuth();
+  const { user, loginWithGoogle, loginWithDevBypass, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -39,10 +39,10 @@ export const Login: React.FC = () => {
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
+    if (isAuthenticated && user) {
+      navigate(getPostLoginRedirect(user));
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleCredentialResponse = useCallback(
     async (response: { credential?: string }) => {
@@ -50,8 +50,8 @@ export const Login: React.FC = () => {
       setLoadingGoogle(true);
       setError(null);
       try {
-        await loginWithGoogle(response.credential);
-        navigate('/dashboard');
+        const loggedInUser = await loginWithGoogle(response.credential);
+        navigate(getPostLoginRedirect(loggedInUser));
       } catch (err) {
         setError(getErrorMessage(err, 'Đăng nhập Google thất bại. Vui lòng thử lại.'));
       } finally {
@@ -110,8 +110,8 @@ export const Login: React.FC = () => {
     try {
       const idToken = prompt('Chưa cấu hình VITE_GOOGLE_CLIENT_ID.\nNhập Google ID Token để test tạm (hoặc Cancel để dùng Dev Bypass bên dưới):');
       if (idToken) {
-        await loginWithGoogle(idToken);
-        navigate('/dashboard');
+        const loggedInUser = await loginWithGoogle(idToken);
+        navigate(getPostLoginRedirect(loggedInUser));
       } else {
         setLoadingGoogle(false);
       }
@@ -122,8 +122,8 @@ export const Login: React.FC = () => {
   };
 
   const handleDevLogin = (role: 'MENTEE' | 'MENTOR' | 'ADMIN') => {
-    loginWithDevBypass(role);
-    navigate('/complete-profile');
+    const demoUser = loginWithDevBypass(role);
+    navigate(getPostLoginRedirect(demoUser));
   };
 
   return (

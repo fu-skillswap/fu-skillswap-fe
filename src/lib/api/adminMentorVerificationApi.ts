@@ -1,8 +1,8 @@
 // =====================================================================
 // src/lib/api/adminMentorVerificationApi.ts — Admin Mentor Verification (4.7)
 // =====================================================================
-import { apiClient } from '../api/client';
-import type { Paged } from '../api/types';
+import { apiClient } from '../../api/client';
+import type { Paged } from '../../api/types';
 import type { AxiosRequestConfig } from 'axios';
 
 async function authFetchWithRefresh<T>(
