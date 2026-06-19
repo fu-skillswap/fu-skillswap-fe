@@ -23,11 +23,11 @@ export interface Paged<T> {
 // ---------- Auth ----------
 export type Role = 'MENTEE' | 'MENTOR' | 'ADMIN' | 'SYSTEM_ADMIN';
 
+// refreshToken nằm trong HttpOnly Cookie (skillswap_refresh_token) do BE set,
+// FE không đọc/lưu refreshToken nên không khai báo field này ở đây.
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
+  tokenType?: string;
 }
 
 export interface MeResponse {
