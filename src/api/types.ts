@@ -62,26 +62,30 @@ export interface StudentProfile {
 }
 export type StudentProfilePayload = StudentProfile;
 
-// ---------- Mentor profile ----------
-export interface MentorBasicPayload {
-  headline: string;
-  currentPosition?: string;
-  currentCompany?: string;
-  avatarUrl?: string;
-  bio?: string;
-  isAvailable: boolean;
+// ---------- Mentor profile (flat endpoint GET/PUT /api/me/mentor-profile) ----------
+export type TeachingMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
+export type SessionDuration = 15 | 30 | 60 | 90;
+
+export interface HelpTopic {
+  id: string;
+  code?: string;
+  name: string;
 }
-export interface MentorExpertisePayload {
-  expertiseTagIds: string[];
-  helpTopicIds: string[];
-  yearsOfExperience: number;
-  industry?: string;
-  expertiseSummary?: string;
+
+export interface MentorProfilePayload {
+  headline: string; // required, max 200 chars
+  expertiseDescription: string; // required, max 1000 chars
+  supportingSubjects?: string; // optional, max 1000 chars
+  isAvailable: boolean;
+  helpTopicIds: string[]; // required, 1-20 items, no duplicates
+  teachingMode: TeachingMode;
+  sessionDuration: SessionDuration;
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
 }
-export interface MentorProfile extends MentorBasicPayload, MentorExpertisePayload {}
+
+export interface MentorProfile extends MentorProfilePayload {}
 
 // ---------- Mentor verification ----------
 export type VerificationStatus =
@@ -108,6 +112,22 @@ export interface TimelineEvent {
   note?: string;
 }
 
+/** Trạng thái hoàn thiện hồ sơ — BE trả về để FE render checklist, không tự suy luận. */
+export interface VerificationChecklist {
+  academicProfileCompleted: boolean;
+  mentorProfileCompleted: boolean;
+  hasAffiliationProof: boolean;
+  hasExpertiseProof: boolean;
+  canSubmit: boolean;
+}
+
+/** Hành động nào FE được phép cho phép user thực hiện — BE quyết định, FE chỉ render theo. */
+export interface VerificationAllowedActions {
+  canUploadDocuments: boolean;
+  canSubmit: boolean;
+  canWithdraw: boolean;
+}
+
 export interface VerificationRequest {
   requestId: string;
   status: VerificationStatus;
@@ -117,11 +137,11 @@ export interface VerificationRequest {
   submittedAt?: string | null;
   documents: VerificationDocument[];
   timeline?: TimelineEvent[];
+  checklist?: VerificationChecklist;
+  allowedActions?: VerificationAllowedActions;
 }
 
 // ---------- Mentor discovery ----------
-export type TeachingMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
-
 export interface MentorCardDto {
   mentorUserId: string;
   displayName: string;

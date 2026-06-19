@@ -22,24 +22,25 @@ export const mentorVerificationApi = {
   getDocument: (documentId: string) =>
     http.get<VerificationDocument>(`/api/me/mentor-verification/documents/${documentId}`),
 
-  /** POST /api/me/mentor-verification/documents — multipart upload */
+  /**
+   * POST /api/me/mentor-verification/documents — multipart upload.
+   * Không tự set Content-Type: để browser tự sinh boundary của multipart/form-data.
+   */
   uploadDocument: (params: { documentType: DocumentType; isPrimary: boolean; file: File }) => {
     const form = new FormData();
     form.append('documentType', params.documentType);
     form.append('isPrimary', String(params.isPrimary));
     form.append('file', params.file);
-    return http.post<VerificationDocument>('/api/me/mentor-verification/documents', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return http.post<VerificationDocument>('/api/me/mentor-verification/documents', form);
   },
 
   /** DELETE /api/me/mentor-verification/documents/{documentId} — xóa mềm */
   deleteDocument: (documentId: string) =>
     http.del<void>(`/api/me/mentor-verification/documents/${documentId}`),
 
-  /** POST /api/me/mentor-verification/submit */
-  submit: (submitNote?: string) =>
-    http.post<VerificationRequest>('/api/me/mentor-verification/submit', { submitNote }),
+  /** POST /api/me/mentor-verification/submit — bắt buộc termsAccepted: true */
+  submit: (params: { submitNote?: string; termsAccepted: boolean }) =>
+    http.post<VerificationRequest>('/api/me/mentor-verification/submit', params),
 
   /** POST /api/me/mentor-verification/withdraw */
   withdraw: () =>

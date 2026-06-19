@@ -1,224 +1,143 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, Check, AlertCircle, Briefcase, Sliders, Tags, Settings } from 'lucide-react';
-import { mentorProfileApi } from '../../api/mentorProfile';
+import { Check, AlertCircle, Tags, Settings, Link2 } from 'lucide-react';
+import { mentorProfileApi, helpTopicApi } from '../../api/mentorProfile';
+import type { HelpTopic, TeachingMode, SessionDuration } from '../../api/types';
 
-interface Experience {
-  id: string;
-  companyName: string;
-  positionTitle: string;
-  startDate: string;
-  endDate: string;
-  isCurrent: boolean;
-}
+const SESSION_DURATIONS: SessionDuration[] = [15, 30, 60, 90];
+const TEACHING_MODES: { value: TeachingMode; label: string }[] = [
+  { value: 'ONLINE', label: 'Trực tuyến' },
+  { value: 'OFFLINE', label: 'Trực tiếp' },
+  { value: 'HYBRID', label: 'Kết hợp' },
+];
 
-interface MentoringService {
-  id: string;
-  title: string;
-  description: string;
-  durationMinutes: number;
-}
-
-const TAG_ID_MAP: Record<string, string> = {
-  'React': 'tag-react-uuid-001',
-  'Node.js': 'tag-nodejs-uuid-002',
-  'TypeScript': 'tag-typescript-uuid-003',
-  'Python': 'tag-python-uuid-004',
-  'AI/ML': 'tag-aiml-uuid-005',
-  'Figma': 'tag-figma-uuid-006',
-  'UI/UX': 'tag-uiux-uuid-007',
-  'SEO': 'tag-seo-uuid-008',
-  'Docker': 'tag-docker-uuid-009',
-};
-
-const TAG_NAME_MAP: Record<string, string> = Object.entries(TAG_ID_MAP).reduce(
-  (acc, [name, id]) => ({ ...acc, [id]: name }),
-  {} as Record<string, string>
-);
+const HEADLINE_MAX = 200;
+const EXPERTISE_MAX = 1000;
+const SUPPORTING_MAX = 1000;
+const HELP_TOPICS_MAX = 20;
 
 export const MentorSetupProfile: React.FC = () => {
-  // Profile settings
-  const [headline, setHeadline] = useState('Chuyên gia phát triển Web Fullstack | Hỗ trợ đồ án K18/K19');
-  const [description, setDescription] = useState('Mình đã làm việc với React, Node.js trong hơn 2 năm và thực hiện nhiều đồ án thực tế. Sẵn sàng giúp đỡ các bạn gỡ rối code và thiết kế hệ thống.');
-  const [mentoringStyle, setMentoringStyle] = useState('Thực chiến, code-along, review code chi tiết.');
-  const [targetMentees, setTargetMentees] = useState('Sinh viên K18, K19 muốn làm quen với dự án thực tế.');
+  // Form fields — đúng theo contract GET/PUT /api/me/mentor-profile
+  const [headline, setHeadline] = useState('');
+  const [expertiseDescription, setExpertiseDescription] = useState('');
+  const [supportingSubjects, setSupportingSubjects] = useState('');
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [helpTopicIds, setHelpTopicIds] = useState<string[]>([]);
+  const [teachingMode, setTeachingMode] = useState<TeachingMode>('ONLINE');
+  const [sessionDuration, setSessionDuration] = useState<SessionDuration>(60);
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [githubUrl, setGithubUrl] = useState('');
+  const [portfolioUrl, setPortfolioUrl] = useState('');
 
-  // Tags
-  const [availableTags] = useState(['React', 'Node.js', 'TypeScript', 'Python', 'AI/ML', 'Figma', 'UI/UX', 'SEO', 'Docker']);
-  const [selectedTags, setSelectedTags] = useState<string[]>(['React', 'Node.js', 'TypeScript']);
-
-  // Loading state
-  const [loading, setLoading] = useState(false);
-
-  // Fetch mentor profile on mount
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const profile = await mentorProfileApi.get();
-        if (profile) {
-          if (profile.headline) setHeadline(profile.headline);
-          if (profile.bio) setDescription(profile.bio);
-          // Set expertise tags if available
-          if (profile.expertiseTagIds && profile.expertiseTagIds.length > 0) {
-            const tags = profile.expertiseTagIds
-              .map(id => TAG_NAME_MAP[id] || id)
-              .filter(Boolean);
-            if (tags.length > 0) {
-              setSelectedTags(tags);
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to fetch mentor profile from backend, using mock data.', err);
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  // Experience state
-  const [experiences, setExperiences] = useState<Experience[]>([
-    { id: 'exp1', companyName: 'FPT Software', positionTitle: 'Front-end Intern', startDate: '2025-01', endDate: '2025-05', isCurrent: false },
-    { id: 'exp2', companyName: 'Freelancer Startup', positionTitle: 'Web Developer', startDate: '2025-06', endDate: '', isCurrent: true },
-  ]);
-
-  // Form Experience input
-  const [company, setCompany] = useState('');
-  const [position, setPosition] = useState('');
-  const [expStart, setExpStart] = useState('');
-  const [expEnd, setExpEnd] = useState('');
-  const [isCurrent, setIsCurrent] = useState(false);
-
-  // Services state
-  const [services, setServices] = useState<MentoringService[]>([
-    { id: 'ser1', title: 'Gỡ rối đồ án tốt nghiệp Web React/Node.js', description: 'Review cấu trúc thư mục, tối ưu hóa database query và kết nối API.', durationMinutes: 60 },
-    { id: 'ser2', title: 'Học ReactJS căn bản trong 1 tiếng', description: 'Giới thiệu State, Effect, Custom Hook và mô hình luồng dữ liệu.', durationMinutes: 60 },
-  ]);
-
-  // Form Service input
-  const [serTitle, setSerTitle] = useState('');
-  const [serDesc, setSerDesc] = useState('');
-  const [serDuration, setSerDuration] = useState(60);
+  // Catalog
+  const [helpTopics, setHelpTopics] = useState<HelpTopic[]>([]);
 
   // Status
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const handleToggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const topics = await helpTopicApi.list();
+        setHelpTopics(topics || []);
+      } catch (err) {
+        console.warn('Không tải được danh sách help topics.', err);
+      }
+
+      try {
+        const profile = await mentorProfileApi.get();
+        if (profile) {
+          setHeadline(profile.headline ?? '');
+          setExpertiseDescription(profile.expertiseDescription ?? '');
+          setSupportingSubjects(profile.supportingSubjects ?? '');
+          setIsAvailable(profile.isAvailable ?? true);
+          setHelpTopicIds(profile.helpTopicIds ?? []);
+          setTeachingMode(profile.teachingMode ?? 'ONLINE');
+          setSessionDuration(profile.sessionDuration ?? 60);
+          setLinkedinUrl(profile.linkedinUrl ?? '');
+          setGithubUrl(profile.githubUrl ?? '');
+          setPortfolioUrl(profile.portfolioUrl ?? '');
+        }
+      } catch (err) {
+        console.warn('Chưa có mentor profile, dùng form trống.', err);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    init();
+  }, []);
+
+  const toggleHelpTopic = (id: string) => {
+    setHelpTopicIds((prev) => {
+      if (prev.includes(id)) return prev.filter((t) => t !== id);
+      if (prev.length >= HELP_TOPICS_MAX) return prev;
+      return [...prev, id];
+    });
   };
 
-  const handleAddExperience = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const validate = (): string | null => {
+    if (!headline.trim()) return 'Vui lòng điền Headline.';
+    if (headline.length > HEADLINE_MAX) return `Headline tối đa ${HEADLINE_MAX} ký tự.`;
+    if (!expertiseDescription.trim()) return 'Vui lòng điền Mô tả chuyên môn.';
+    if (expertiseDescription.length > EXPERTISE_MAX) return `Mô tả chuyên môn tối đa ${EXPERTISE_MAX} ký tự.`;
+    if (supportingSubjects.length > SUPPORTING_MAX) return `Môn học hỗ trợ tối đa ${SUPPORTING_MAX} ký tự.`;
+    if (helpTopicIds.length === 0) return 'Vui lòng chọn ít nhất 1 chủ đề hỗ trợ.';
+    if (helpTopicIds.length > HELP_TOPICS_MAX) return `Chỉ được chọn tối đa ${HELP_TOPICS_MAX} chủ đề.`;
+    return null;
+  };
 
-    if (!company || !position || !expStart) {
-      setError('Vui lòng điền đủ Tên công ty, Vị trí và Ngày bắt đầu.');
+  const handleSave = async () => {
+    setError(null);
+    setSuccess(null);
+
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
-    const newExp: Experience = {
-      id: `exp_${Date.now()}`,
-      companyName: company,
-      positionTitle: position,
-      startDate: expStart,
-      endDate: isCurrent ? '' : expEnd,
-      isCurrent,
-    };
-
-    setExperiences([...experiences, newExp]);
-    setCompany('');
-    setPosition('');
-    setExpStart('');
-    setExpEnd('');
-    setIsCurrent(false);
-    setSuccess('Đã thêm kinh nghiệm làm việc.');
-    setTimeout(() => setSuccess(null), 3000);
-  };
-
-  const handleDeleteExperience = (id: string) => {
-    setExperiences(experiences.filter((e) => e.id !== id));
-  };
-
-  const handleAddService = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!serTitle || !serDesc) return;
-
-    const newSer: MentoringService = {
-      id: `ser_${Date.now()}`,
-      title: serTitle,
-      description: serDesc,
-      durationMinutes: Number(serDuration),
-    };
-
-    setServices([...services, newSer]);
-    setSerTitle('');
-    setSerDesc('');
-    setSerDuration(60);
-    setSuccess('Đã thêm dịch vụ mentoring (miễn phí).');
-    setTimeout(() => setSuccess(null), 3000);
-  };
-
-  const handleDeleteService = (id: string) => {
-    setServices(services.filter((s) => s.id !== id));
-  };
-
-  const handleSaveProfile = async () => {
     setLoading(true);
-    setError(null);
-    setSuccess(null);
     try {
-      await mentorProfileApi.updateBasic({
+      await mentorProfileApi.update({
         headline,
-        bio: description,
-        isAvailable: true,
+        expertiseDescription,
+        supportingSubjects: supportingSubjects || undefined,
+        isAvailable,
+        helpTopicIds,
+        teachingMode,
+        sessionDuration,
+        linkedinUrl: linkedinUrl || undefined,
+        githubUrl: githubUrl || undefined,
+        portfolioUrl: portfolioUrl || undefined,
       });
-      setSuccess('Lưu thông tin mô tả thành công!');
+      setSuccess('Lưu hồ sơ mentor thành công!');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu thông tin mô tả.');
+      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu hồ sơ mentor.');
     } finally {
       setLoading(false);
     }
     setTimeout(() => setSuccess(null), 3000);
   };
 
-  const handleSaveExpertise = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const tagIds = selectedTags.map((tag) => TAG_ID_MAP[tag] || tag);
-      await mentorProfileApi.updateExpertise({
-        expertiseTagIds: tagIds,
-        helpTopicIds: [], // Empty or mock
-        yearsOfExperience: 2,
-        industry: 'Software Development',
-        expertiseSummary: description,
-        linkedinUrl: '',
-        githubUrl: '',
-        portfolioUrl: '',
-      });
-      setSuccess('Lưu kỹ năng chuyên môn thành công!');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu kỹ năng chuyên môn.');
-    } finally {
-      setLoading(false);
-    }
-    setTimeout(() => setSuccess(null), 3000);
-  };
+  if (initialLoading) {
+    return (
+      <div className="py-20 flex justify-center">
+        <div className="w-7 h-7 border-2 border-brand-terracotta border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 text-left">
-      
       {/* Title */}
       <div className="space-y-1">
         <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight flex items-center gap-2">
-          <Settings className="w-8 h-8 text-brand-terracotta" /> Cấu hình hồ sơ chuyên môn
+          <Settings className="w-8 h-8 text-brand-terracotta" /> Cấu hình hồ sơ mentor
         </h1>
         <p className="text-brand-text-muted text-body font-medium">
-          Tối ưu hóa các thông số kỹ năng, lịch sử làm việc và các gói hỗ trợ để tăng độ uy tín với sinh viên.
+          Hoàn thiện thông tin chuyên môn để hệ thống gợi ý bạn cho các mentee phù hợp.
         </p>
       </div>
 
@@ -237,272 +156,176 @@ export const MentorSetupProfile: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column: Profile Card & Tech Tags */}
+        {/* Left Column: Description */}
         <div className="lg:col-span-1 space-y-6">
-          
-          {/* Card Info */}
           <div className="meetmind-card p-6 rounded-card space-y-4">
             <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
-              <Sliders className="w-4.5 h-4.5 text-brand-terracotta" /> 1. Mô tả năng lực
+              <Settings className="w-4.5 h-4.5 text-brand-terracotta" /> 1. Mô tả năng lực
             </h3>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Headline ngắn</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">
+                  Headline ({headline.length}/{HEADLINE_MAX})
+                </label>
                 <input
                   type="text"
+                  maxLength={HEADLINE_MAX}
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
+                  placeholder="Ví dụ: Chuyên gia phát triển Web Fullstack | Hỗ trợ đồ án"
                   className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Giới thiệu chi tiết</label>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">
+                  Mô tả chuyên môn ({expertiseDescription.length}/{EXPERTISE_MAX})
+                </label>
                 <textarea
                   rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  maxLength={EXPERTISE_MAX}
+                  value={expertiseDescription}
+                  onChange={(e) => setExpertiseDescription(e.target.value)}
+                  placeholder="Giới thiệu kinh nghiệm, kỹ năng và cách bạn hỗ trợ mentee."
                   className="w-full bg-brand-bg/50 border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none font-medium"
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Phong cách mentoring</label>
-                  <input
-                    type="text"
-                    value={mentoringStyle}
-                    onChange={(e) => setMentoringStyle(e.target.value)}
-                    className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Đối tượng hỗ trợ</label>
-                  <input
-                    type="text"
-                    value={targetMentees}
-                    onChange={(e) => setTargetMentees(e.target.value)}
-                    className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
-                  />
-                </div>
+              <div>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">
+                  Môn học hỗ trợ ({supportingSubjects.length}/{SUPPORTING_MAX}, không bắt buộc)
+                </label>
+                <textarea
+                  rows={3}
+                  maxLength={SUPPORTING_MAX}
+                  value={supportingSubjects}
+                  onChange={(e) => setSupportingSubjects(e.target.value)}
+                  placeholder="Ví dụ: PRJ301, SWP391, EXE101..."
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none font-medium"
+                />
               </div>
-            </div>
 
-            <button
-              disabled={loading}
-              onClick={handleSaveProfile}
-              className="w-full bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all disabled:opacity-50"
-            >
-              {loading ? 'Đang lưu...' : 'Lưu thông tin mô tả'}
-            </button>
+              <label className="flex items-center gap-2 text-meta font-bold text-brand-text-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAvailable}
+                  onChange={(e) => setIsAvailable(e.target.checked)}
+                  className="cursor-pointer"
+                />
+                Đang nhận mentee mới
+              </label>
+            </div>
           </div>
 
-          {/* Expert Tags */}
+          {/* Links */}
           <div className="meetmind-card p-6 rounded-card space-y-3">
             <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
-              <Tags className="w-4.5 h-4.5 text-brand-blue" /> 2. Kỹ năng chuyên môn
+              <Link2 className="w-4.5 h-4.5 text-brand-blue" /> 2. Liên kết (không bắt buộc)
+            </h3>
+            <div className="space-y-3">
+              <input
+                type="url"
+                placeholder="LinkedIn URL"
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+                className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-medium"
+              />
+              <input
+                type="url"
+                placeholder="GitHub URL"
+                value={githubUrl}
+                onChange={(e) => setGithubUrl(e.target.value)}
+                className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-medium"
+              />
+              <input
+                type="url"
+                placeholder="Portfolio URL"
+                value={portfolioUrl}
+                onChange={(e) => setPortfolioUrl(e.target.value)}
+                className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-medium"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Help topics + teaching mode/duration */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="meetmind-card p-6 rounded-card space-y-3">
+            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+              <Tags className="w-4.5 h-4.5 text-brand-blue" /> 3. Chủ đề hỗ trợ ({helpTopicIds.length}/{HELP_TOPICS_MAX})
             </h3>
 
-            <div className="flex flex-wrap gap-1.5 pt-2">
-              {availableTags.map((tag) => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => handleToggleTag(tag)}
-                    className={`text-meta font-bold py-1 px-3 rounded-lg border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-brand-terracotta/15 text-brand-terracotta border-brand-terracotta/20'
-                        : 'bg-brand-bg border-brand-border text-brand-text-muted hover:bg-brand-bg/80'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-            
-            <p className="text-meta text-brand-text-muted font-semibold leading-normal pt-1 mb-3">
-              * Vui lòng chọn ít nhất 1 kỹ năng chủ đạo (Primary tag) trùng khớp với chuyên ngành của bạn.
+            {helpTopics.length === 0 ? (
+              <p className="text-meta text-brand-text-muted font-medium py-2">Không tải được danh sách chủ đề. Vui lòng thử lại sau.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 pt-2">
+                {helpTopics.map((topic) => {
+                  const isSelected = helpTopicIds.includes(topic.id);
+                  return (
+                    <button
+                      key={topic.id}
+                      onClick={() => toggleHelpTopic(topic.id)}
+                      className={`text-meta font-bold py-1 px-3 rounded-lg border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-brand-terracotta/15 text-brand-terracotta border-brand-terracotta/20'
+                          : 'bg-brand-bg border-brand-border text-brand-text-muted hover:bg-brand-bg/80'
+                      }`}
+                    >
+                      {topic.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <p className="text-meta text-brand-text-muted font-semibold leading-normal pt-1">
+              * Chọn từ 1 đến {HELP_TOPICS_MAX} chủ đề bạn có thể hỗ trợ.
             </p>
+          </div>
+
+          <div className="meetmind-card p-6 rounded-card space-y-4">
+            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+              <Settings className="w-4.5 h-4.5 text-brand-terracotta" /> 4. Hình thức & thời lượng buổi học
+            </h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Hình thức</label>
+                <select
+                  value={teachingMode}
+                  onChange={(e) => setTeachingMode(e.target.value as TeachingMode)}
+                  className="w-full bg-surface border border-brand-border rounded-field py-2 px-3 text-body focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
+                >
+                  {TEACHING_MODES.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Thời lượng (phút)</label>
+                <select
+                  value={sessionDuration}
+                  onChange={(e) => setSessionDuration(Number(e.target.value) as SessionDuration)}
+                  className="w-full bg-surface border border-brand-border rounded-field py-2 px-3 text-body focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
+                >
+                  {SESSION_DURATIONS.map((d) => (
+                    <option key={d} value={d}>{d} phút</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             <button
               disabled={loading}
-              onClick={handleSaveExpertise}
-              className="w-full bg-brand-blue hover:bg-brand-blue/80 text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md transition-all disabled:opacity-50"
+              onClick={handleSave}
+              className="w-full bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all disabled:opacity-50"
             >
-              {loading ? 'Đang lưu...' : 'Lưu kỹ năng chuyên môn'}
+              {loading ? 'Đang lưu...' : 'Lưu hồ sơ mentor'}
             </button>
           </div>
-
         </div>
-
-        {/* Right Column: Work History & Mentoring Packages */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Work experiences */}
-          <div className="meetmind-card p-6 rounded-card space-y-4">
-            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
-              <Briefcase className="w-4.5 h-4.5 text-brand-terracotta" /> 3. Lịch sử kinh nghiệm & Học vấn
-            </h3>
-
-            {/* List experiences */}
-            <div className="space-y-3">
-              {experiences.map((exp) => (
-                <div key={exp.id} className="flex justify-between items-center bg-brand-bg/40 border border-brand-border p-3.5 rounded-card">
-                  <div className="text-left">
-                    <span className="text-body font-bold text-brand-text block">{exp.positionTitle}</span>
-                    <span className="text-meta text-brand-text-muted font-bold block">{exp.companyName}</span>
-                    <span className="text-meta text-brand-grey font-semibold">
-                      {exp.startDate} - {exp.isCurrent ? 'Hiện tại' : exp.endDate}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteExperience(exp.id)}
-                    className="p-1.5 hover:bg-red-50 text-brand-text-muted hover:text-red-600 rounded-field transition-all cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Add Exp Form */}
-            <form onSubmit={handleAddExperience} className="bg-brand-bg/30 border border-brand-border p-4 rounded-card space-y-3">
-              <span className="text-meta font-bold text-brand-text uppercase block mb-1">Thêm kinh nghiệm mới</span>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Tên công ty (Ví dụ: FPT Software)"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  className="bg-surface border border-brand-border rounded-field py-2 px-3 text-body focus:outline-none focus:border-brand-terracotta"
-                />
-                <input
-                  type="text"
-                  placeholder="Vị trí (Ví dụ: React Developer)"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  className="bg-surface border border-brand-border rounded-field py-2 px-3 text-body focus:outline-none focus:border-brand-terracotta"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 items-center">
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="month"
-                    value={expStart}
-                    onChange={(e) => setExpStart(e.target.value)}
-                    className="bg-surface border border-brand-border rounded-field py-2 px-2 text-body focus:outline-none focus:border-brand-terracotta cursor-pointer"
-                    title="Bắt đầu"
-                  />
-                  <input
-                    type="month"
-                    disabled={isCurrent}
-                    value={expEnd}
-                    onChange={(e) => setExpEnd(e.target.value)}
-                    className="bg-surface border border-brand-border rounded-field py-2 px-2 text-body focus:outline-none focus:border-brand-terracotta disabled:opacity-40 cursor-pointer"
-                    title="Kết thúc"
-                  />
-                </div>
-                <div className="flex items-center gap-2 pl-2">
-                  <input
-                    type="checkbox"
-                    id="isCurrent"
-                    checked={isCurrent}
-                    onChange={(e) => setIsCurrent(e.target.checked)}
-                    className="cursor-pointer"
-                  />
-                  <label htmlFor="isCurrent" className="text-meta font-bold text-brand-text-muted cursor-pointer">
-                    Đang làm việc tại đây
-                  </label>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-brand-bg hover:bg-brand-terracotta hover:text-white border border-brand-border hover:border-brand-terracotta text-brand-text text-meta font-bold py-2 rounded-field transition-all cursor-pointer"
-              >
-                + Lưu kinh nghiệm
-              </button>
-            </form>
-          </div>
-
-          {/* Mentoring services */}
-          <div className="meetmind-card p-6 rounded-card space-y-4">
-            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
-              <Sliders className="w-4.5 h-4.5 text-brand-blue" /> 4. Thiết lập Gói dịch vụ hỗ trợ (Miễn phí cho MVP)
-            </h3>
-
-            <div className="space-y-3">
-              {services.map((ser) => (
-                <div key={ser.id} className="flex justify-between items-start bg-brand-bg/40 border border-brand-border p-4 rounded-card">
-                  <div className="text-left space-y-1">
-                    <span className="text-body font-bold text-brand-text block">{ser.title}</span>
-                    <p className="text-meta text-brand-text-muted font-medium">{ser.description}</p>
-                    <span className="inline-block text-meta font-extrabold text-brand-blue bg-brand-blue/15 border border-brand-blue/20 px-2 py-0.5 rounded-lg">
-                      Thời lượng: {ser.durationMinutes} phút
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteService(ser.id)}
-                    className="p-1.5 hover:bg-red-50 text-brand-text-muted hover:text-red-600 rounded-field transition-all cursor-pointer shrink-0 ml-4"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Add Service Form */}
-            <form onSubmit={handleAddService} className="bg-brand-bg/30 border border-brand-border p-4 rounded-card space-y-3">
-              <span className="text-meta font-bold text-brand-text uppercase block mb-1">Thêm dịch vụ hỗ trợ mới</span>
-              
-              <div className="grid grid-cols-3 gap-3">
-                <input
-                  type="text"
-                  required
-                  placeholder="Tên gói hỗ trợ (Ví dụ: Mock Interview SE)"
-                  value={serTitle}
-                  onChange={(e) => setSerTitle(e.target.value)}
-                  className="col-span-2 bg-surface border border-brand-border rounded-field py-2 px-3 text-body focus:outline-none focus:border-brand-terracotta"
-                />
-                <select
-                  value={serDuration}
-                  onChange={(e) => setSerDuration(Number(e.target.value))}
-                  className="col-span-1 bg-surface border border-brand-border rounded-field py-2 px-2 text-body focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
-                >
-                  <option value={30}>30 phút</option>
-                  <option value={45}>45 phút</option>
-                  <option value={60}>60 phút</option>
-                  <option value={90}>90 phút</option>
-                </select>
-              </div>
-
-              <textarea
-                required
-                rows={2}
-                placeholder="Mô tả nội dung chi tiết buổi học và những gì mentee cần chuẩn bị trước..."
-                value={serDesc}
-                onChange={(e) => setSerDesc(e.target.value)}
-                className="w-full bg-surface border border-brand-border rounded-field p-3 text-body focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
-              />
-
-              <button
-                type="submit"
-                className="w-full bg-brand-bg hover:bg-brand-terracotta hover:text-white border border-brand-border hover:border-brand-terracotta text-brand-text text-meta font-bold py-2 rounded-field transition-all cursor-pointer"
-              >
-                + Thêm gói hỗ trợ
-              </button>
-            </form>
-          </div>
-
-        </div>
-
       </div>
-
     </div>
   );
 };

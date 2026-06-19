@@ -12,7 +12,6 @@ interface GoogleAccountsId {
   initialize: (config: {
     client_id: string;
     callback: (response: { credential?: string }) => void;
-    hd?: string;
   }) => void;
   renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
 }
@@ -72,7 +71,10 @@ export const Login: React.FC = () => {
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleCredentialResponse,
-        hd: 'fpt.edu.vn',
+        // Không set "hd" (hosted domain) ở đây: tham số này khiến Google ẩn các tài khoản
+        // đã lưu trên máy không thuộc domain đó, buộc người dùng phải tự gõ email thủ công
+        // thay vì hiện bảng "Chọn tài khoản". Việc kiểm tra domain @fpt.edu.vn (nếu cần)
+        // nên để BE xác thực lại từ email trong idToken sau khi verify.
       });
       window.google.accounts.id.renderButton(googleButtonRef.current, {
         type: 'standard',
@@ -195,7 +197,7 @@ export const Login: React.FC = () => {
                   />
                 </svg>
               )}
-              <span>Đăng nhập với Google @fpt.edu.vn</span>
+              <span>Đăng nhập với Google</span>
             </button>
           )}
           {!GOOGLE_CLIENT_ID && (
