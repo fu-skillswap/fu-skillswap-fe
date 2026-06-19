@@ -1,18 +1,20 @@
 // =====================================================================
-// src/api/mentorProfile.ts — Mentor Profile onboarding (4.5)
+// src/api/mentorProfile.ts — Mentor Profile (route phẳng, theo
+// SkillSwap_FE_Mentor_Onboarding_Guideline_NextJS_v2)
 // =====================================================================
 import { http } from './http';
-import type { MentorProfile, MentorBasicPayload, MentorExpertisePayload } from './types';
+import type { MentorProfile, MentorProfilePayload, HelpTopic } from './types';
 
 export const mentorProfileApi = {
   /** GET /api/me/mentor-profile */
   get: () => http.get<MentorProfile>('/api/me/mentor-profile'),
 
-  /** PUT /api/me/mentor-profile/basic — Step 1 onboarding */
-  updateBasic: (payload: MentorBasicPayload) =>
-    http.put<MentorProfile>('/api/me/mentor-profile/basic', payload),
+  /** PUT /api/me/mentor-profile — route phẳng duy nhất, không còn /basic, /expertise */
+  update: (payload: MentorProfilePayload) =>
+    http.put<MentorProfile>('/api/me/mentor-profile', payload),
+};
 
-  /** PUT /api/me/mentor-profile/expertise — Step 2 onboarding */
-  updateExpertise: (payload: MentorExpertisePayload) =>
-    http.put<MentorProfile>('/api/me/mentor-profile/expertise', payload),
+export const helpTopicApi = {
+  /** GET /api/catalog/help-topics — public endpoint, dùng để load options cho helpTopicIds */
+  list: () => http.get<HelpTopic[]>('/api/catalog/help-topics'),
 };

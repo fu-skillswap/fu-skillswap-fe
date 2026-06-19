@@ -7,7 +7,7 @@ export interface UserMeResponse {
   fullName: string;
   avatarUrl: string;
   status: 'ACTIVE' | 'INACTIVE' | 'BANNED' | 'DELETED';
-  roles: ('MENTEE' | 'MENTOR' | 'ADMIN' | 'STAFF')[];
+  roles: ('MENTEE' | 'MENTOR' | 'ADMIN' | 'SYSTEM_ADMIN')[];
   profileCompleted: boolean;
   hasStudentProfile: boolean;
 }
@@ -17,11 +17,23 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   isDevBypass: boolean;
-  loginWithGoogle: (idToken: string) => Promise<void>;
-  loginWithDevBypass: (role: 'MENTEE' | 'MENTOR' | 'ADMIN') => void;
+  loginWithGoogle: (idToken: string) => Promise<UserMeResponse>;
+  loginWithDevBypass: (role: 'MENTEE' | 'MENTOR' | 'ADMIN') => UserMeResponse;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<UserMeResponse | null>;
 }
+
+/**
+ * Quyết định trang đích sau khi đăng nhập / hoàn thiện hồ sơ, dựa trên role
+ * và trạng thái hồ sơ của user. ADMIN/SYSTEM_ADMIN luôn được đưa vào khu vực
+ * quản trị, bất kể profileCompleted.
+ */
+export const getPostLoginRedirect = (user: UserMeResponse): string => {
+  const isAdmin = user.roles.includes('ADMIN') || user.roles.includes('SYSTEM_ADMIN');
+  if (isAdmin) return '/admin';
+  if (!user.profileCompleted) return '/complete-profile';
+  return '/dashboard';
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -58,7 +70,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Lỗi khôi phục phiên đăng nhập:', error);
       // Clean up state
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       setUser(null);
     } finally {
       setLoading(false);
@@ -73,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setIsDevBypass(false);
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       localStorage.removeItem('isDevBypass');
       localStorage.removeItem('demoUser');
     };
@@ -87,17 +97,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async (idToken: string) => {
     setLoading(true);
     try {
+      // refreshToken được BE set vào HttpOnly Cookie (skillswap_refresh_token) —
+      // FE chỉ nhận và lưu accessToken, không đọc/lưu refreshToken.
       const response = await apiClient.post('/api/auth/google', { idToken });
-      const { accessToken, refreshToken } = response.data.data;
+      const { accessToken } = response.data.data;
 
       localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('isDevBypass', 'false');
       setIsDevBypass(false);
 
       // Fetch user profile
       const meResponse = await apiClient.get('/api/auth/me');
-      setUser(meResponse.data.data);
+      const fetchedUser: UserMeResponse = meResponse.data.data;
+      setUser(fetchedUser);
+      return fetchedUser;
     } catch (error) {
       console.error('Đăng nhập Google thất bại:', error);
       throw error;
@@ -108,6 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithDevBypass = (role: 'MENTEE' | 'MENTOR' | 'ADMIN') => {
     setLoading(true);
+    // ADMIN demo user được coi là đã hoàn thiện hồ sơ vì khu vực quản trị
+    // không yêu cầu hồ sơ học thuật của sinh viên.
     const demoUser: UserMeResponse = {
       publicId: 'e3b0c442-98fc-1c14-9afb-f3557fa39123',
       email: `demo.${role.toLowerCase()}@fpt.edu.vn`,
@@ -115,34 +130,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${role}`,
       status: 'ACTIVE',
       roles: [role],
-      profileCompleted: false, // Default to false so they can test profile completion!
-      hasStudentProfile: false,
+      profileCompleted: role === 'ADMIN', // Non-admin: false để test luồng hoàn thiện hồ sơ.
+      hasStudentProfile: role === 'ADMIN',
     };
 
     localStorage.setItem('accessToken', 'dev-bypass-access-token');
-    localStorage.setItem('refreshToken', 'dev-bypass-refresh-token');
     localStorage.setItem('isDevBypass', 'true');
     localStorage.setItem('demoUser', JSON.stringify(demoUser));
 
     setUser(demoUser);
     setIsDevBypass(true);
     setLoading(false);
+    return demoUser;
   };
 
   const logout = async () => {
     setLoading(true);
-    const refreshToken = localStorage.getItem('refreshToken');
     const isBypass = localStorage.getItem('isDevBypass') === 'true';
 
     try {
-      if (!isBypass && refreshToken) {
-        await apiClient.post('/api/auth/logout', { refreshToken });
+      // BE tự lấy refreshToken từ HttpOnly Cookie để revoke, FE không gửi body.
+      if (!isBypass) {
+        await apiClient.post('/api/auth/logout');
       }
     } catch (error) {
       console.error('Đăng xuất API thất bại:', error);
     } finally {
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       localStorage.removeItem('isDevBypass');
       localStorage.removeItem('demoUser');
       setUser(null);
@@ -158,14 +172,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedUser = { ...user, profileCompleted: true, hasStudentProfile: true };
       localStorage.setItem('demoUser', JSON.stringify(updatedUser));
       setUser(updatedUser);
-      return;
+      return updatedUser;
     }
 
     try {
       const response = await apiClient.get('/api/auth/me');
-      setUser(response.data.data);
+      const fetchedUser: UserMeResponse = response.data.data;
+      setUser(fetchedUser);
+      return fetchedUser;
     } catch (error) {
       console.error('Lỗi cập nhật thông tin user:', error);
+      return null;
     }
   };
 

@@ -3,55 +3,32 @@
 // =====================================================================
 "use client";
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import * as adminMentorVerificationApi from "@/lib/api/adminMentorVerificationApi";
-
-interface AdminQueueItem {
-  requestId: string;
-  mentorFullName: string;
-  mentorEmail: string;
-  status: string;
-  revisionCount: number;
-  submittedAt: string | null;
-  updatedAt: string | null;
-}
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { getVerificationQueue, type AdminVerificationQueueItem } from '@/lib/api/adminMentorVerificationApi';
 
 export default function AdminMentorVerificationQueuePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.includes('ADMIN') ?? false;
+
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [queue, setQueue] = useState<AdminQueueItem[]>([]);
+  const [queue, setQueue] = useState<AdminVerificationQueueItem[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState({
-    status: "PENDING_REVIEW",
+    status: 'PENDING_REVIEW',
     page: 0,
     size: 20,
-    sortBy: "submittedAt",
-    direction: "DESC",
+    sortBy: 'submittedAt',
+    direction: 'DESC',
   });
-
   useEffect(() => {
-    const guard = async () => {
-      try {
-        const response = await fetch("/api/auth/me");
-        const data = await response.json();
-        const roles: string[] = data.data.roles || [];
-        setIsAdmin(roles.includes("ADMIN"));
-      } catch {
-        setIsAdmin(false);
-      }
-    };
-
-    guard();
-  }, []);
-
-  useEffect(() => {
-    if (isAdmin !== true) {
-      setLoading(false);
+    if (!isAdmin) {
+      navigate('/dashboard');
       return;
     }
 
@@ -60,7 +37,7 @@ export default function AdminMentorVerificationQueuePage() {
         setLoading(true);
         setError(null);
 
-        const result = await adminMentorVerificationApi.getVerificationQueue({
+        const result = await getVerificationQueue({
           status: filters.status,
           page: filters.page,
           size: filters.size,
@@ -72,7 +49,7 @@ export default function AdminMentorVerificationQueuePage() {
         setTotalElements(result.totalElements);
         setTotalPages(result.totalPages);
       } catch (err) {
-        setError("Failed to load verification queue.");
+        setError('Failed to load verification queue.');
         console.error(err);
       } finally {
         setLoading(false);
@@ -80,13 +57,7 @@ export default function AdminMentorVerificationQueuePage() {
     };
 
     loadQueue();
-  }, [isAdmin, filters]);
-
-  useEffect(() => {
-    if (isAdmin === false) {
-      navigate("/dashboard");
-    }
-  }, [isAdmin, navigate]);
+  }, [isAdmin, navigate, filters]);
 
   const handleRowClick = (requestId: string) => {
     navigate(`/admin/mentor-verification/${requestId}`);
@@ -96,27 +67,27 @@ export default function AdminMentorVerificationQueuePage() {
     setFilters((prev) => ({
       ...prev,
       [key]: value,
-      page: key === "page" ? (typeof value === "number" ? value : prev.page) : 0,
+      page: key === 'page' ? (typeof value === 'number' ? value : prev.page) : 0,
     }));
   };
 
-  if (loading || isAdmin === null) {
+  const formatDateTime = (isoString: string | null) => {
+    if (!isoString) return '-';
+    const date = new Date(isoString);
+    return date.toLocaleString();
+  };
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-brand-text-muted font-semibold">Loading...</div>
       </div>
     );
   }
-
-  if (!isAdmin) {
-    return null;
-  }
-
-  const formatDateTime = (isoString: string | null) => {
-    if (!isoString) return "-";
-    const date = new Date(isoString);
-    return date.toLocaleString();
-  };
 
   return (
     <div className="space-y-6">
@@ -196,14 +167,14 @@ export default function AdminMentorVerificationQueuePage() {
           <div className="flex items-center gap-2">
             <button
               disabled={filters.page === 0}
-              onClick={() => handleFilterChange("page", filters.page - 1)}
+              onClick={() => handleFilterChange('page', filters.page - 1)}
               className="px-3 py-1.5 rounded-field border border-brand-border text-sm font-bold text-brand-text hover:bg-brand-bg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
             <button
               disabled={filters.page + 1 >= totalPages}
-              onClick={() => handleFilterChange("page", filters.page + 1)}
+              onClick={() => handleFilterChange('page', filters.page + 1)}
               className="px-3 py-1.5 rounded-field border border-brand-border text-sm font-bold text-brand-text hover:bg-brand-bg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next

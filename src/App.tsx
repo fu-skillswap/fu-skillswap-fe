@@ -65,6 +65,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
 
 {/* Admin Workspaces */}
+             <Route path="/admin" element={<Navigate to="/admin/metrics" replace />} />
              <Route path="/admin/metrics" element={<AdminMetrics />} />
              <Route path="/admin/users" element={<UserManagement />} />
              <Route path="/admin/verifications" element={<VerificationQueue />} />

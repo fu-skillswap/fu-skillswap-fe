@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, getPostLoginRedirect } from '../context/AuthContext';
 import { apiClient } from '../api/client';
 import { User, GraduationCap, School, Check, AlertCircle, FileText } from 'lucide-react';
 
@@ -161,8 +161,8 @@ export const CompleteProfile: React.FC = () => {
       if (!isDevBypass) {
         await apiClient.put('/api/me/student-profile', payload);
       }
-      await refreshUser();
-      navigate('/dashboard');
+      const updatedUser = await refreshUser();
+      navigate(updatedUser ? getPostLoginRedirect(updatedUser) : '/dashboard');
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu hồ sơ. Vui lòng thử lại.');

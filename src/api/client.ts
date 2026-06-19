@@ -8,6 +8,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  // Bắt buộc: backend set refreshToken vào HttpOnly Cookie (skillswap_refresh_token).
+  // FE không đọc/lưu refreshToken — phải gửi credentials để browser tự kèm cookie.
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -74,23 +77,18 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        isRefreshing = false;
-        // No refresh token available, logout or redirect
-        window.dispatchEvent(new Event('auth-logout'));
-        return Promise.reject(error);
-      }
-
       try {
-        const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
-          refreshToken,
-        });
+        // refreshToken nằm trong HttpOnly Cookie (skillswap_refresh_token) do BE set.
+        // FE không đọc/lưu refreshToken — không gửi body, browser tự kèm cookie nhờ withCredentials.
+        const response = await axios.post(
+          `${API_BASE_URL}/api/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
 
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
+        const { accessToken: newAccessToken } = response.data.data;
 
         localStorage.setItem('accessToken', newAccessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
 
         apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -103,7 +101,6 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         isRefreshing = false;
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         window.dispatchEvent(new Event('auth-logout'));
         return Promise.reject(refreshError);
       }
