@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   UserCheck, X, BarChart3, Users, FileCheck, Calendar,
-  ListTodo, Sliders, Bookmark, MessageSquare, Send, Home, User, ShieldCheck,
+  ListTodo, Bookmark, MessageSquare, Send, Home, User, ShieldCheck,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,46 +24,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
     }`;
 
-  const handlePostClick = () => {
-    onClose();
-    window.dispatchEvent(new CustomEvent('open-post-composer'));
-  };
+  const roles = user?.roles ?? [];
+  const isAdmin = roles.includes('ADMIN') || roles.includes('SYSTEM_ADMIN');
+  const isMentor = roles.includes('MENTOR');
 
-  const getNavLinks = () => {
-    const role = user?.roles?.[0] || 'MENTEE';
+  const adminLinks = [
+    { path: '/admin/metrics', label: 'Chỉ số hệ thống', icon: <BarChart3 className="w-5 h-5" /> },
+    { path: '/admin/users', label: 'Quản lý người dùng', icon: <Users className="w-5 h-5" /> },
+    { path: '/admin/verifications', label: 'Yêu cầu phê duyệt', icon: <FileCheck className="w-5 h-5" /> },
+  ];
 
-    if (role === 'ADMIN') {
-      return [
-        { path: '/admin/metrics', label: 'Chỉ số hệ thống', icon: <BarChart3 className="w-5 h-5" /> },
-        { path: '/admin/users', label: 'Quản lý người dùng', icon: <Users className="w-5 h-5" /> },
-        { path: '/admin/verifications', label: 'Yêu cầu phê duyệt', icon: <FileCheck className="w-5 h-5" /> },
-      ];
-    }
+  // Hồ sơ chuyên môn & xác thực mentor đã gộp vào tab "Hồ sơ Mentor" trong /profile,
+  // nên cả 2 vai trò đều chỉ cần 1 mục "Hồ sơ cá nhân" duy nhất.
+  const mentorLinks = [
+    { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
+    { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
+    { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
+    { path: '/mentor/slots', label: 'Khung giờ rảnh', icon: <Calendar className="w-5 h-5" /> },
+    { path: '/bookings', label: 'Lịch của tôi', icon: <ListTodo className="w-5 h-5" /> },
+    { path: '/mentor/verification', label: 'Xác thực Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
+    { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
+  ];
 
-    if (role === 'MENTOR') {
-      return [
-        { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
-        { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
-        { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
-        { path: '/mentor/slots', label: 'Khung giờ rảnh', icon: <Calendar className="w-5 h-5" /> },
-        { path: '/mentor/bookings', label: 'Lịch dạy của tôi', icon: <ListTodo className="w-5 h-5" /> },
-        { path: '/mentor/profile-setup', label: 'Cấu hình chuyên môn', icon: <Sliders className="w-5 h-5" /> },
-        { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
-      ];
-    }
+  const menteeLinks = [
+    { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
+    { path: '/mentors', label: 'Khám phá Mentor', icon: <UserCheck className="w-5 h-5" /> },
+    { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
+    { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
+    { path: '/bookings', label: 'Lịch của tôi', icon: <Bookmark className="w-5 h-5" /> },
+    { path: '/mentor/verification', label: 'Đăng ký Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
+    { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
+  ];
 
-    return [
-      { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
-      { path: '/mentors', label: 'Khám phá Mentor', icon: <UserCheck className="w-5 h-5" /> },
-      { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
-      { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
-      { path: '/mentee/bookings', label: 'Lịch học của tôi', icon: <Bookmark className="w-5 h-5" /> },
-      { path: '/mentor/verification', label: 'Xác thực Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
-      { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
-    ];
-  };
-
-  const navLinks = getNavLinks();
+  // Base nav theo vai trò hoạt động. Nếu là ADMIN, chỉ hiển thị các tab quản trị.
+  const navLinks = isAdmin ? adminLinks : (isMentor ? mentorLinks : menteeLinks);
 
   return (
     <>
@@ -82,8 +76,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="flex flex-col flex-1 min-h-0">
           {/* Logo */}
           <div className="flex items-center justify-between mb-8">
-            <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2.5 group text-left">
-              <img src="/SkillSwapLogo.png" alt="SkillSwap Logo" className="w-11 h-11 object-contain" />
+            <Link to={isAdmin ? "/admin" : "/dashboard"} onClick={onClose} className="flex items-center gap-2.5 group text-left">
+              <img src="/logo.svg" alt="SkillSwap Logo" className="w-11 h-11 object-contain" />
               <span className="text-head font-extrabold tracking-tight text-primary leading-none">SkillSwap</span>
             </Link>
             <button
@@ -102,15 +96,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <span>{link.label}</span>
               </Link>
             ))}
-
-            {user?.roles?.[0] !== 'ADMIN' && (
-              <button
-                onClick={handlePostClick}
-                className="w-full bg-action hover:bg-action-hover text-on-action rounded-pill py-3.5 px-4 text-body font-bold transition-all active:scale-95 cursor-pointer mt-5"
-              >
-                Đăng tin
-              </button>
-            )}
           </nav>
         </div>
 

@@ -4,8 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, MessageSquare, Sparkles, BookOpen, Send, Calendar,
   Heart, Share2, Image as ImageIcon, X, MoreHorizontal, Globe,
-  ChevronLeft, ChevronRight, MessageCircle, ChevronUp, ChevronDown,
+  ChevronLeft, ChevronRight, MessageCircle, ChevronUp, ChevronDown, Loader2,
 } from 'lucide-react';
+import { useImageUpload } from '../hooks/useImageUpload';
 
 interface RecommendedMentor {
   id: string; name: string; avatarUrl: string; major: string;
@@ -16,6 +17,7 @@ interface FeedPost {
   id: string; authorName: string; authorAvatar: string; authorRole: string;
   timeAgo: string; content: string; skills: string[];
   likesCount: number; commentsCount: number; hasLiked?: boolean; mentorId?: string;
+  imageUrl?: string;
 }
 
 export const Dashboard: React.FC = () => {
@@ -64,7 +66,18 @@ export const Dashboard: React.FC = () => {
 
   const stepperScrollRef = useRef<HTMLDivElement>(null);
   const composerInputRef = useRef<HTMLInputElement>(null);
+  const composerFileInputRef = useRef<HTMLInputElement>(null);
   const [chatsOpen, setChatsOpen] = useState(false);
+
+  // Đính kèm ảnh khi đăng tin: FE upload trực tiếp lên Cloudinary, lưu lại fileUrl để gắn vào bài đăng.
+  const composerImageUpload = useImageUpload({ usage: 'FORUM_POST' });
+
+  const handleComposerImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    await composerImageUpload.upload(file);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -76,16 +89,12 @@ export const Dashboard: React.FC = () => {
       setLoading(false);
     }, 400);
 
-    const handleFocusComposer = () => {
-      if (composerInputRef.current) composerInputRef.current.focus();
-    };
-    window.addEventListener('open-post-composer', handleFocusComposer);
-    return () => { clearTimeout(timer); window.removeEventListener('open-post-composer', handleFocusComposer); };
+    return () => { clearTimeout(timer); };
   }, []);
 
   const handleCreatePost = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!composerText.trim()) return;
+    if (!composerText.trim() && !composerImageUpload.result) return;
     const newPost: FeedPost = {
       id: `p_custom_${Date.now()}`,
       authorName: user?.fullName || 'Demo User',
@@ -93,9 +102,11 @@ export const Dashboard: React.FC = () => {
       authorRole: user?.roles?.[0] === 'MENTOR' ? 'Mentor học thuật' : 'Sinh viên (Mentee)',
       timeAgo: 'Vừa xong', content: composerText, skills: ['Thảo luận chéo'],
       likesCount: 0, commentsCount: 0, hasLiked: false,
+      imageUrl: composerImageUpload.result?.fileUrl,
     };
     setPosts([newPost, ...posts]);
     setComposerText('');
+    composerImageUpload.reset();
     setSuccessMsg('Đăng tin lên bảng tin cộng đồng thành công!');
     setTimeout(() => setSuccessMsg(null), 3000);
   };
@@ -148,7 +159,7 @@ export const Dashboard: React.FC = () => {
   const steps = [
     { icon: <BookOpen className="w-5 h-5" />, title: 'Bạn có chuyên môn học thuật?', desc: 'Cấu hình hồ sơ chuyên môn và giảng dạy để kết nối trao đổi chéo.', to: '/profile', cta: 'Bắt đầu ngay' },
     { icon: <Sparkles className="w-5 h-5" />, title: 'Tìm kiếm đề xuất phù hợp', desc: 'Xem danh mục Mentor rảnh trong campus được đề xuất riêng cho bạn.', to: '/mentors', cta: 'Khám phá' },
-    { icon: <Calendar className="w-5 h-5" />, title: 'Quản lý lịch hẹn học chéo', desc: 'Theo dõi yêu cầu rảnh và phê duyệt lịch hẹn từ bạn học ở Dashboard.', to: '/mentee/bookings', cta: 'Xem lịch hẹn' },
+    { icon: <Calendar className="w-5 h-5" />, title: 'Quản lý lịch hẹn học chéo', desc: 'Theo dõi yêu cầu rảnh và phê duyệt lịch hẹn từ bạn học ở Dashboard.', to: '/bookings', cta: 'Xem lịch hẹn' },
   ];
 
   const tabLabels: Record<string, string> = {
@@ -168,24 +179,49 @@ export const Dashboard: React.FC = () => {
         {/* ===== Feed column ===== */}
         <div className="lg:col-span-2 space-y-5">
           {/* Composer */}
-          <div className="ss-card rounded-card p-4 flex items-center gap-3.5">
-            {user && <img src={user.avatarUrl} alt={user.fullName} className="w-11 h-11 rounded-full object-cover shrink-0" />}
-            <div className="flex-1 bg-surface-muted rounded-pill py-3 px-5 flex items-center">
+          <div className="ss-card rounded-card p-4 space-y-3">
+            <div className="flex items-center gap-3.5">
+              {user && <img src={user.avatarUrl} alt={user.fullName} className="w-11 h-11 rounded-full object-cover shrink-0" />}
+              <div className="flex-1 bg-surface-muted rounded-pill py-3 px-5 flex items-center">
+                <input
+                  type="text" value={composerText} ref={composerInputRef}
+                  onChange={(e) => setComposerText(e.target.value)}
+                  placeholder="Có chuyện gì thế? Chia sẻ tin học tập..."
+                  className="bg-transparent border-none outline-none flex-1 text-body text-fg placeholder-fg-muted"
+                />
+              </div>
               <input
-                type="text" value={composerText} ref={composerInputRef}
-                onChange={(e) => setComposerText(e.target.value)}
-                placeholder="Có chuyện gì thế? Chia sẻ tin học tập..."
-                className="bg-transparent border-none outline-none flex-1 text-body text-fg placeholder-fg-muted"
+                type="file" accept="image/jpeg,image/png,image/webp,image/gif" ref={composerFileInputRef}
+                className="hidden" onChange={handleComposerImageChange}
               />
+              <button
+                type="button" title="Đính kèm ảnh" disabled={composerImageUpload.uploading}
+                onClick={() => composerFileInputRef.current?.click()}
+                className="p-3 bg-surface-muted hover:opacity-80 text-fg-muted rounded-field transition-all shrink-0 disabled:opacity-50"
+              >
+                {composerImageUpload.uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImageIcon className="w-5 h-5" />}
+              </button>
+              <button onClick={handleCreatePost}
+                className="bg-action hover:bg-action-hover text-on-action rounded-field px-6 py-3 text-body font-bold transition-all active:scale-95 cursor-pointer shrink-0">
+                Đăng tin
+              </button>
             </div>
-            <button type="button" onClick={() => alert('Chức năng đính kèm hình ảnh (Mockup)')} title="Đính kèm ảnh"
-              className="p-3 bg-surface-muted hover:opacity-80 text-fg-muted rounded-field transition-all shrink-0">
-              <ImageIcon className="w-5 h-5" />
-            </button>
-            <button onClick={handleCreatePost}
-              className="bg-action hover:bg-action-hover text-on-action rounded-field px-6 py-3 text-body font-bold transition-all active:scale-95 cursor-pointer shrink-0">
-              Đăng tin
-            </button>
+
+            {composerImageUpload.error && (
+              <p className="text-meta font-semibold text-red-600 pl-[3.7rem]">{composerImageUpload.error}</p>
+            )}
+
+            {composerImageUpload.result && (
+              <div className="relative inline-block pl-[3.7rem]">
+                <img src={composerImageUpload.result.fileUrl} alt="Ảnh đính kèm" className="h-24 rounded-field object-cover border border-line" />
+                <button
+                  type="button" onClick={() => composerImageUpload.reset()} title="Bỏ ảnh"
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-fg text-bg flex items-center justify-center shadow"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Filter pills */}
@@ -264,6 +300,10 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 <p className="text-body text-fg font-medium leading-relaxed whitespace-pre-line">{post.content}</p>
+
+                {post.imageUrl && (
+                  <img src={post.imageUrl} alt="Ảnh đính kèm bài đăng" className="w-full max-h-96 object-cover rounded-field border border-line" />
+                )}
 
                 <div className="flex flex-wrap gap-1.5">
                   {post.skills.map((s, idx) => (

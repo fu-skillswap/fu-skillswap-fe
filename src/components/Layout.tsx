@@ -11,6 +11,7 @@ export const Layout: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { user, logout } = useAuth();
+  const isAdmin = user?.roles.includes('ADMIN') || user?.roles.includes('SYSTEM_ADMIN');
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -44,29 +45,41 @@ export const Layout: React.FC = () => {
         <header className="hidden md:flex items-center bg-transparent h-18 px-6 lg:px-8 shrink-0">
           <div className="max-w-7xl mx-auto w-full flex lg:grid lg:grid-cols-3 gap-6 items-center">
             {/* Search aligns with the feed (center) column */}
-            <form onSubmit={handleSearchSubmit} className="relative flex-1 lg:col-span-2">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-faint" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={location.pathname.startsWith('/forum') ? 'Tìm kiếm chủ đề thảo luận...' : 'Tìm kiếm kỹ năng, mentor...'}
-                className="w-full bg-surface border border-line focus:border-primary/40 rounded-pill py-3 pl-12 pr-5 text-body font-semibold text-fg focus:outline-none transition-all placeholder-fg-faint shadow-card"
-              />
-            </form>
+            {isAdmin ? (
+              <div className="relative flex-1 lg:col-span-2 flex items-center h-full">
+                <span className="text-title font-extrabold tracking-tight text-primary bg-primary-soft/50 px-4 py-2 rounded-pill select-none">
+                  Hệ thống Quản trị SkillSwap
+                </span>
+              </div>
+            ) : (
+              <form onSubmit={handleSearchSubmit} className="relative flex-1 lg:col-span-2">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-faint" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={location.pathname.startsWith('/forum') ? 'Tìm kiếm chủ đề thảo luận...' : 'Tìm kiếm kỹ năng, mentor...'}
+                  className="w-full bg-surface border border-line focus:border-primary/40 rounded-pill py-3 pl-12 pr-5 text-body font-semibold text-fg focus:outline-none transition-all placeholder-fg-faint shadow-card"
+                />
+              </form>
+            )}
 
             {/* Right utilities sit over the widgets column */}
             <div className="flex items-center justify-end gap-3 lg:col-span-1">
               <ThemeSwitcher />
 
-            <Link to="/chat" title="Tin nhắn" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative">
-              <MessageSquare className="w-5 h-5" />
-            </Link>
+            {!isAdmin && (
+              <>
+                <Link to="/chat" title="Tin nhắn" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative">
+                  <MessageSquare className="w-5 h-5" />
+                </Link>
 
-            <button title="Thông báo" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative cursor-pointer">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-danger border-2 border-surface"></span>
-            </button>
+                <button title="Thông báo" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative cursor-pointer">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-danger border-2 border-surface"></span>
+                </button>
+              </>
+            )}
 
             {user && (
               <div className="relative" ref={dropdownRef}>
@@ -86,9 +99,11 @@ export const Layout: React.FC = () => {
                         {user.roles?.[0] || 'MENTEE'}
                       </span>
                     </div>
-                    <Link to="/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-primary transition-all">
-                      <User className="w-4.5 h-4.5" /><span>Hồ sơ cá nhân</span>
-                    </Link>
+                    {!isAdmin && (
+                      <Link to="/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-primary transition-all">
+                        <User className="w-4.5 h-4.5" /><span>Hồ sơ cá nhân</span>
+                      </Link>
+                    )}
                     <Link to="/settings" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-primary transition-all">
                       <Settings className="w-4.5 h-4.5" /><span>Cài đặt tài khoản</span>
                     </Link>
@@ -113,7 +128,7 @@ export const Layout: React.FC = () => {
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2.5">
-            <img src="/SkillSwapLogo.png" alt="SkillSwap Logo" className="w-8 h-8 object-contain" />
+            <img src="/logo.svg" alt="SkillSwap Logo" className="w-8 h-8 object-contain" />
             <span className="text-title font-bold tracking-tight text-primary">SkillSwap</span>
           </div>
           {user && <img src={user.avatarUrl} alt={user.fullName} className="w-8 h-8 rounded-full object-cover border border-line" />}

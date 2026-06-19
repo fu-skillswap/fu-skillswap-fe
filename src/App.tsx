@@ -20,12 +20,10 @@ import AdminMentorVerificationDetailPage from './app/admin/mentor-verification/[
 
 // Mentor Pages
 import { AvailabilitySlots } from './pages/mentor/AvailabilitySlots';
-import { MentorBookings } from './pages/mentor/MentorBookings';
-import { MentorSetupProfile } from './pages/mentor/MentorSetupProfile';
 import { MentorVerification } from './pages/mentor/MentorVerification';
 
-// Mentee Pages
-import { MenteeBookings } from './pages/MenteeBookings';
+// Lịch của tôi (hợp nhất mentor + mentee)
+import { MyBookings } from './pages/MyBookings';
 
 // Forum & Chat Pages
 import { Forum } from './pages/Forum';
@@ -74,12 +72,14 @@ function App() {
 
             {/* Mentor Workspaces */}
             <Route path="/mentor/slots" element={<AvailabilitySlots />} />
-            <Route path="/mentor/bookings" element={<MentorBookings />} />
-            <Route path="/mentor/profile-setup" element={<MentorSetupProfile />} />
+            {/* Hồ sơ + xác thực mentor đã gộp vào tab "Hồ sơ Mentor" trong /profile */}
+            <Route path="/mentor/profile-setup" element={<Navigate to="/profile" replace />} />
             <Route path="/mentor/verification" element={<MentorVerification />} />
 
-            {/* Mentee Workspaces */}
-            <Route path="/mentee/bookings" element={<MenteeBookings />} />
+            {/* Lịch của tôi (hợp nhất mentor + mentee) */}
+            <Route path="/bookings" element={<MyBookings />} />
+            <Route path="/mentor/bookings" element={<Navigate to="/bookings" replace />} />
+            <Route path="/mentee/bookings" element={<Navigate to="/bookings" replace />} />
 
             {/* Forum & Chat */}
             <Route path="/forum" element={<Forum />} />

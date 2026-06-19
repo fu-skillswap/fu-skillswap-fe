@@ -28,14 +28,34 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If logged in but profile is not completed
-  if (user && !user.profileCompleted && location.pathname !== '/complete-profile') {
+  const roles = user?.roles ?? [];
+  const isAdmin = roles.includes('ADMIN') || roles.includes('SYSTEM_ADMIN');
+
+  // If logged in but profile is not completed (only check for non-admin)
+  if (user && !isAdmin && !user.profileCompleted && location.pathname !== '/complete-profile') {
     return <Navigate to="/complete-profile" replace />;
   }
 
-  // If logged in and profile is already completed, prevent going back to complete-profile page
-  if (user && user.profileCompleted && location.pathname === '/complete-profile') {
-    return <Navigate to="/dashboard" replace />;
+  // If logged in and profile is already completed (or user is admin), prevent going back to complete-profile page
+  if (user && (isAdmin || user.profileCompleted) && location.pathname === '/complete-profile') {
+    return <Navigate to={isAdmin ? "/admin" : "/dashboard"} replace />;
+  }
+
+  // Role-based route guards
+  if (user) {
+    if (isAdmin) {
+      // Admin can only access routes starting with /admin and the /settings page
+      const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname === '/settings';
+      if (!isAdminRoute) {
+        return <Navigate to="/admin" replace />;
+      }
+    } else {
+      // Non-admin cannot access routes starting with /admin
+      const isAdminRoute = location.pathname.startsWith('/admin');
+      if (isAdminRoute) {
+        return <Navigate to={user.profileCompleted ? "/dashboard" : "/complete-profile"} replace />;
+      }
+    }
   }
 
   return children ? <>{children}</> : null;
