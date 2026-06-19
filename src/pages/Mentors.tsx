@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sparkles, Send, Calendar, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
 import type {
@@ -6,6 +6,7 @@ import type {
   MentorAvailabilitySlot, MentorServiceItem, MentorDetail,
 } from '../api/types';
 import { bookingsApi } from '../api/bookings';
+import { onAvatarError } from '../lib/img';
 
 // View-model gộp card + thông tin tương hợp (nếu có từ recommendations).
 interface MentorVM extends MentorCard {
@@ -27,8 +28,11 @@ export const Mentors: React.FC = () => {
   const [selectedSpecialization, setSelectedSpecialization] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [mentors, setMentors] = useState<MentorVM[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // chỉ hiện skeleton lần đầu
+  const [searching, setSearching] = useState(false);          // các lần tìm sau: giữ list cũ + spinner nhẹ
   const [loadError, setLoadError] = useState<string | null>(null);
+  const recMapRef = useRef<Map<string, MentorRecommendation>>(new Map());
+  const didInitRef = useRef(false);
 
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -50,20 +54,27 @@ export const Mentors: React.FC = () => {
   const [reviews, setReviews] = useState<MentorReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
-  // Tải danh sách mentor từ BE (search) + ghép matchScore/reasons từ recommendations.
+  // recommendations chỉ tải MỘT LẦN (dùng để ghép matchScore/reasons), không gọi lại mỗi lần gõ.
+  useEffect(() => {
+    mentorsApi.getRecommendations(12)
+      .then((recs) => {
+        const m = new Map<string, MentorRecommendation>();
+        recs.forEach((r) => r.mentor && m.set(r.mentor.mentorUserId, r));
+        recMapRef.current = m;
+      })
+      .catch(() => { /* không bắt buộc */ });
+  }, []);
+
+  // Tải danh sách mentor từ BE (search). Lần đầu -> skeleton; các lần sau -> giữ list cũ.
   const loadMentors = useCallback(async (keyword: string) => {
-    setLoading(true);
+    const firstLoad = !didInitRef.current;
+    if (firstLoad) setInitialLoading(true); else setSearching(true);
     setLoadError(null);
     try {
-      const [paged, recs] = await Promise.all([
-        mentorsApi.search({ keyword: keyword || undefined, size: 24 }),
-        mentorsApi.getRecommendations(12).catch(() => [] as MentorRecommendation[]),
-      ]);
-      const recMap = new Map<string, MentorRecommendation>();
-      recs.forEach((r) => r.mentor && recMap.set(r.mentor.mentorUserId, r));
+      const paged = await mentorsApi.search({ keyword: keyword || undefined, size: 24 });
       const cards = paged?.content ?? [];
       const merged: MentorVM[] = cards.map((c) => {
-        const rec = recMap.get(c.mentorUserId);
+        const rec = recMapRef.current.get(c.mentorUserId);
         return { ...c, matchScore: rec?.matchScore, matchReasons: rec?.matchReasons };
       });
       setMentors(merged);
@@ -72,13 +83,16 @@ export const Mentors: React.FC = () => {
       setLoadError(err?.response?.data?.message || 'Không tải được danh sách mentor. Vui lòng thử lại.');
       setMentors([]);
     } finally {
-      setLoading(false);
+      didInitRef.current = true;
+      setInitialLoading(false);
+      setSearching(false);
     }
   }, []);
 
-  // Debounce keyword -> gọi search server-side.
+  // Debounce keyword -> gọi search server-side (lần đầu chạy ngay, không trễ).
   useEffect(() => {
-    const t = setTimeout(() => loadMentors(searchQuery.trim()), 350);
+    const delay = didInitRef.current ? 350 : 0;
+    const t = setTimeout(() => loadMentors(searchQuery.trim()), delay);
     return () => clearTimeout(t);
   }, [searchQuery, loadMentors]);
 
@@ -196,8 +210,9 @@ export const Mentors: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm kiếm theo tên hoặc từ khóa kỹ năng (React, Python...)..."
-            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 pl-10 pr-4 text-body text-brand-text focus:outline-none focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta transition-all font-semibold"
+            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 pl-10 pr-10 text-body text-brand-text focus:outline-none focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta transition-all font-semibold"
           />
+          {searching && <Loader2 className="absolute right-3.5 top-3.5 w-4 h-4 text-brand-terracotta animate-spin" />}
         </div>
 
         {/* Specialization Filter */}
@@ -239,7 +254,7 @@ export const Mentors: React.FC = () => {
       )}
 
       {/* Grid Mentors */}
-      {loading ? (
+      {initialLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="meetmind-card h-64 animate-pulse"></div>
@@ -252,7 +267,7 @@ export const Mentors: React.FC = () => {
           <p className="text-brand-text-muted text-body font-semibold">Vui lòng điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-150 ${searching ? 'opacity-60' : 'opacity-100'}`}>
           {filteredMentors.map((m) => {
             const skills = skillsOf(m);
             return (
@@ -266,6 +281,7 @@ export const Mentors: React.FC = () => {
                   <div className="flex items-start gap-4">
                     <img
                       src={m.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                      onError={onAvatarError}
                       alt={m.displayName}
                       className="w-14 h-14 rounded-card bg-brand-bg object-cover border border-brand-border"
                     />
@@ -424,6 +440,7 @@ export const Mentors: React.FC = () => {
                       <div className="flex items-center gap-2.5">
                         <img
                           src={rev.reviewerAvatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                          onError={onAvatarError}
                           alt={rev.reviewerDisplayName}
                           className="w-8 h-8 rounded-lg border border-brand-border"
                         />
@@ -503,6 +520,7 @@ export const Mentors: React.FC = () => {
                 <div className="flex items-center gap-3 p-3 bg-brand-bg border border-brand-border rounded-card text-left">
                   <img
                     src={activeMentor.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                    onError={onAvatarError}
                     alt={activeMentor.displayName}
                     className="w-10 h-10 rounded-field border border-brand-border"
                   />

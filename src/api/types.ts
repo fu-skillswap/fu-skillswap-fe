@@ -47,7 +47,28 @@ export interface AcademicProgram { id: string; code: string; nameVi: string; nam
 export interface Specialization { id: string; programId: string; code: string; nameVi: string; nameEn?: string; }
 
 // ---------- Student profile ----------
+/**
+ * GET /api/me/student-profile — khớp StudentProfileResponse: campus/program/
+ * specialization là OBJECT lồng (không phải *Id phẳng).
+ */
 export interface StudentProfile {
+  userId?: string;
+  email?: string;
+  studentCode: string;
+  displayName: string;
+  avatarUrl?: string;
+  campus?: Campus;
+  program?: AcademicProgram;
+  specialization?: Specialization;
+  semester: number;
+  intakeYear: number;
+  graduationYear?: number | null;
+  bio?: string;
+  alumni?: boolean;
+}
+
+/** PUT /api/me/student-profile — khớp StudentProfileRequest: dùng *Id phẳng. */
+export interface StudentProfilePayload {
   studentCode: string;
   displayName: string;
   avatarUrl?: string;
@@ -60,16 +81,18 @@ export interface StudentProfile {
   graduationYear?: number | null;
   bio?: string;
 }
-export type StudentProfilePayload = StudentProfile;
 
 // ---------- Mentor profile (flat endpoint GET/PUT /api/me/mentor-profile) ----------
 export type TeachingMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
 export type SessionDuration = 15 | 30 | 60 | 90;
 
+/** Khớp HelpTopicResponse của BE (nameVi/nameEn, không phải `name`). */
 export interface HelpTopic {
   id: string;
   code?: string;
-  name: string;
+  nameVi: string;
+  nameEn?: string;
+  weight?: number;
 }
 
 export interface MentorProfilePayload {
@@ -80,12 +103,30 @@ export interface MentorProfilePayload {
   helpTopicIds: string[]; // required, 1-20 items, no duplicates
   teachingMode: TeachingMode;
   sessionDuration: SessionDuration;
+  phoneNumber: string; // BẮT BUỘC, pattern ^(0)(3|5|7|8|9)[0-9]{8}$
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
 }
 
-export type MentorProfile = MentorProfilePayload;
+/** GET/PUT /api/me/mentor-profile trả MentorProfileResponse: helpTopics là mảng tag. */
+export interface MentorProfileResponse {
+  exists?: boolean;
+  requiredFieldsCompleted?: boolean;
+  headline?: string;
+  expertiseDescription?: string;
+  supportingSubjects?: string;
+  isAvailable?: boolean;
+  helpTopics?: MentorTag[];
+  teachingMode?: TeachingMode;
+  sessionDuration?: SessionDuration;
+  phoneNumber?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+}
+
+export type MentorProfile = MentorProfileResponse;
 
 // ---------- Mentor verification ----------
 export type VerificationStatus =

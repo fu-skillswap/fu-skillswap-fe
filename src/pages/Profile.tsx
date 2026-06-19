@@ -121,15 +121,16 @@ export const Profile: React.FC = () => {
         try {
           const data = await studentProfileApi.get();
           if (data) {
+            // BE trả campus/program/specialization là object lồng (StudentProfileResponse).
             setStudentCode(data.studentCode || '');
             setDisplayName(data.displayName || user?.fullName || '');
             setAvatarUrl(data.avatarUrl || user?.avatarUrl || '');
-            setSelectedCampus(data.campusId || '');
-            setSelectedProgram(data.programId || '');
-            setSelectedSpecialization(data.specializationId || '');
+            setSelectedCampus(data.campus?.id || '');
+            setSelectedProgram(data.program?.id || '');
+            setSelectedSpecialization(data.specialization?.id || '');
             setSemester(data.semester || 1);
             setIntakeYear(data.intakeYear || 2022);
-            setIsAlumni(data.isAlumni || false);
+            setIsAlumni(data.alumni || false);
             setGraduationYear(data.graduationYear || 2026);
             setBio(data.bio || '');
           }

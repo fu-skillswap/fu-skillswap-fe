@@ -3,6 +3,7 @@ import {
   Bookmark, Calendar, Clock, Video, Check, X, Star, MessageSquare, Smile, Loader2, AlertCircle,
 } from 'lucide-react';
 import { bookingsApi } from '../api/bookings';
+import { onAvatarError } from '../lib/img';
 import type { Booking, BookingStatus, MeetingPlatform } from '../api/types';
 
 /* ---------------------------------------------------------------------------
@@ -309,6 +310,7 @@ export const MyBookings: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <img
                           src={b.menteeAvatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                          onError={onAvatarError}
                           alt={b.menteeDisplayName}
                           className="w-9 h-9 rounded-field object-cover border border-brand-border"
                         />
@@ -407,6 +409,7 @@ export const MyBookings: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <img
                             src={b.mentorAvatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                            onError={onAvatarError}
                             alt={b.mentorDisplayName}
                             className="w-10 h-10 rounded-field object-cover border border-brand-border"
                           />

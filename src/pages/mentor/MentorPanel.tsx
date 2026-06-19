@@ -9,8 +9,11 @@ import { mentorVerificationApi } from '../../api/mentorVerification';
 import { mentorProfileApi, helpTopicApi } from '../../api/mentorProfile';
 import type {
   VerificationRequest, VerificationStatus, DocumentType,
-  HelpTopic, TeachingMode, SessionDuration,
+  HelpTopic, TeachingMode, SessionDuration, MentorProfileResponse,
 } from '../../api/types';
+
+// SĐT VN — BE bắt buộc field này khi lưu hồ sơ mentor.
+const PHONE_RE = /^(0)(3|5|7|8|9)[0-9]{8}$/;
 
 // ---------------------------------------------------------------------------
 // Cấu hình hiển thị
@@ -128,6 +131,7 @@ export const MentorPanel: React.FC = () => {
   const [helpTopicIds, setHelpTopicIds] = useState<string[]>([]);
   const [teachingMode, setTeachingMode] = useState<TeachingMode>('ONLINE');
   const [sessionDuration, setSessionDuration] = useState<SessionDuration>(60);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
@@ -146,14 +150,16 @@ export const MentorPanel: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 3000); };
 
-  const fillProfileForm = (p: { headline?: string; expertiseDescription?: string; supportingSubjects?: string; isAvailable?: boolean; helpTopicIds?: string[]; teachingMode?: TeachingMode; sessionDuration?: SessionDuration; linkedinUrl?: string; githubUrl?: string; portfolioUrl?: string }) => {
+  const fillProfileForm = (p: MentorProfileResponse) => {
     setHeadline(p.headline ?? '');
     setExpertiseDescription(p.expertiseDescription ?? '');
     setSupportingSubjects(p.supportingSubjects ?? '');
     setIsAvailable(p.isAvailable ?? true);
-    setHelpTopicIds(p.helpTopicIds ?? []);
+    // BE trả helpTopics (mảng tag), map về danh sách id để binding chip.
+    setHelpTopicIds((p.helpTopics ?? []).map((t) => t.id));
     setTeachingMode(p.teachingMode ?? 'ONLINE');
     setSessionDuration(p.sessionDuration ?? 60);
+    setPhoneNumber(p.phoneNumber ?? '');
     setLinkedinUrl(p.linkedinUrl ?? '');
     setGithubUrl(p.githubUrl ?? '');
     setPortfolioUrl(p.portfolioUrl ?? '');
@@ -209,6 +215,7 @@ export const MentorPanel: React.FC = () => {
     if (supportingSubjects.length > SUPPORTING_MAX) return `Môn học hỗ trợ tối đa ${SUPPORTING_MAX} ký tự.`;
     if (helpTopicIds.length === 0) return 'Vui lòng chọn ít nhất 1 chủ đề hỗ trợ.';
     if (helpTopicIds.length > HELP_TOPICS_MAX) return `Chỉ được chọn tối đa ${HELP_TOPICS_MAX} chủ đề.`;
+    if (!PHONE_RE.test(phoneNumber.trim())) return 'Vui lòng nhập số điện thoại Việt Nam hợp lệ (VD: 0901234567).';
     return null;
   };
 
@@ -220,6 +227,7 @@ export const MentorPanel: React.FC = () => {
     helpTopicIds,
     teachingMode,
     sessionDuration,
+    phoneNumber: phoneNumber.trim(),
     linkedinUrl: linkedinUrl || undefined,
     githubUrl: githubUrl || undefined,
     portfolioUrl: portfolioUrl || undefined,
@@ -444,6 +452,12 @@ export const MentorPanel: React.FC = () => {
               placeholder="Ví dụ: PRJ301, SWP391, EXE101..."
               className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
           </div>
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Số điện thoại liên hệ <span className="text-danger">*</span></label>
+            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="VD: 0901234567"
+              className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+          </div>
           <label className="flex items-center gap-2 text-meta font-bold text-fg-muted cursor-pointer">
             <input type="checkbox" checked={isAvailable} onChange={(e) => setIsAvailable(e.target.checked)} className="cursor-pointer w-4 h-4 accent-[var(--primary)]" />
             Đang nhận mentee mới
@@ -471,7 +485,7 @@ export const MentorPanel: React.FC = () => {
               return (
                 <button key={topic.id} onClick={() => toggleHelpTopic(topic.id)}
                   className={`text-meta font-bold py-1.5 px-3 rounded-lg border transition-all cursor-pointer ${isSelected ? 'bg-primary-soft text-primary border-primary/25' : 'bg-surface border-line text-fg-muted hover:bg-surface-muted'}`}>
-                  {topic.name}
+                  {topic.nameVi}
                 </button>
               );
             })}
@@ -542,7 +556,7 @@ export const MentorPanel: React.FC = () => {
                 {resolvedHelpTopics.map((t) => (
                   <div key={t.id} className="flex items-center gap-3 p-3 rounded-field border border-line bg-surface-muted/40">
                     <div className="w-9 h-9 rounded-field bg-accent/12 text-accent flex items-center justify-center shrink-0"><Lightbulb className="w-4 h-4" /></div>
-                    <p className="text-body font-bold text-fg">{t.name}</p>
+                    <p className="text-body font-bold text-fg">{t.nameVi}</p>
                   </div>
                 ))}
               </div>

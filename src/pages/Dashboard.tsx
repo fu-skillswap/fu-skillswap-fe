@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useImageUpload } from '../hooks/useImageUpload';
 import { studentProfileApi } from '../api/studentProfile';
-import { catalogApi } from '../api/catalog';
 import type { StudentProfile } from '../api/types';
 
 // LƯU Ý: Bảng tin cộng đồng (feed) và khung chat dưới đây vẫn dùng dữ liệu mẫu
@@ -25,31 +24,16 @@ export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // ----- Hồ sơ học viên thật -----
+  // ----- Hồ sơ học viên thật (BE trả campus/program là object lồng) -----
   const [profile, setProfile] = useState<StudentProfile | null>(null);
-  const [campusName, setCampusName] = useState('');
-  const [programName, setProgramName] = useState('');
+  const campusName = profile?.campus?.name || '';
+  const programName = profile?.program?.nameVi || '';
 
   useEffect(() => {
     let active = true;
-    const loadProfile = async () => {
-      try {
-        const [p, campuses, programs] = await Promise.all([
-          studentProfileApi.get().catch(() => null),
-          catalogApi.getCampuses().catch(() => []),
-          catalogApi.getPrograms().catch(() => []),
-        ]);
-        if (!active) return;
-        setProfile(p);
-        if (p) {
-          setCampusName(campuses.find((c) => c.id === p.campusId)?.name || '');
-          setProgramName(programs.find((pr) => pr.id === p.programId)?.nameVi || '');
-        }
-      } catch (err) {
-        console.warn('Không tải được hồ sơ học viên', err);
-      }
-    };
-    loadProfile();
+    studentProfileApi.get()
+      .then((p) => { if (active) setProfile(p); })
+      .catch((err) => console.warn('Không tải được hồ sơ học viên', err));
     return () => { active = false; };
   }, []);
 

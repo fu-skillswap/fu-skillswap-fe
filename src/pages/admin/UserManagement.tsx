@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Ban, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { adminUsersApi } from '../../api/adminUsers';
+import { onAvatarError } from '../../lib/img';
 import type { SystemUser } from '../../api/types';
 
 const fmtDate = (iso?: string) => {
@@ -175,7 +176,7 @@ export const UserManagement: React.FC = () => {
                       <td className="py-4 px-6 font-bold text-brand-text">
                         <div className="flex items-center gap-2">
                           {u.avatarUrl ? (
-                            <img src={u.avatarUrl} alt={u.fullName} className="w-8 h-8 rounded-full border border-brand-border object-cover" />
+                            <img src={u.avatarUrl} onError={onAvatarError} alt={u.fullName} className="w-8 h-8 rounded-full border border-brand-border object-cover" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-brand-bg border border-brand-border flex items-center justify-center font-bold text-meta text-brand-terracotta">
                               {u.fullName?.charAt(0) || '?'}
