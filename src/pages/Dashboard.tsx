@@ -148,7 +148,7 @@ export const Dashboard: React.FC = () => {
   const steps = [
     { icon: <BookOpen className="w-5 h-5" />, title: 'Bạn có chuyên môn học thuật?', desc: 'Cấu hình hồ sơ chuyên môn và giảng dạy để kết nối trao đổi chéo.', to: '/profile', cta: 'Bắt đầu ngay' },
     { icon: <Sparkles className="w-5 h-5" />, title: 'Tìm kiếm đề xuất phù hợp', desc: 'Xem danh mục Mentor rảnh trong campus được đề xuất riêng cho bạn.', to: '/mentors', cta: 'Khám phá' },
-    { icon: <Calendar className="w-5 h-5" />, title: 'Quản lý lịch hẹn học chéo', desc: 'Theo dõi yêu cầu rảnh và phê duyệt lịch hẹn từ bạn học ở Dashboard.', to: '/mentee/bookings', cta: 'Xem lịch hẹn' },
+    { icon: <Calendar className="w-5 h-5" />, title: 'Quản lý lịch hẹn học chéo', desc: 'Theo dõi yêu cầu rảnh và phê duyệt lịch hẹn từ bạn học ở Dashboard.', to: '/bookings', cta: 'Xem lịch hẹn' },
   ];
 
   const tabLabels: Record<string, string> = {

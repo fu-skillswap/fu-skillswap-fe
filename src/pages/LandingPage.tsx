@@ -44,7 +44,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <img src="/SkillSwapLogo.png" alt="SkillSwap Logo" className="w-11 h-11 object-contain" />
+            <img src="/logo.svg" alt="SkillSwap Logo" className="w-11 h-11 object-contain" />
             <span className="text-lg font-bold tracking-tight text-brand-primary">
               SkillSwap
             </span>
@@ -440,7 +440,7 @@ export const LandingPage: React.FC = () => {
           
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <img src="/SkillSwapLogo.png" alt="SkillSwap Logo" className="w-10 h-10 object-contain brightness-0 invert" />
+              <img src="/logo.svg" alt="SkillSwap Logo" className="w-10 h-10 object-contain brightness-0 invert" />
               <span className="text-base font-bold text-white">
                 SkillSwap
               </span>
