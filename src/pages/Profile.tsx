@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/client';
-import { Check, AlertCircle, User, Award, UploadCloud, FileText, ChevronRight, Clock, X } from 'lucide-react';
+import { Check, AlertCircle, User, Award, UploadCloud, FileText, ChevronRight, Clock, X, Camera, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useImageUpload } from '../hooks/useImageUpload';
 
 interface Campus {
   id: string;
@@ -70,6 +71,19 @@ export const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Upload ảnh đại diện: FE upload trực tiếp lên Cloudinary, rồi lưu fileUrl vào avatarUrl.
+  const avatarUpload = useImageUpload({ usage: 'AVATAR' });
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const uploaded = await avatarUpload.upload(file);
+    if (uploaded) {
+      setAvatarUrl(uploaded.fileUrl);
+    }
+  };
 
   // Fallback demo data
   const fallbackCampuses = [
@@ -351,7 +365,30 @@ export const Profile: React.FC = () => {
               alt={displayName}
               className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-white ring-4 ring-brand-terracotta/15"
             />
+            <label
+              htmlFor="avatar-upload-input"
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-brand-terracotta text-white flex items-center justify-center cursor-pointer shadow-md hover:bg-brand-terracotta/90 transition-all"
+              title="Đổi ảnh đại diện"
+            >
+              {avatarUpload.uploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+            </label>
+            <input
+              id="avatar-upload-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              disabled={avatarUpload.uploading}
+              onChange={handleAvatarChange}
+            />
           </div>
+
+          {avatarUpload.error && (
+            <p className="text-meta font-semibold text-red-600 mb-2">{avatarUpload.error}</p>
+          )}
 
           <h2 className="text-xl font-bold text-brand-text tracking-tight">{displayName || user?.fullName}</h2>
           <p className="text-brand-text-muted text-body font-semibold mt-1">{user?.email}</p>

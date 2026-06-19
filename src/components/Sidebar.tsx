@@ -24,11 +24,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
     }`;
 
-  const handlePostClick = () => {
-    onClose();
-    window.dispatchEvent(new CustomEvent('open-post-composer'));
-  };
-
   const roles = user?.roles ?? [];
   const isAdmin = roles.includes('ADMIN');
   const isMentor = roles.includes('MENTOR');
@@ -100,13 +95,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <span>{link.label}</span>
               </Link>
             ))}
-
-            <button
-              onClick={handlePostClick}
-              className="w-full bg-action hover:bg-action-hover text-on-action rounded-pill py-3.5 px-4 text-body font-bold transition-all active:scale-95 cursor-pointer mt-5"
-            >
-              Đăng tin
-            </button>
 
             {isAdmin && (
               <>
