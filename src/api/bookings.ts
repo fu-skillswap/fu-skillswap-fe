@@ -1,0 +1,62 @@
+// =====================================================================
+// src/api/bookings.ts — Booking lifecycle (mentee đặt + mentor xử lý) (4.9/4.10)
+// =====================================================================
+import { http } from './http';
+import type {
+  Booking, CreateBookingPayload, SubmitFeedbackPayload, MyBookingsParams,
+  MeetingPlatform, Paged,
+} from './types';
+
+export const bookingsApi = {
+  /** POST /api/bookings — mentee tạo yêu cầu đặt lịch */
+  create: (payload: CreateBookingPayload) =>
+    http.post<Booking>('/api/bookings', payload),
+
+  /** GET /api/me/bookings — danh sách booking của tôi (lọc theo role/status) */
+  listMine: (params: MyBookingsParams = {}) =>
+    http.get<Paged<Booking>>('/api/me/bookings', {
+      params: {
+        role: params.role || undefined,
+        status: params.status || undefined,
+        page: params.page ?? 0,
+        size: params.size ?? 50,
+        sortBy: params.sortBy || undefined,
+        direction: params.direction || undefined,
+      },
+    }),
+
+  /** GET /api/me/bookings/{bookingId} */
+  getById: (bookingId: string) =>
+    http.get<Booking>(`/api/me/bookings/${bookingId}`),
+
+  /** POST /api/me/bookings/{bookingId}/cancel — mentee huỷ */
+  cancel: (bookingId: string, cancelReason?: string) =>
+    http.post<Booking>(`/api/me/bookings/${bookingId}/cancel`, { cancelReason }),
+
+  /** POST /api/me/bookings/{bookingId}/complete — đánh dấu hoàn tất */
+  complete: (bookingId: string, completionNote?: string) =>
+    http.post<Booking>(`/api/me/bookings/${bookingId}/complete`, { completionNote }),
+
+  /** POST /api/bookings/{bookingId}/feedback — mentee gửi đánh giá sau buổi học */
+  submitFeedback: (bookingId: string, payload: SubmitFeedbackPayload) =>
+    http.post<unknown>(`/api/bookings/${bookingId}/feedback`, payload),
+
+  // -------------------- mentor side --------------------
+  /** POST /api/mentor/bookings/{bookingId}/accept */
+  accept: (bookingId: string, mentorResponseNote?: string) =>
+    http.post<Booking>(`/api/mentor/bookings/${bookingId}/accept`, { mentorResponseNote }),
+
+  /** POST /api/mentor/bookings/{bookingId}/reject */
+  reject: (bookingId: string, rejectReason: string, mentorResponseNote?: string) =>
+    http.post<Booking>(`/api/mentor/bookings/${bookingId}/reject`, { rejectReason, mentorResponseNote }),
+
+  /** POST /api/mentor/bookings/{bookingId}/cancel — mentor huỷ buổi đã nhận */
+  mentorCancel: (bookingId: string, cancelReason?: string) =>
+    http.post<Booking>(`/api/mentor/bookings/${bookingId}/cancel`, { cancelReason }),
+
+  /** PATCH /api/mentor/bookings/{bookingId}/meeting-link — gắn link/địa điểm họp */
+  saveMeetingLink: (
+    bookingId: string,
+    body: { meetingPlatform: MeetingPlatform; meetingLink?: string; location?: string },
+  ) => http.patch<Booking>(`/api/mentor/bookings/${bookingId}/meeting-link`, body),
+};

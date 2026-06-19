@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (
   typeof window !== 'undefined' && window.location.protocol === 'https:'
     ? ''
-    : 'http://103.200.23.169:8080'
+    : 'https://api.skillswap.asia'
 );
 
 export const apiClient = axios.create({

@@ -1,55 +1,76 @@
-import { useState } from 'react';
-import { Search, Ban, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Ban, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { adminUsersApi } from '../../api/adminUsers';
+import type { SystemUser } from '../../api/types';
 
-interface ManagedUser {
-  id: string;
-  name: string;
-  email: string;
-  campus: string;
-  role: 'MENTEE' | 'MENTOR' | 'ADMIN';
-  status: 'ACTIVE' | 'BANNED';
-  profileCompleted: boolean;
-}
+const fmtDate = (iso?: string) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('vi-VN');
+};
 
 export const UserManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
-  const [users, setUsers] = useState<ManagedUser[]>([
-    { id: '1', name: 'Trần Hoàng Long', email: 'longth.se18@fpt.edu.vn', campus: 'HCM', role: 'MENTOR', status: 'ACTIVE', profileCompleted: true },
-    { id: '2', name: 'Lê Minh Hương', email: 'huonglm.se19@fpt.edu.vn', campus: 'HCM', role: 'MENTOR', status: 'ACTIVE', profileCompleted: true },
-    { id: '3', name: 'Nguyễn Tiến Đạt', email: 'datnt.ia19@fpt.edu.vn', campus: 'HCM', role: 'MENTEE', status: 'ACTIVE', profileCompleted: true },
-    { id: '4', name: 'Phạm Thùy Linh', email: 'linhpt.ba18@fpt.edu.vn', campus: 'HA_NOI', role: 'MENTOR', status: 'ACTIVE', profileCompleted: true },
-    { id: '5', name: 'Nguyễn Hoàng Nam', email: 'namnh.gd19@fpt.edu.vn', campus: 'HCM', role: 'MENTEE', status: 'ACTIVE', profileCompleted: true },
-    { id: '6', name: 'Nguyễn Văn Hùng', email: 'hungnv.se18@fpt.edu.vn', campus: 'DA_NANG', role: 'MENTEE', status: 'BANNED', profileCompleted: false },
-  ]);
+  const [users, setUsers] = useState<SystemUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const handleToggleStatus = (userId: string) => {
-    setUsers(
-      users.map((u) => {
-        if (u.id === userId) {
-          const newStatus = u.status === 'ACTIVE' ? 'BANNED' : 'ACTIVE';
-          return { ...u, status: newStatus };
-        }
-        return u;
-      })
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const paged = await adminUsersApi.listUsers({ size: 100 });
+      setUsers(paged?.content ?? []);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Không tải được danh sách người dùng.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleToggleStatus = async (u: SystemUser) => {
+    const banning = u.status !== 'BANNED';
+    const reason = window.prompt(
+      banning ? 'Lý do khoá tài khoản này:' : 'Lý do mở khoá tài khoản này:',
+      banning ? 'Vi phạm quy định cộng đồng' : 'Đã xác minh lại',
     );
+    if (reason === null) return; // huỷ
+    setBusyId(u.userId);
+    try {
+      if (banning) await adminUsersApi.ban(u.userId, reason || 'N/A');
+      else await adminUsersApi.unban(u.userId, reason || undefined);
+      await load();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Thao tác thất bại.');
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesRole = selectedRole === 'ALL' || u.role === selectedRole;
+      u.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = selectedRole === 'ALL' || (u.roles || []).includes(selectedRole);
     const matchesStatus = selectedStatus === 'ALL' || u.status === selectedStatus;
-
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  const primaryRole = (u: SystemUser) => {
+    const r = u.roles || [];
+    if (r.includes('ADMIN') || r.includes('SYSTEM_ADMIN')) return 'ADMIN';
+    if (r.includes('MENTOR')) return 'MENTOR';
+    return 'MENTEE';
+  };
+
   return (
     <div className="space-y-6 text-left">
-      
+
       {/* Title */}
       <div className="space-y-1">
         <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight">
@@ -60,9 +81,16 @@ export const UserManagement: React.FC = () => {
         </p>
       </div>
 
+      {error && (
+        <div className="flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-card text-body font-semibold">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* Filter Controls */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface border border-brand-border p-4 rounded-card shadow-sm">
-        
+
         {/* Search */}
         <div className="relative md:col-span-2">
           <Search className="absolute left-3.5 top-3 w-4 h-4 text-brand-grey" />
@@ -70,7 +98,7 @@ export const UserManagement: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo tên hoặc email học sinh..."
+            placeholder="Tìm theo tên hoặc email..."
             className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 pl-10 pr-4 text-body text-brand-text focus:outline-none focus:border-brand-terracotta transition-all"
           />
         </div>
@@ -99,6 +127,7 @@ export const UserManagement: React.FC = () => {
             <option value="ALL">Tất cả trạng thái</option>
             <option value="ACTIVE">Đang hoạt động</option>
             <option value="BANNED">Đang khóa (Banned)</option>
+            <option value="INACTIVE">Chưa kích hoạt</option>
           </select>
         </div>
 
@@ -108,15 +137,14 @@ export const UserManagement: React.FC = () => {
       <div className="meetmind-card rounded-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-body text-left border-collapse">
-            
+
             {/* Headers */}
             <thead>
               <tr className="bg-brand-bg border-b border-brand-border text-brand-text-muted font-bold text-meta uppercase tracking-wider">
                 <th className="py-4 px-6">Họ và tên</th>
-                <th className="py-4 px-4">Email sinh viên</th>
-                <th className="py-4 px-4">Cơ sở FPT</th>
+                <th className="py-4 px-4">Email</th>
                 <th className="py-4 px-4">Vai trò</th>
-                <th className="py-4 px-4">Hồ sơ</th>
+                <th className="py-4 px-4">Đăng nhập gần nhất</th>
                 <th className="py-4 px-4">Trạng thái</th>
                 <th className="py-4 px-6 text-right">Thao tác</th>
               </tr>
@@ -124,84 +152,92 @@ export const UserManagement: React.FC = () => {
 
             {/* Rows */}
             <tbody className="divide-y divide-brand-border">
-              {filteredUsers.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-brand-text-muted font-semibold">
-                    Không tìm thấy tài khoản sinh viên nào
+                  <td colSpan={6} className="py-12 text-center">
+                    <Loader2 className="w-7 h-7 animate-spin text-brand-terracotta mx-auto" />
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-brand-text-muted font-semibold">
+                    Không tìm thấy tài khoản nào
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-brand-bg/20 transition-colors">
-                    
-                    {/* Name */}
-                    <td className="py-4 px-6 font-bold text-brand-text flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-brand-bg border border-brand-border flex items-center justify-center font-bold text-meta text-brand-terracotta">
-                        {u.name.charAt(0)}
-                      </div>
-                      <span>{u.name}</span>
-                    </td>
+                filteredUsers.map((u) => {
+                  const role = primaryRole(u);
+                  const isBanned = u.status === 'BANNED';
+                  return (
+                    <tr key={u.userId} className="hover:bg-brand-bg/20 transition-colors">
 
-                    {/* Email */}
-                    <td className="py-4 px-4 font-semibold text-brand-text-muted">{u.email}</td>
+                      {/* Name */}
+                      <td className="py-4 px-6 font-bold text-brand-text">
+                        <div className="flex items-center gap-2">
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt={u.fullName} className="w-8 h-8 rounded-full border border-brand-border object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-brand-bg border border-brand-border flex items-center justify-center font-bold text-meta text-brand-terracotta">
+                              {u.fullName?.charAt(0) || '?'}
+                            </div>
+                          )}
+                          <span>{u.fullName}</span>
+                        </div>
+                      </td>
 
-                    {/* Campus */}
-                    <td className="py-4 px-4 font-bold text-brand-blue">{u.campus}</td>
+                      {/* Email */}
+                      <td className="py-4 px-4 font-semibold text-brand-text-muted">{u.email}</td>
 
-                    {/* Role */}
-                    <td className="py-4 px-4">
-                      <span className={`inline-block text-meta font-extrabold px-2 py-0.5 rounded-md uppercase border ${
-                        u.role === 'ADMIN'
-                          ? 'bg-brand-sidebar/10 text-brand-sidebar border-brand-sidebar/20'
-                          : u.role === 'MENTOR'
-                          ? 'bg-brand-terracotta/10 text-brand-terracotta border-brand-terracotta/20'
-                          : 'bg-brand-blue/10 text-brand-blue border-brand-blue/20'
-                      }`}>
-                        {u.role}
-                      </span>
-                    </td>
+                      {/* Role */}
+                      <td className="py-4 px-4">
+                        <span className={`inline-block text-meta font-extrabold px-2 py-0.5 rounded-md uppercase border ${
+                          role === 'ADMIN'
+                            ? 'bg-brand-sidebar/10 text-brand-sidebar border-brand-sidebar/20'
+                            : role === 'MENTOR'
+                            ? 'bg-brand-terracotta/10 text-brand-terracotta border-brand-terracotta/20'
+                            : 'bg-brand-blue/10 text-brand-blue border-brand-blue/20'
+                        }`}>
+                          {role}
+                        </span>
+                      </td>
 
-                    {/* Profile completed */}
-                    <td className="py-4 px-4">
-                      <span className={`font-semibold ${u.profileCompleted ? 'text-green-600' : 'text-amber-600'}`}>
-                        {u.profileCompleted ? 'Đã xong' : 'Thiếu'}
-                      </span>
-                    </td>
+                      {/* Last login */}
+                      <td className="py-4 px-4 font-semibold text-brand-text-muted">{fmtDate(u.lastLoginAt)}</td>
 
-                    {/* Status */}
-                    <td className="py-4 px-4">
-                      <span className={`inline-flex items-center gap-1 text-meta font-bold ${
-                        u.status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                        {u.status === 'ACTIVE' ? 'Active' : 'Banned'}
-                      </span>
-                    </td>
+                      {/* Status */}
+                      <td className="py-4 px-4">
+                        <span className={`inline-flex items-center gap-1 text-meta font-bold ${
+                          u.status === 'ACTIVE' ? 'text-green-600' : isBanned ? 'text-red-600' : 'text-amber-600'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'ACTIVE' ? 'bg-green-500' : isBanned ? 'bg-red-500' : 'bg-amber-500'}`}></span>
+                          {u.status}
+                        </span>
+                      </td>
 
-                    {/* Actions */}
-                    <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => handleToggleStatus(u.id)}
-                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-field border text-meta font-bold transition-all cursor-pointer ${
-                          u.status === 'ACTIVE'
-                            ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                            : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-                        }`}
-                      >
-                        {u.status === 'ACTIVE' ? (
-                          <>
-                            <Ban className="w-3 h-3" /> Khóa
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="w-3 h-3" /> Kích hoạt
-                          </>
-                        )}
-                      </button>
-                    </td>
+                      {/* Actions */}
+                      <td className="py-4 px-6 text-right">
+                        <button
+                          onClick={() => handleToggleStatus(u)}
+                          disabled={busyId === u.userId}
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-field border text-meta font-bold transition-all cursor-pointer disabled:opacity-50 ${
+                            isBanned
+                              ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
+                              : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                          }`}
+                        >
+                          {busyId === u.userId ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : isBanned ? (
+                            <><CheckCircle className="w-3 h-3" /> Kích hoạt</>
+                          ) : (
+                            <><Ban className="w-3 h-3" /> Khóa</>
+                          )}
+                        </button>
+                      </td>
 
-                  </tr>
-                ))
+                    </tr>
+                  );
+                })
               )}
             </tbody>
 
