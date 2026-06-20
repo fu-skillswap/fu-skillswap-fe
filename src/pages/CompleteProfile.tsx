@@ -216,9 +216,9 @@ export const CompleteProfile: React.FC = () => {
         </div>
 
         <div className="px-6 sm:px-9 pb-9">
-          {/* Avatar + greeting */}
-          <div className="flex items-end gap-4 -mt-11 mb-6">
-            <div className="relative w-[88px] h-[88px] rounded-card ring-4 ring-surface bg-surface-muted overflow-hidden shrink-0 shadow-lg">
+          {/* Avatar overlapping banner */}
+          <div className="-mt-11 mb-4">
+            <div className="relative w-[84px] h-[84px] rounded-card ring-4 ring-surface bg-surface-muted overflow-hidden shadow-lg">
               <img
                 src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
                 onError={onAvatarError}
@@ -226,14 +226,15 @@ export const CompleteProfile: React.FC = () => {
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="pb-1 min-w-0">
-              <h2 className="text-xl sm:text-2xl font-extrabold font-serif text-brand-text tracking-tight leading-tight truncate">
-                Hoàn thiện hồ sơ học thuật
-              </h2>
-              <p className="text-brand-text-muted text-body font-semibold truncate">
-                Xin chào{user?.fullName ? `, ${user.fullName}` : ''} — điền thông tin để nhận gợi ý trao đổi phù hợp.
-              </p>
-            </div>
+          </div>
+          {/* Greeting — đặt dưới banner để không bị đè/cắt chữ */}
+          <div className="mb-6">
+            <h2 className="text-xl sm:text-2xl font-extrabold font-serif text-brand-text tracking-tight leading-tight">
+              Hoàn thiện hồ sơ học thuật
+            </h2>
+            <p className="text-brand-text-muted text-body font-semibold mt-1">
+              Xin chào{user?.fullName ? `, ${user.fullName}` : ''} — điền thông tin để nhận gợi ý trao đổi phù hợp.
+            </p>
           </div>
 
           {error && (
