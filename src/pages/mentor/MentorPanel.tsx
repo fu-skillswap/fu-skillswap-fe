@@ -218,7 +218,9 @@ export const MentorPanel: React.FC = () => {
 
   const allowedActions = req?.allowedActions;
   const checklist = req?.checklist;
-  const docs = req?.documents ?? [];
+  // BE trả về cả document đã soft-delete (isActive=false) — chỉ hiển thị tài liệu còn hiệu lực,
+  // nếu không user thấy "doc ma" và bấm xoá lại sẽ bị 400 "đã bị xóa".
+  const docs = (req?.documents ?? []).filter((d) => d.isActive !== false);
 
   const validateProfile = (): string | null => {
     if (!headline.trim()) return 'Vui lòng điền Headline.';
