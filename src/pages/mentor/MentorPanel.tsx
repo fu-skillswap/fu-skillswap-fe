@@ -4,6 +4,7 @@ import {
   Clock, CheckCircle2, XCircle, AlertTriangle, Undo2, Plus, Paperclip,
   ListChecks, Lock, Inbox, Check, Square, CheckSquare, Settings, Tags, Link2,
   Pencil, Award, Briefcase, Monitor, ExternalLink, Lightbulb, UserPlus,
+  ArrowRight, ArrowLeft,
 } from 'lucide-react';
 import { mentorVerificationApi } from '../../api/mentorVerification';
 import { mentorProfileApi, helpTopicApi } from '../../api/mentorProfile';
@@ -42,18 +43,22 @@ const STATE_UI: Record<VerificationStatus, { bar: string; iconWrap: string; icon
 };
 
 const EVENT_DOT: Record<string, string> = {
-  CREATED: 'bg-fg-faint', SUBMITTED: 'bg-primary', RESUBMITTED: 'bg-primary', REVISION_REQUESTED: 'bg-accent',
-  APPROVED: 'bg-success', REJECTED: 'bg-danger', WITHDRAWN: 'bg-fg-faint',
-  DOCUMENT_UPLOADED: 'bg-primary', DOCUMENT_DELETED: 'bg-fg-faint',
+  REQUEST_CREATED: 'bg-fg-faint', SUBMITTED: 'bg-primary', RESUBMITTED: 'bg-primary',
+  REVISION_REQUESTED: 'bg-accent', APPROVED: 'bg-success', REJECTED: 'bg-danger', WITHDRAWN: 'bg-fg-faint',
 };
 
-// Nhãn tiếng Việt cho eventType của timeline (BE trả eventType, không phải label sẵn).
+// Nhãn tiếng Việt cho eventType của timeline (khớp enum MentorVerificationEventType của BE).
 const EVENT_LABELS: Record<string, string> = {
-  CREATED: 'Tạo hồ sơ', SUBMITTED: 'Đã nộp hồ sơ', RESUBMITTED: 'Nộp lại hồ sơ',
-  REVISION_REQUESTED: 'Admin yêu cầu chỉnh sửa', APPROVED: 'Đã được duyệt', REJECTED: 'Bị từ chối',
-  WITHDRAWN: 'Đã rút hồ sơ', DOCUMENT_UPLOADED: 'Tải lên minh chứng', DOCUMENT_DELETED: 'Xoá minh chứng',
+  REQUEST_CREATED: 'Tạo hồ sơ',
+  SUBMITTED: 'Đã nộp hồ sơ',
+  RESUBMITTED: 'Nộp lại hồ sơ',
+  REVISION_REQUESTED: 'Admin yêu cầu chỉnh sửa',
+  APPROVED: 'Đã được duyệt',
+  REJECTED: 'Bị từ chối',
+  WITHDRAWN: 'Đã rút hồ sơ',
 };
-const eventLabel = (t?: string) => (t ? EVENT_LABELS[t] || t.replace(/_/g, ' ') : 'Sự kiện');
+const eventLabel = (t?: string) =>
+  t ? EVENT_LABELS[t] || t.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) : 'Sự kiện';
 
 // Định dạng timestamp ISO -> giờ/ngày Việt Nam.
 const fmtDateTime = (iso?: string | null) => {
@@ -136,6 +141,35 @@ const FactStat: React.FC<{ icon: React.ReactNode; label: string; value: React.Re
   </div>
 );
 
+// Chỉ báo các bước soạn hồ sơ (wizard): Hồ sơ -> Minh chứng -> Nộp.
+const WizardSteps: React.FC<{ step: 1 | 2 | 3 }> = ({ step }) => {
+  const items = [
+    { n: 1, label: 'Hồ sơ chuyên môn' },
+    { n: 2, label: 'Minh chứng' },
+    { n: 3, label: 'Nộp hồ sơ' },
+  ];
+  return (
+    <div className="meetmind-card p-5 rounded-card">
+      <div className="flex items-center">
+        {items.map((it, i) => {
+          const done = it.n < step, active = it.n === step;
+          return (
+            <React.Fragment key={it.n}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-meta font-extrabold shrink-0 ${done ? 'bg-primary text-on-action' : active ? 'bg-primary-soft text-primary ring-2 ring-primary/30' : 'bg-surface-muted text-fg-faint'}`}>
+                  {done ? <Check className="w-4 h-4" /> : it.n}
+                </span>
+                <span className={`text-body font-bold truncate ${active || done ? 'text-fg' : 'text-fg-faint'}`}>{it.label}</span>
+              </div>
+              {i < items.length - 1 && <div className={`flex-1 h-0.5 mx-3 rounded ${it.n < step ? 'bg-primary' : 'bg-surface-muted'}`} />}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ---------------------------------------------------------------------------
 export const MentorPanel: React.FC = () => {
   const [checked, setChecked] = useState(false);
@@ -166,6 +200,11 @@ export const MentorPanel: React.FC = () => {
 
   // Edit mode dành cho mentor đã APPROVED muốn cập nhật lại hồ sơ
   const [editingApproved, setEditingApproved] = useState(false);
+
+  // Wizard soạn hồ sơ (DRAFT/NEEDS_REVISION): 1=Hồ sơ → 2=Minh chứng → 3=Nộp
+  const [composeStep, setComposeStep] = useState<1 | 2 | 3>(1);
+  // Xem trước hồ sơ đã nộp (ở trạng thái Chờ duyệt)
+  const [showPreview, setShowPreview] = useState(false);
 
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -386,6 +425,19 @@ export const MentorPanel: React.FC = () => {
     } finally {
       setBusy(false);
     }
+  };
+
+  // Wizard: B1 (Hồ sơ) -> B2 (Minh chứng). Kiểm tra hợp lệ + lưu nháp 1 lần rồi sang bước sau.
+  const goToDocuments = async () => {
+    const v = validateProfile();
+    if (v) { setError(v); return; }
+    await saveDraft();
+    setComposeStep(2);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const goToReview = () => {
+    setComposeStep(3);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleUpload = async (file?: File) => {
@@ -611,6 +663,45 @@ export const MentorPanel: React.FC = () => {
     </>
   );
 
+  // ---------- Xem trước hồ sơ (read-only) — dùng cho bước Nộp & trạng thái Chờ duyệt ----------
+  const ProfileSummary = (
+    <div className="meetmind-card p-7 rounded-card space-y-6">
+      <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><ShieldCheck className="w-5 h-5 text-primary" /> Hồ sơ chuyên môn</h3>
+      <div>
+        <p className="text-body font-bold text-fg leading-snug">{headline || 'Chưa có headline'}</p>
+        <p className="text-body text-fg-muted font-medium mt-2 leading-relaxed" style={{ textWrap: 'pretty' }}>{expertiseDescription || 'Chưa có mô tả chuyên môn.'}</p>
+      </div>
+      <div className="flex flex-wrap gap-x-6 gap-y-2 text-body">
+        <span><span className="text-fg-muted font-semibold">Hình thức:</span> <span className="font-bold text-fg">{TEACHING_MODE_LABELS[teachingMode]}</span></span>
+        <span><span className="text-fg-muted font-semibold">Thời lượng:</span> <span className="font-bold text-fg">{sessionDuration} phút/buổi</span></span>
+        <span><span className="text-fg-muted font-semibold">Trạng thái:</span> <span className="font-bold text-fg">{isAvailable ? 'Đang nhận mentee' : 'Tạm ngưng'}</span></span>
+        {phoneNumber && <span><span className="text-fg-muted font-semibold">SĐT:</span> <span className="font-bold text-fg">{phoneNumber}</span></span>}
+      </div>
+      {supportingTags.length > 0 && (
+        <div>
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Môn học hỗ trợ</p>
+          <div className="flex flex-wrap gap-2">{supportingTags.map((t) => (<span key={t} className="py-1.5 px-3 rounded-pill bg-primary-soft text-primary border border-primary/15 text-meta font-extrabold">{t}</span>))}</div>
+        </div>
+      )}
+      {resolvedHelpTopics.length > 0 && (
+        <div>
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Chủ đề hỗ trợ</p>
+          <div className="flex flex-wrap gap-2">{resolvedHelpTopics.map((t) => (<span key={t.id} className="py-1.5 px-3 rounded-lg bg-surface border border-line text-fg-muted text-meta font-bold">{t.nameVi}</span>))}</div>
+        </div>
+      )}
+      {(linkedinUrl || githubUrl || portfolioUrl) && (
+        <div>
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Liên kết</p>
+          <div className="flex flex-wrap gap-2.5">
+            {[{ label: 'LinkedIn', url: linkedinUrl }, { label: 'GitHub', url: githubUrl }, { label: 'Portfolio', url: portfolioUrl }].filter((l) => l.url).map((l) => (
+              <a key={l.label} href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 py-2 px-3.5 rounded-field border border-line bg-surface text-body font-bold text-fg-muted hover:text-primary transition-all">{l.label}<ExternalLink className="w-3 h-3" /></a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // ---------- APPROVED: hồ sơ mentor đã kích hoạt ----------
   if (req.status === 'APPROVED' && !editingApproved) {
     return (
@@ -697,17 +788,31 @@ export const MentorPanel: React.FC = () => {
     );
   }
 
-  // ---------- PENDING_REVIEW: chỉ xem, có thể rút ----------
+  // ---------- PENDING_REVIEW: chỉ hiển thị trạng thái + nút xem trước & rút hồ sơ (KHÔNG cho sửa) ----------
   if (req.status === 'PENDING_REVIEW') {
     return (
       <div className="space-y-7">
         {Notices}
-        <StatusHero req={req} sm={sm} ui={ui} heroDesc={heroDesc} />
+        <StatusHero req={req} sm={sm} ui={ui} heroDesc={heroDesc} extra={
+          <div className="mt-6 pt-6 border-t border-line-soft flex items-center gap-3 flex-wrap">
+            <button onClick={() => setShowPreview((v) => !v)} className="inline-flex items-center gap-2 bg-primary-soft text-primary hover:bg-primary/15 text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all">
+              <FileText className="w-4 h-4" /> {showPreview ? 'Ẩn hồ sơ đã nộp' : 'Xem hồ sơ đã nộp'}
+            </button>
+            {allowedActions?.canWithdraw && (
+              <button disabled={busy} onClick={handleWithdraw} className="inline-flex items-center gap-1.5 bg-danger/10 hover:bg-danger/15 border border-danger/20 text-danger text-body font-bold py-2.5 px-4 rounded-field cursor-pointer disabled:opacity-50 transition-all"><Undo2 className="w-4 h-4" /> Rút hồ sơ</button>
+            )}
+          </div>
+        } />
         <div className="grid lg:grid-cols-3 gap-7 items-start">
           <div className="lg:col-span-2 space-y-7">
-            <DocumentsCard docs={docs} canUpload={false} />
-            {allowedActions?.canWithdraw && (
-              <button disabled={busy} onClick={handleWithdraw} className="w-full inline-flex items-center justify-center gap-1.5 bg-danger/10 hover:bg-danger/15 border border-danger/20 text-danger text-body font-bold py-2.5 px-4 rounded-field cursor-pointer disabled:opacity-50 transition-all"><Undo2 className="w-4 h-4" /> Rút hồ sơ đang chờ duyệt</button>
+            {showPreview && ProfileSummary}
+            {showPreview && <DocumentsCard docs={docs} canUpload={false} />}
+            {!showPreview && (
+              <div className="meetmind-card p-7 rounded-card text-center space-y-2">
+                <div className="w-12 h-12 rounded-card bg-amber-500/12 text-amber-600 flex items-center justify-center mx-auto"><Clock className="w-6 h-6" /></div>
+                <p className="text-body font-bold text-fg">Hồ sơ đang chờ admin duyệt</p>
+                <p className="text-meta text-fg-muted font-medium">Bạn sẽ nhận thông báo ngay khi có kết quả. Bấm "Xem hồ sơ đã nộp" để xem lại nội dung.</p>
+              </div>
             )}
           </div>
           <TimelinePanel req={req} />
@@ -735,7 +840,7 @@ export const MentorPanel: React.FC = () => {
     );
   }
 
-  // ---------- DRAFT / NEEDS_REVISION: soạn hồ sơ gộp (profile + minh chứng) rồi nộp ----------
+  // ---------- DRAFT / NEEDS_REVISION: wizard 3 bước (Hồ sơ -> Minh chứng -> Nộp) ----------
   return (
     <div className="space-y-7">
       {Notices}
@@ -743,46 +848,76 @@ export const MentorPanel: React.FC = () => {
 
       <div className="grid lg:grid-cols-3 gap-7 items-start">
         <div className="lg:col-span-2 space-y-7">
-          {checklist && (
-            <div className="meetmind-card p-6 rounded-card space-y-4">
-              <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><ListChecks className="w-5 h-5 text-primary" /> Yêu cầu hồ sơ</h3>
-              <div className="space-y-4">
-                {CHECKLIST_ROWS.map(({ key, label, hint, optional }) => (
-                  <RequirementRow key={key} met={!!checklist[key]} label={label} hint={hint} optional={optional} />
-                ))}
+          <WizardSteps step={composeStep} />
+
+          {/* ===== Bước 1: Hồ sơ chuyên môn ===== */}
+          {composeStep === 1 && (
+            <>
+              {checklist && (
+                <div className="meetmind-card p-6 rounded-card space-y-4">
+                  <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><ListChecks className="w-5 h-5 text-primary" /> Yêu cầu hồ sơ</h3>
+                  <div className="space-y-4">
+                    {CHECKLIST_ROWS.map(({ key, label, hint, optional }) => (
+                      <RequirementRow key={key} met={!!checklist[key]} label={label} hint={hint} optional={optional} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {ProfileFields}
+
+              <div className="flex items-center justify-end">
+                <button disabled={busy} onClick={goToDocuments} className="inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50">
+                  Lưu & Tiếp tục <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
-            </div>
+            </>
           )}
 
-          {ProfileFields}
+          {/* ===== Bước 2: Minh chứng ===== */}
+          {composeStep === 2 && (
+            <>
+              <DocumentsCard
+                docs={docs}
+                canUpload={!!allowedActions?.canUploadDocuments}
+                docType={docType} setDocType={setDocType}
+                uploading={uploading}
+                onUpload={handleUpload} onDelete={handleDelete}
+              />
+              <div className="flex items-center justify-between gap-3">
+                <button onClick={() => setComposeStep(1)} className="inline-flex items-center gap-2 bg-surface-muted hover:bg-line/40 text-fg text-body font-bold py-2.5 px-4 rounded-field cursor-pointer border border-line transition-all"><ArrowLeft className="w-4 h-4" /> Quay lại</button>
+                <button onClick={goToReview} className="inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20">Tiếp tục <ArrowRight className="w-4 h-4" /></button>
+              </div>
+            </>
+          )}
 
-          <DocumentsCard
-            docs={docs}
-            canUpload={!!allowedActions?.canUploadDocuments}
-            docType={docType} setDocType={setDocType}
-            uploading={uploading}
-            onUpload={handleUpload} onDelete={handleDelete}
-          />
+          {/* ===== Bước 3: Xem lại & Nộp ===== */}
+          {composeStep === 3 && (
+            <>
+              {ProfileSummary}
+              <DocumentsCard docs={docs} canUpload={false} />
 
-          <div className="meetmind-card p-6 rounded-card space-y-4">
-            <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Send className="w-5 h-5 text-primary" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại hồ sơ' : 'Hoàn tất & nộp hồ sơ'}</h3>
-            <div>
-              <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Ghi chú gửi admin (tuỳ chọn)</label>
-              <textarea rows={2} value={submitNote} onChange={(e) => setSubmitNote(e.target.value)} placeholder="Ví dụ: Em bổ sung lại ảnh thẻ rõ nét và thêm chứng chỉ AWS…" className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
-            </div>
-            <label className="flex items-center gap-2 text-meta font-bold text-fg-muted cursor-pointer">
-              {termsAccepted ? <CheckSquare className="w-4.5 h-4.5 text-primary shrink-0" /> : <Square className="w-4.5 h-4.5 text-fg-faint shrink-0" />}
-              <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="hidden" />
-              Tôi xác nhận thông tin và minh chứng đã cung cấp là chính xác.
-            </label>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <button disabled={busy} onClick={saveDraft} className="inline-flex items-center gap-2 bg-surface-muted hover:bg-line/40 text-fg text-body font-bold py-2.5 px-4 rounded-field cursor-pointer disabled:opacity-50 transition-all border border-line"><FileText className="w-4 h-4" /> Lưu bản nháp</button>
-              <button disabled={busy || !termsAccepted || !allowedActions?.canSubmit} onClick={submitVerification} className="ml-auto inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"><Send className="w-4 h-4" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại' : 'Nộp hồ sơ duyệt'}</button>
-            </div>
-            {!allowedActions?.canSubmit && (
-              <p className="text-meta text-fg-faint font-medium inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> Hoàn thiện đủ các yêu cầu bắt buộc ở trên để có thể nộp hồ sơ.</p>
-            )}
-          </div>
+              <div className="meetmind-card p-6 rounded-card space-y-4">
+                <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Send className="w-5 h-5 text-primary" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại hồ sơ' : 'Hoàn tất & nộp hồ sơ'}</h3>
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Ghi chú gửi admin (tuỳ chọn)</label>
+                  <textarea rows={2} value={submitNote} onChange={(e) => setSubmitNote(e.target.value)} placeholder="Ví dụ: Em bổ sung lại ảnh thẻ rõ nét và thêm chứng chỉ AWS…" className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
+                </div>
+                <label className="flex items-center gap-2 text-meta font-bold text-fg-muted cursor-pointer">
+                  {termsAccepted ? <CheckSquare className="w-4.5 h-4.5 text-primary shrink-0" /> : <Square className="w-4.5 h-4.5 text-fg-faint shrink-0" />}
+                  <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="hidden" />
+                  Tôi xác nhận thông tin và minh chứng đã cung cấp là chính xác.
+                </label>
+                {!allowedActions?.canSubmit && (
+                  <p className="text-meta text-fg-faint font-medium inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> Hoàn thiện đủ các yêu cầu bắt buộc (xem bước 1 & 2) để có thể nộp hồ sơ.</p>
+                )}
+                <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+                  <button onClick={() => setComposeStep(2)} className="inline-flex items-center gap-2 bg-surface-muted hover:bg-line/40 text-fg text-body font-bold py-2.5 px-4 rounded-field cursor-pointer border border-line transition-all"><ArrowLeft className="w-4 h-4" /> Quay lại</button>
+                  <button disabled={busy || !termsAccepted || !allowedActions?.canSubmit} onClick={submitVerification} className="inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"><Send className="w-4 h-4" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại' : 'Nộp hồ sơ duyệt'}</button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <TimelinePanel req={req} />
