@@ -19,12 +19,14 @@ const SectionTitle: React.FC<{ n: number; icon: React.ReactNode; title: string; 
   </div>
 );
 
-// Báo lỗi thuần Việt hiển thị ngay dưới ô nhập sai.
+// Báo lỗi thuần Việt — box callout nổi (ô vuông đỏ dấu !, đuôi chỉ lên) ngay dưới ô nhập sai.
 const FieldError: React.FC<{ msg?: string }> = ({ msg }) =>
   msg ? (
-    <p className="mt-1.5 text-meta font-semibold text-red-600 flex items-center gap-1">
-      <AlertCircle className="w-3.5 h-3.5 shrink-0" />{msg}
-    </p>
+    <div className="relative inline-flex items-center gap-2.5 mt-2.5 max-w-full bg-surface border border-red-200 rounded-xl py-2 px-3 shadow-lg">
+      <span className="absolute -top-1.5 left-5 w-3 h-3 bg-surface border-l border-t border-red-200 rotate-45" />
+      <span className="w-5 h-5 rounded-[5px] bg-red-600 text-white flex items-center justify-center shrink-0 text-sm font-black leading-none">!</span>
+      <span className="text-meta font-semibold text-brand-text leading-snug">{msg}</span>
+    </div>
   ) : null;
 
 // Viền đỏ khi ô có lỗi.

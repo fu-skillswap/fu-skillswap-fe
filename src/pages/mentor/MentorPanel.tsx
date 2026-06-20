@@ -141,6 +141,16 @@ const FactStat: React.FC<{ icon: React.ReactNode; label: string; value: React.Re
   </div>
 );
 
+// Box báo lỗi kiểu "callout" nổi (ô vuông đỏ dấu !, đuôi nhọn chỉ lên) — hiện ngay dưới ô nhập sai.
+const ErrorBubble: React.FC<{ msg?: string | null }> = ({ msg }) =>
+  msg ? (
+    <div className="relative inline-flex items-center gap-2.5 mt-2.5 max-w-full bg-surface border border-line rounded-xl py-2 px-3 shadow-lg">
+      <span className="absolute -top-1.5 left-5 w-3 h-3 bg-surface border-l border-t border-line rotate-45" />
+      <span className="w-5 h-5 rounded-[5px] bg-danger text-white flex items-center justify-center shrink-0 text-sm font-black leading-none">!</span>
+      <span className="text-meta font-semibold text-fg leading-snug">{msg}</span>
+    </div>
+  ) : null;
+
 // Chỉ báo các bước soạn hồ sơ (wizard): Hồ sơ -> Minh chứng -> Nộp.
 const WizardSteps: React.FC<{ step: 1 | 2 | 3 }> = ({ step }) => {
   const items = [
@@ -193,6 +203,8 @@ export const MentorPanel: React.FC = () => {
   const [hydrated, setHydrated] = useState(false); // đã tải xong để bật tự lưu nháp
   const [uploading, setUploading] = useState(false); // đang upload minh chứng
   const [uploadError, setUploadError] = useState<string | null>(null); // lỗi upload — hiện ngay dưới nút tải
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({}); // lỗi validate hồ sơ — hiện tại từng ô
+  const clearPErr = (k: string) => setProfileErrors((prev) => (prev[k] ? { ...prev, [k]: '' } : prev));
 
   // Document upload controls
   const [docType, setDocType] = useState<DocumentType>('FPTU_AFFILIATION_PROOF');
@@ -322,16 +334,19 @@ export const MentorPanel: React.FC = () => {
   // nếu không user thấy "doc ma" và bấm xoá lại sẽ bị 400 "đã bị xóa".
   const docs = (req?.documents ?? []).filter((d) => d.isActive !== false);
 
-  const validateProfile = (): string | null => {
-    if (!headline.trim()) return 'Vui lòng điền Headline.';
-    if (headline.length > HEADLINE_MAX) return `Headline tối đa ${HEADLINE_MAX} ký tự.`;
-    if (!expertiseDescription.trim()) return 'Vui lòng điền Mô tả chuyên môn.';
-    if (expertiseDescription.length > EXPERTISE_MAX) return `Mô tả chuyên môn tối đa ${EXPERTISE_MAX} ký tự.`;
-    if (supportingSubjects.length > SUPPORTING_MAX) return `Môn học hỗ trợ tối đa ${SUPPORTING_MAX} ký tự.`;
-    if (helpTopicIds.length === 0) return 'Vui lòng chọn ít nhất 1 chủ đề hỗ trợ.';
-    if (helpTopicIds.length > HELP_TOPICS_MAX) return `Chỉ được chọn tối đa ${HELP_TOPICS_MAX} chủ đề.`;
-    if (!PHONE_RE.test(phoneNumber.trim())) return 'Vui lòng nhập số điện thoại Việt Nam hợp lệ (VD: 0901234567).';
-    return null;
+  // Trả về true nếu hợp lệ; nếu sai thì gắn lỗi vào từng ô (profileErrors) thay vì báo ở đầu trang.
+  const validateProfile = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!headline.trim()) e.headline = 'Vui lòng điền Headline.';
+    else if (headline.length > HEADLINE_MAX) e.headline = `Headline tối đa ${HEADLINE_MAX} ký tự.`;
+    if (!expertiseDescription.trim()) e.expertiseDescription = 'Vui lòng điền Mô tả chuyên môn.';
+    else if (expertiseDescription.length > EXPERTISE_MAX) e.expertiseDescription = `Mô tả chuyên môn tối đa ${EXPERTISE_MAX} ký tự.`;
+    if (supportingSubjects.length > SUPPORTING_MAX) e.supportingSubjects = `Môn học hỗ trợ tối đa ${SUPPORTING_MAX} ký tự.`;
+    if (helpTopicIds.length === 0) e.helpTopics = 'Vui lòng chọn ít nhất 1 chủ đề hỗ trợ.';
+    else if (helpTopicIds.length > HELP_TOPICS_MAX) e.helpTopics = `Chỉ được chọn tối đa ${HELP_TOPICS_MAX} chủ đề.`;
+    if (!PHONE_RE.test(phoneNumber.trim())) e.phoneNumber = 'Số điện thoại Việt Nam không hợp lệ (VD: 0901234567).';
+    setProfileErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const buildPayload = () => ({
@@ -349,6 +364,7 @@ export const MentorPanel: React.FC = () => {
   });
 
   const toggleHelpTopic = (id: string) => {
+    clearPErr('helpTopics');
     setHelpTopicIds((prev) => {
       if (prev.includes(id)) return prev.filter((t) => t !== id);
       if (prev.length >= HELP_TOPICS_MAX) return prev;
@@ -388,8 +404,7 @@ export const MentorPanel: React.FC = () => {
   };
 
   const saveDraft = async () => {
-    const v = validateProfile();
-    if (v) { setError(v); return; }
+    if (!validateProfile()) return;
     setBusy(true);
     setError(null);
     try {
@@ -410,8 +425,7 @@ export const MentorPanel: React.FC = () => {
 
   const submitVerification = async () => {
     if (!termsAccepted) return;
-    const v = validateProfile();
-    if (v) { setError(v); return; }
+    if (!validateProfile()) return;
     setBusy(true);
     setError(null);
     try {
@@ -430,8 +444,7 @@ export const MentorPanel: React.FC = () => {
 
   // Wizard: B1 (Hồ sơ) -> B2 (Minh chứng). Kiểm tra hợp lệ + lưu nháp 1 lần rồi sang bước sau.
   const goToDocuments = async () => {
-    const v = validateProfile();
-    if (v) { setError(v); return; }
+    if (!validateProfile()) return;
     await saveDraft();
     setComposeStep(2);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -443,8 +456,20 @@ export const MentorPanel: React.FC = () => {
 
   const handleUpload = async (file?: File) => {
     if (!req || !file) return;
-    setUploading(true);
     setUploadError(null);
+
+    // Kiểm tra ngay phía client để báo đúng nguyên nhân (định dạng / dung lượng).
+    const okType = ['image/jpeg', 'image/png', 'application/pdf'].includes(file.type) || /\.(jpe?g|png|pdf)$/i.test(file.name);
+    if (!okType) {
+      setUploadError('Định dạng không được hỗ trợ. Chỉ nhận tệp JPG, PNG hoặc PDF.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError(`Tệp ${(file.size / 1024 / 1024).toFixed(1)}MB vượt quá giới hạn 5MB.`);
+      return;
+    }
+
+    setUploading(true);
     try {
       const doc = await mentorVerificationApi.uploadDocument({ documentType: docType, file });
       // cập nhật lạc quan + làm mới ngầm (giữ nguyên vị trí cuộn, không remount panel)
@@ -452,8 +477,10 @@ export const MentorPanel: React.FC = () => {
       flash('Đã tải lên minh chứng.');
       await refreshRequest();
     } catch (err: any) {
-      // Hiển thị lỗi ngay dưới nút tải (bong bóng chat), không đẩy lên đầu trang.
-      setUploadError(err.response?.data?.message || 'Tải minh chứng thất bại. Vui lòng thử lại.');
+      // Ưu tiên message thật từ BE (err.response.data.message) hoặc từ Cloudinary (err.message).
+      setUploadError(
+        err?.response?.data?.message || err?.message || 'Tải minh chứng thất bại. Vui lòng thử lại.'
+      );
     } finally {
       setUploading(false);
     }
@@ -492,8 +519,7 @@ export const MentorPanel: React.FC = () => {
   };
 
   const saveApprovedProfile = async () => {
-    const v = validateProfile();
-    if (v) { setError(v); return; }
+    if (!validateProfile()) return;
     setBusy(true);
     setError(null);
     try {
@@ -571,27 +597,31 @@ export const MentorPanel: React.FC = () => {
         <div className="space-y-3">
           <div>
             <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Headline ({headline.length}/{HEADLINE_MAX})</label>
-            <input type="text" maxLength={HEADLINE_MAX} value={headline} onChange={(e) => setHeadline(e.target.value)}
+            <input type="text" maxLength={HEADLINE_MAX} value={headline} onChange={(e) => { setHeadline(e.target.value); clearPErr('headline'); }}
               placeholder="Ví dụ: Chuyên gia phát triển Web Fullstack | Hỗ trợ đồ án"
-              className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+              className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none font-semibold ${profileErrors.headline ? 'border-danger/60 focus:border-danger' : 'border-line focus:border-primary/50'}`} />
+            <ErrorBubble msg={profileErrors.headline} />
           </div>
           <div>
             <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mô tả chuyên môn ({expertiseDescription.length}/{EXPERTISE_MAX})</label>
-            <textarea rows={4} maxLength={EXPERTISE_MAX} value={expertiseDescription} onChange={(e) => setExpertiseDescription(e.target.value)}
+            <textarea rows={4} maxLength={EXPERTISE_MAX} value={expertiseDescription} onChange={(e) => { setExpertiseDescription(e.target.value); clearPErr('expertiseDescription'); }}
               placeholder="Giới thiệu kinh nghiệm, kỹ năng và cách bạn hỗ trợ mentee."
-              className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
+              className={`w-full bg-surface border rounded-field p-3 text-body text-fg focus:outline-none resize-none font-medium ${profileErrors.expertiseDescription ? 'border-danger/60 focus:border-danger' : 'border-line focus:border-primary/50'}`} />
+            <ErrorBubble msg={profileErrors.expertiseDescription} />
           </div>
           <div>
             <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Môn học hỗ trợ ({supportingSubjects.length}/{SUPPORTING_MAX}, không bắt buộc)</label>
-            <textarea rows={2} maxLength={SUPPORTING_MAX} value={supportingSubjects} onChange={(e) => setSupportingSubjects(e.target.value)}
+            <textarea rows={2} maxLength={SUPPORTING_MAX} value={supportingSubjects} onChange={(e) => { setSupportingSubjects(e.target.value); clearPErr('supportingSubjects'); }}
               placeholder="Ví dụ: PRJ301, SWP391, EXE101..."
               className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
+            <ErrorBubble msg={profileErrors.supportingSubjects} />
           </div>
           <div>
             <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Số điện thoại liên hệ <span className="text-danger">*</span></label>
-            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}
+            <input type="tel" value={phoneNumber} onChange={(e) => { setPhoneNumber(e.target.value); clearPErr('phoneNumber'); }}
               placeholder="VD: 0901234567"
-              className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+              className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none font-semibold ${profileErrors.phoneNumber ? 'border-danger/60 focus:border-danger' : 'border-line focus:border-primary/50'}`} />
+            <ErrorBubble msg={profileErrors.phoneNumber} />
           </div>
         </div>
       </div>
@@ -623,6 +653,7 @@ export const MentorPanel: React.FC = () => {
           </div>
         )}
         <p className="text-meta text-fg-faint font-semibold pt-1">* Chọn từ 1 đến {helpMax} chủ đề bạn có thể hỗ trợ.</p>
+        <ErrorBubble msg={profileErrors.helpTopics} />
       </div>
 
       <div className="meetmind-card p-6 rounded-card space-y-4">
@@ -978,13 +1009,8 @@ const DocumentsCard: React.FC<{
           <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; onUpload(f); }} />
         </label>
 
-        {/* Lỗi tải lên — bong bóng chat nổi ngay dưới nút tải, có chấm đỏ đầu câu */}
-        {uploadError && (
-          <div className="relative inline-flex items-start gap-2 max-w-full bg-danger/10 border border-danger/25 text-danger rounded-2xl rounded-tl-md py-2.5 px-3.5 text-meta font-semibold shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-danger mt-1.5 shrink-0" />
-            <span className="leading-snug">{uploadError}</span>
-          </div>
-        )}
+        {/* Lỗi tải lên — box callout nổi ngay dưới nút tải (kiểu ô vuông đỏ dấu !, đuôi chỉ lên) */}
+        <ErrorBubble msg={uploadError} />
       </div>
     )}
 
