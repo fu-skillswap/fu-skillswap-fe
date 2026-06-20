@@ -152,12 +152,17 @@ export interface VerificationDocument {
   uploadedAt?: string;
 }
 
+/** Khớp MentorVerificationTimelineEventResponse của BE. */
 export interface TimelineEvent {
-  event: string;
-  label?: string;
-  at: string;
-  by?: string;
+  id?: string;
+  eventType: string;
+  fromStatus?: string;
+  toStatus?: string;
+  actorUserId?: string;
+  actorEmail?: string;
+  actorFullName?: string;
   note?: string;
+  createdAt: string;
 }
 
 /** Trạng thái hoàn thiện hồ sơ — BE trả về để FE render checklist, không tự suy luận. */

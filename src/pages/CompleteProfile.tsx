@@ -19,6 +19,17 @@ const SectionTitle: React.FC<{ n: number; icon: React.ReactNode; title: string; 
   </div>
 );
 
+// Báo lỗi thuần Việt hiển thị ngay dưới ô nhập sai.
+const FieldError: React.FC<{ msg?: string }> = ({ msg }) =>
+  msg ? (
+    <p className="mt-1.5 text-meta font-semibold text-red-600 flex items-center gap-1">
+      <AlertCircle className="w-3.5 h-3.5 shrink-0" />{msg}
+    </p>
+  ) : null;
+
+// Viền đỏ khi ô có lỗi.
+const errCls = (has?: string) => (has ? ' !border-red-400 focus:!border-red-400 focus:!ring-red-200' : '');
+
 interface Campus {
   id: string;
   code: string;
@@ -67,6 +78,9 @@ export const CompleteProfile: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const currentYear = new Date().getFullYear();
+  const clearErr = (k: string) => setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: '' } : prev));
 
   // Fallback demo data if APIs fail or empty
   const fallbackCampuses: Campus[] = [
@@ -144,17 +158,35 @@ export const CompleteProfile: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    // Validate Student Code
+    // ----- Validate, báo lỗi thuần Việt ngay tại từng ô -----
+    const errs: Record<string, string> = {};
     const studentCodeRegex = /^[HSDQC][ESA](0[1-9]|1[0-9]|2[0-2])\d{4}$/i;
-    if (!studentCodeRegex.test(studentCode)) {
-      setError('Mã số sinh viên không đúng định dạng FPT. Ví dụ: SE192621, HA221234');
-      return;
+
+    if (!displayName.trim()) errs.displayName = 'Vui lòng nhập tên hiển thị.';
+    if (!studentCode.trim()) errs.studentCode = 'Vui lòng nhập mã số sinh viên.';
+    else if (!studentCodeRegex.test(studentCode)) errs.studentCode = 'MSSV không đúng định dạng FPT (VD: SE192621, HA221234).';
+
+    if (!selectedCampus) errs.campus = 'Vui lòng chọn cơ sở.';
+    if (!selectedProgram) errs.program = 'Vui lòng chọn ngành học.';
+    if (!selectedSpecialization) errs.specialization = 'Vui lòng chọn chuyên ngành.';
+
+    // Cựu sinh viên thì bỏ qua học kỳ hiện tại.
+    if (!isAlumni) {
+      if (!semester || semester < 1 || semester > 9) errs.semester = 'Học kỳ hiện tại phải từ 1 đến 9.';
     }
 
-    if (!selectedCampus || !selectedProgram || !selectedSpecialization) {
-      setError('Vui lòng chọn đầy đủ Cơ sở, Ngành học và Chuyên ngành.');
-      return;
+    if (!intakeYear || intakeYear < 2000) errs.intakeYear = 'Năm nhập học không hợp lệ.';
+    else if (intakeYear > currentYear) errs.intakeYear = 'Năm nhập học phải bé hơn hoặc bằng năm hiện tại.';
+
+    if (isAlumni) {
+      if (!graduationYear || graduationYear < 2000) errs.graduationYear = 'Năm tốt nghiệp không hợp lệ.';
+      else if (graduationYear < intakeYear) errs.graduationYear = 'Năm tốt nghiệp không thể nhỏ hơn năm nhập học.';
     }
+
+    if (!bio.trim()) errs.bio = 'Vui lòng nhập phần giới thiệu bản thân.';
+
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
 
     setLoading(true);
 
@@ -165,7 +197,8 @@ export const CompleteProfile: React.FC = () => {
       campusId: selectedCampus,
       programId: selectedProgram,
       specializationId: selectedSpecialization,
-      semester: Number(semester),
+      // Cựu sinh viên không còn học kỳ hiện tại — gửi giá trị an toàn cho BE (bắt buộc).
+      semester: isAlumni ? (semester || 9) : Number(semester),
       intakeYear: Number(intakeYear),
       isAlumni,
       graduationYear: isAlumni ? Number(graduationYear) : null,
@@ -252,11 +285,13 @@ export const CompleteProfile: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Tên hiển thị</label>
-                  <input type="text" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={fieldCls} placeholder="Nguyễn Văn A" />
+                  <input type="text" value={displayName} onChange={(e) => { setDisplayName(e.target.value); clearErr('displayName'); }} className={fieldCls + errCls(fieldErrors.displayName)} placeholder="Nguyễn Văn A" />
+                  <FieldError msg={fieldErrors.displayName} />
                 </div>
                 <div>
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5 flex items-center gap-1"><Hash className="w-3.5 h-3.5" /> Mã số sinh viên</label>
-                  <input type="text" required value={studentCode} onChange={(e) => setStudentCode(e.target.value)} className={`${fieldCls} font-bold tracking-wide`} placeholder="Ví dụ: SE192621" />
+                  <input type="text" value={studentCode} onChange={(e) => { setStudentCode(e.target.value); clearErr('studentCode'); }} className={`${fieldCls} font-bold tracking-wide` + errCls(fieldErrors.studentCode)} placeholder="Ví dụ: SE192621" />
+                  <FieldError msg={fieldErrors.studentCode} />
                 </div>
               </div>
             </section>
@@ -267,42 +302,50 @@ export const CompleteProfile: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Cơ sở học tập</label>
-                  <select required value={selectedCampus} onChange={(e) => setSelectedCampus(e.target.value)} className={`${fieldCls} cursor-pointer`}>
+                  <select value={selectedCampus} onChange={(e) => { setSelectedCampus(e.target.value); clearErr('campus'); }} className={`${fieldCls} cursor-pointer` + errCls(fieldErrors.campus)}>
                     <option value="">-- Chọn cơ sở --</option>
-                    {campuses.map((c) => (<option key={c.id} value={c.id}>{c.name} ({c.code})</option>))}
+                    {campuses.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
                   </select>
+                  <FieldError msg={fieldErrors.campus} />
                 </div>
                 <div>
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Ngành học (Major)</label>
-                  <select required value={selectedProgram} onChange={(e) => setSelectedProgram(e.target.value)} className={`${fieldCls} cursor-pointer`}>
+                  <select value={selectedProgram} onChange={(e) => { setSelectedProgram(e.target.value); clearErr('program'); }} className={`${fieldCls} cursor-pointer` + errCls(fieldErrors.program)}>
                     <option value="">-- Chọn ngành học --</option>
-                    {programs.map((p) => (<option key={p.id} value={p.id}>{p.nameVi} ({p.code})</option>))}
+                    {programs.map((p) => (<option key={p.id} value={p.id}>{p.nameVi}</option>))}
                   </select>
+                  <FieldError msg={fieldErrors.program} />
                 </div>
                 <div>
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Chuyên ngành</label>
-                  <select required disabled={!selectedProgram} value={selectedSpecialization} onChange={(e) => setSelectedSpecialization(e.target.value)} className={`${fieldCls} cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}>
+                  <select disabled={!selectedProgram} value={selectedSpecialization} onChange={(e) => { setSelectedSpecialization(e.target.value); clearErr('specialization'); }} className={`${fieldCls} cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed` + errCls(fieldErrors.specialization)}>
                     <option value="">-- Chọn chuyên ngành --</option>
-                    {specializations.map((s) => (<option key={s.id} value={s.id}>{s.nameVi} ({s.code})</option>))}
+                    {specializations.map((s) => (<option key={s.id} value={s.id}>{s.nameVi}</option>))}
                   </select>
+                  <FieldError msg={fieldErrors.specialization} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5 flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> Học kỳ hiện tại</label>
-                  <input type="number" required min={1} max={12} value={semester} onChange={(e) => setSemester(Number(e.target.value))} className={fieldCls} placeholder="Ví dụ: 5" />
-                </div>
+                {/* Cựu sinh viên thì ẩn ô Học kỳ hiện tại */}
+                {!isAlumni && (
+                  <div>
+                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5 flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> Học kỳ hiện tại</label>
+                    <input type="number" value={semester} onChange={(e) => { setSemester(Number(e.target.value)); clearErr('semester'); }} className={fieldCls + errCls(fieldErrors.semester)} placeholder="Ví dụ: 5 (1–9)" />
+                    <FieldError msg={fieldErrors.semester} />
+                  </div>
+                )}
                 <div>
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm nhập học</label>
-                  <input type="number" required min={2000} max={2030} value={intakeYear} onChange={(e) => setIntakeYear(Number(e.target.value))} className={fieldCls} placeholder="Ví dụ: 2022" />
+                  <input type="number" value={intakeYear} onChange={(e) => { setIntakeYear(Number(e.target.value)); clearErr('intakeYear'); }} className={fieldCls + errCls(fieldErrors.intakeYear)} placeholder="Ví dụ: 2022" />
+                  <FieldError msg={fieldErrors.intakeYear} />
                 </div>
               </div>
 
               {/* Alumni toggle */}
               <div className="flex items-center gap-3 mt-4">
                 <label className="relative flex items-center cursor-pointer">
-                  <input type="checkbox" checked={isAlumni} onChange={(e) => setIsAlumni(e.target.checked)} className="sr-only peer" />
+                  <input type="checkbox" checked={isAlumni} onChange={(e) => { setIsAlumni(e.target.checked); clearErr('semester'); clearErr('graduationYear'); }} className="sr-only peer" />
                   <div className="w-9 h-5 bg-brand-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-terracotta"></div>
                   <span className="ml-3 text-body font-bold text-brand-text-muted">Tôi là Cựu sinh viên (Alumni) đã tốt nghiệp</span>
                 </label>
@@ -311,21 +354,23 @@ export const CompleteProfile: React.FC = () => {
               {isAlumni && (
                 <div className="mt-4">
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm tốt nghiệp</label>
-                  <input type="number" required={isAlumni} min={2000} max={2030} value={graduationYear} onChange={(e) => setGraduationYear(Number(e.target.value))} className={`${fieldCls} max-w-xs`} />
+                  <input type="number" value={graduationYear} onChange={(e) => { setGraduationYear(Number(e.target.value)); clearErr('graduationYear'); }} className={`${fieldCls} max-w-xs` + errCls(fieldErrors.graduationYear)} />
+                  <FieldError msg={fieldErrors.graduationYear} />
                 </div>
               )}
             </section>
 
             {/* ===== Section 3: Bio ===== */}
             <section className="bg-brand-bg/30 border border-brand-border rounded-card p-5">
-              <SectionTitle n={3} icon={<FileText className="w-4 h-4 text-brand-terracotta" />} title="Giới thiệu bản thân" />
+              <SectionTitle n={3} icon={<FileText className="w-4 h-4 text-brand-terracotta" />} title="Giới thiệu bản thân" hint="Bắt buộc — giúp hệ thống gợi ý trao đổi phù hợp." />
               <textarea
                 value={bio}
-                onChange={(e) => setBio(e.target.value)}
+                onChange={(e) => { setBio(e.target.value); clearErr('bio'); }}
                 rows={3}
-                className={`${fieldCls} resize-none font-medium`}
+                className={`${fieldCls} resize-none font-medium` + errCls(fieldErrors.bio)}
                 placeholder="Giới thiệu bản thân, kỹ năng bạn muốn chia sẻ (Ví dụ: React, Java) hoặc kỹ năng bạn đang tìm kiếm (Ví dụ: Python, UI/UX design)..."
               />
+              <FieldError msg={fieldErrors.bio} />
             </section>
 
             {/* ===== Submit ===== */}
