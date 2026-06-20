@@ -203,6 +203,20 @@ export const MentorPanel: React.FC = () => {
   };
   useEffect(() => { load(); }, []);
 
+  /**
+   * Làm mới request (checklist/allowedActions/documents) NGẦM — KHÔNG bật `loading`
+   * để tránh remount cả panel (gây nhảy về đầu trang sau khi upload/xoá minh chứng).
+   */
+  const refreshRequest = async () => {
+    try {
+      const r = await mentorVerificationApi.getCurrent();
+      try { r.timeline = await mentorVerificationApi.getTimeline(); } catch { /* optional */ }
+      setReq(r);
+    } catch (err) {
+      console.warn('Không làm mới được hồ sơ xác thực.', err);
+    }
+  };
+
   const allowedActions = req?.allowedActions;
   const checklist = req?.checklist;
   const docs = req?.documents ?? [];
@@ -316,10 +330,11 @@ export const MentorPanel: React.FC = () => {
     setError(null);
     try {
       const doc = await mentorVerificationApi.uploadDocument({ documentType: docType, isPrimary, file });
-      setReq({ ...req, documents: [...req.documents, doc] });
+      // cập nhật lạc quan + làm mới ngầm (giữ nguyên vị trí cuộn, không remount panel)
+      setReq((prev) => (prev ? { ...prev, documents: [...prev.documents, doc] } : prev));
       setIsPrimary(false);
       flash('Đã tải lên minh chứng.');
-      load();
+      await refreshRequest();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Tải minh chứng thất bại.');
     } finally {
@@ -333,9 +348,9 @@ export const MentorPanel: React.FC = () => {
     setError(null);
     try {
       await mentorVerificationApi.deleteDocument(documentId);
-      setReq({ ...req, documents: req.documents.filter((d) => d.documentId !== documentId) });
+      setReq((prev) => (prev ? { ...prev, documents: prev.documents.filter((d) => d.documentId !== documentId) } : prev));
       flash('Đã xoá minh chứng.');
-      load();
+      await refreshRequest();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Xoá minh chứng thất bại.');
     } finally {
@@ -680,7 +695,7 @@ export const MentorPanel: React.FC = () => {
             </label>
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <button disabled={busy} onClick={saveDraft} className="inline-flex items-center gap-2 bg-surface-muted hover:bg-line/40 text-fg text-body font-bold py-2.5 px-4 rounded-field cursor-pointer disabled:opacity-50 transition-all border border-line"><FileText className="w-4 h-4" /> Lưu bản nháp</button>
-              <button disabled={busy || !termsAccepted} onClick={submitVerification} className="ml-auto inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"><Send className="w-4 h-4" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại' : 'Nộp hồ sơ duyệt'}</button>
+              <button disabled={busy || !termsAccepted || !allowedActions?.canSubmit} onClick={submitVerification} className="ml-auto inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"><Send className="w-4 h-4" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại' : 'Nộp hồ sơ duyệt'}</button>
             </div>
             {!allowedActions?.canSubmit && (
               <p className="text-meta text-fg-faint font-medium inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> Hoàn thiện đủ các yêu cầu bắt buộc ở trên để có thể nộp hồ sơ.</p>
@@ -779,7 +794,7 @@ const DocumentsCard: React.FC<{
           <span className="w-11 h-11 rounded-card bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition-transform"><UploadCloud className="w-5 h-5" /></span>
           <span className="text-body font-bold text-fg">Kéo thả tệp vào đây, hoặc <span className="text-primary">chọn từ máy</span></span>
           <span className="text-meta text-fg-faint font-medium">JPG, PNG hoặc PDF · tối đa 5MB</span>
-          <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
+          <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; onUpload(f); }} />
         </label>
       </div>
     )}
