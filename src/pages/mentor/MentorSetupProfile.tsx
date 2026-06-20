@@ -24,6 +24,7 @@ export const MentorSetupProfile: React.FC = () => {
   const [helpTopicIds, setHelpTopicIds] = useState<string[]>([]);
   const [teachingMode, setTeachingMode] = useState<TeachingMode>('ONLINE');
   const [sessionDuration, setSessionDuration] = useState<SessionDuration>(60);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
@@ -53,9 +54,10 @@ export const MentorSetupProfile: React.FC = () => {
           setExpertiseDescription(profile.expertiseDescription ?? '');
           setSupportingSubjects(profile.supportingSubjects ?? '');
           setIsAvailable(profile.isAvailable ?? true);
-          setHelpTopicIds(profile.helpTopicIds ?? []);
+          setHelpTopicIds((profile.helpTopics ?? []).map((t) => t.id));
           setTeachingMode(profile.teachingMode ?? 'ONLINE');
           setSessionDuration(profile.sessionDuration ?? 60);
+          setPhoneNumber(profile.phoneNumber ?? '');
           setLinkedinUrl(profile.linkedinUrl ?? '');
           setGithubUrl(profile.githubUrl ?? '');
           setPortfolioUrl(profile.portfolioUrl ?? '');
@@ -85,6 +87,7 @@ export const MentorSetupProfile: React.FC = () => {
     if (supportingSubjects.length > SUPPORTING_MAX) return `Môn học hỗ trợ tối đa ${SUPPORTING_MAX} ký tự.`;
     if (helpTopicIds.length === 0) return 'Vui lòng chọn ít nhất 1 chủ đề hỗ trợ.';
     if (helpTopicIds.length > HELP_TOPICS_MAX) return `Chỉ được chọn tối đa ${HELP_TOPICS_MAX} chủ đề.`;
+    if (!/^(0)(3|5|7|8|9)[0-9]{8}$/.test(phoneNumber.trim())) return 'Vui lòng nhập số điện thoại Việt Nam hợp lệ (VD: 0901234567).';
     return null;
   };
 
@@ -108,6 +111,7 @@ export const MentorSetupProfile: React.FC = () => {
         helpTopicIds,
         teachingMode,
         sessionDuration,
+        phoneNumber: phoneNumber.trim(),
         linkedinUrl: linkedinUrl || undefined,
         githubUrl: githubUrl || undefined,
         portfolioUrl: portfolioUrl || undefined,
@@ -267,7 +271,7 @@ export const MentorSetupProfile: React.FC = () => {
                           : 'bg-brand-bg border-brand-border text-brand-text-muted hover:bg-brand-bg/80'
                       }`}
                     >
-                      {topic.name}
+                      {topic.nameVi}
                     </button>
                   );
                 })}

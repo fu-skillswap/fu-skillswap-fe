@@ -2,7 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, getPostLoginRedirect } from '../context/AuthContext';
 import { apiClient } from '../api/client';
-import { User, GraduationCap, School, Check, AlertCircle, FileText } from 'lucide-react';
+import { User, School, Check, AlertCircle, FileText, Sparkles, Hash, CalendarDays } from 'lucide-react';
+import { onAvatarError } from '../lib/img';
+
+// input/select dùng chung 1 style để đồng nhất
+const fieldCls =
+  'w-full bg-brand-bg/40 border border-brand-border focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20 rounded-field py-2.5 px-3.5 text-body text-brand-text focus:outline-none transition-all font-semibold placeholder-brand-grey';
+
+const SectionTitle: React.FC<{ n: number; icon: React.ReactNode; title: string; hint?: string }> = ({ n, icon, title, hint }) => (
+  <div className="flex items-center gap-3 mb-4">
+    <span className="w-8 h-8 shrink-0 rounded-field bg-brand-terracotta text-white flex items-center justify-center font-extrabold text-body shadow-sm shadow-brand-terracotta/25">{n}</span>
+    <div className="flex-1">
+      <h3 className="text-body font-extrabold text-brand-text flex items-center gap-1.5">{icon}{title}</h3>
+      {hint && <p className="text-meta text-brand-text-muted font-medium">{hint}</p>}
+    </div>
+  </div>
+);
 
 interface Campus {
   id: string;
@@ -184,210 +199,140 @@ export const CompleteProfile: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-brand-bg flex items-center justify-center py-12 px-4 overflow-hidden text-left">
-      
-      {/* Background Neon Glows */}
-      <div className="absolute -top-[10%] -left-[10%] w-[45vw] h-[45vw] rounded-full bg-brand-terracotta/4 blur-[130px] pointer-events-none"></div>
-      <div className="absolute -bottom-[10%] -right-[10%] w-[45vw] h-[45vw] rounded-full bg-brand-blue/3 blur-[130px] pointer-events-none"></div>
+    <div className="relative min-h-screen bg-brand-bg flex items-center justify-center py-10 px-4 overflow-hidden text-left">
 
-      <div className="relative w-full max-w-2xl bg-surface/85 border border-brand-border backdrop-blur-xl rounded-card p-8 lg:p-10 z-10 shadow-xl shadow-brand-text/5">
-        
-        {/* Header */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 rounded-field bg-brand-terracotta flex items-center justify-center shadow-lg shadow-brand-terracotta/20 mb-3">
-            <GraduationCap className="w-6 h-6 text-white" />
-          </div>
-          <h2 className="text-2xl font-bold font-serif text-brand-text">Hoàn thiện hồ sơ học thuật</h2>
-          <p className="text-brand-text-muted text-body font-semibold mt-1">
-            Vui lòng điền thông tin chi tiết để hệ thống đề xuất trao đổi kỹ năng phù hợp
-          </p>
+      {/* Background Neon Glows */}
+      <div className="absolute -top-[10%] -left-[10%] w-[45vw] h-[45vw] rounded-full bg-brand-terracotta/5 blur-[130px] pointer-events-none"></div>
+      <div className="absolute -bottom-[10%] -right-[10%] w-[45vw] h-[45vw] rounded-full bg-brand-blue/4 blur-[130px] pointer-events-none"></div>
+
+      <div className="relative w-full max-w-3xl bg-surface border border-brand-border backdrop-blur-xl rounded-card z-10 shadow-2xl shadow-brand-text/10 overflow-hidden">
+
+        {/* ===== Header banner ===== */}
+        <div className="relative h-28" style={{ background: 'linear-gradient(110deg, var(--brand-terracotta, #c1654f) 0%, #c97b63 45%, var(--brand-blue, #3b6ea5) 130%)' }}>
+          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.18) 1px, transparent 1.4px)', backgroundSize: '14px 14px' }} />
+          <span className="absolute top-4 right-5 inline-flex items-center gap-1.5 bg-white/15 backdrop-blur text-white text-meta font-bold py-1 px-3 rounded-full border border-white/25">
+            <Sparkles className="w-3.5 h-3.5" /> Bước cuối để bắt đầu
+          </span>
         </div>
 
-        {error && (
-          <div className="mb-6 flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-card text-body">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
-          {/* Section: Personal Details */}
-          <div className="space-y-4">
-            <h3 className="text-body font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
-              <User className="w-4 h-4" /> 1. Thông tin cá nhân
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Tên hiển thị</label>
-                <input
-                  type="text"
-                  required
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
-                  placeholder="Nguyễn Văn A"
-                />
-              </div>
-
-              <div>
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Mã số sinh viên (MSSV)</label>
-                <input
-                  type="text"
-                  required
-                  value={studentCode}
-                  onChange={(e) => setStudentCode(e.target.value)}
-                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all placeholder-brand-grey font-bold"
-                  placeholder="Ví dụ: SE192621"
-                />
-              </div>
+        <div className="px-6 sm:px-9 pb-9">
+          {/* Avatar overlapping banner */}
+          <div className="-mt-11 mb-4">
+            <div className="relative w-[84px] h-[84px] rounded-card ring-4 ring-surface bg-surface-muted overflow-hidden shadow-lg">
+              <img
+                src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                onError={onAvatarError}
+                alt={displayName || user?.fullName || ''}
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
-
-          {/* Section: Academic Details */}
-          <div className="space-y-4 pt-2">
-            <h3 className="text-body font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
-              <School className="w-4 h-4" /> 2. Cơ sở & Ngành học FPT
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Cơ sở học tập</label>
-                <select
-                  required
-                  value={selectedCampus}
-                  onChange={(e) => setSelectedCampus(e.target.value)}
-                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none transition-all cursor-pointer font-semibold"
-                >
-                  <option value="">-- Chọn cơ sở --</option>
-                  {campuses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Ngành học (Major)</label>
-                <select
-                  required
-                  value={selectedProgram}
-                  onChange={(e) => setSelectedProgram(e.target.value)}
-                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none transition-all cursor-pointer font-semibold"
-                >
-                  <option value="">-- Chọn ngành học --</option>
-                  {programs.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nameVi} ({p.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Chuyên ngành</label>
-                <select
-                  required
-                  disabled={!selectedProgram}
-                  value={selectedSpecialization}
-                  onChange={(e) => setSelectedSpecialization(e.target.value)}
-                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer font-semibold"
-                >
-                  <option value="">-- Chọn chuyên ngành --</option>
-                  {specializations.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nameVi} ({s.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Học kỳ hiện tại</label>
-                <input
-                  type="number"
-                  required
-                  min={1}
-                  max={12}
-                  value={semester}
-                  onChange={(e) => setSemester(Number(e.target.value))}
-                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
-                  placeholder="Ví dụ: 5"
-                />
-              </div>
-
-              <div>
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Năm nhập học</label>
-                <input
-                  type="number"
-                  required
-                  min={2000}
-                  max={2030}
-                  value={intakeYear}
-                  onChange={(e) => setIntakeYear(Number(e.target.value))}
-                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
-                  placeholder="Ví dụ: 2022"
-                />
-              </div>
-            </div>
-
-            {/* Alumni toggle */}
-            <div className="flex items-center gap-3 pt-2">
-              <label className="relative flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isAlumni}
-                  onChange={(e) => setIsAlumni(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-9 h-5 bg-brand-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-terracotta"></div>
-                <span className="ml-3 text-body font-bold text-brand-text-muted">Tôi là Cựu sinh viên (Alumni) đã tốt nghiệp</span>
-              </label>
-            </div>
-
-            {isAlumni && (
-              <div className="mt-3">
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Năm tốt nghiệp</label>
-                <input
-                  type="number"
-                  required={isAlumni}
-                  min={2000}
-                  max={2030}
-                  value={graduationYear}
-                  onChange={(e) => setGraduationYear(Number(e.target.value))}
-                  className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
-                />
-              </div>
-            )}
+          {/* Greeting — đặt dưới banner để không bị đè/cắt chữ */}
+          <div className="mb-6">
+            <h2 className="text-xl sm:text-2xl font-extrabold font-serif text-brand-text tracking-tight leading-tight">
+              Hoàn thiện hồ sơ học thuật
+            </h2>
+            <p className="text-brand-text-muted text-body font-semibold mt-1">
+              Xin chào{user?.fullName ? `, ${user.fullName}` : ''} — điền thông tin để nhận gợi ý trao đổi phù hợp.
+            </p>
           </div>
 
-          {/* Section: Biography */}
-          <div className="space-y-4 pt-2">
-            <h3 className="text-body font-extrabold tracking-wider text-brand-terracotta uppercase flex items-center gap-2 border-b border-brand-border pb-2">
-              <FileText className="w-4 h-4" /> 3. Giới thiệu bản thân
-            </h3>
-            <div>
-              <label className="block text-body font-bold text-brand-text-muted mb-1.5">Bio / Kỹ năng nổi bật</label>
+          {error && (
+            <div className="mb-6 flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-card text-body font-semibold">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-7">
+
+            {/* ===== Section 1: Personal ===== */}
+            <section className="bg-brand-bg/30 border border-brand-border rounded-card p-5">
+              <SectionTitle n={1} icon={<User className="w-4 h-4 text-brand-terracotta" />} title="Thông tin cá nhân" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Tên hiển thị</label>
+                  <input type="text" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={fieldCls} placeholder="Nguyễn Văn A" />
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5 flex items-center gap-1"><Hash className="w-3.5 h-3.5" /> Mã số sinh viên</label>
+                  <input type="text" required value={studentCode} onChange={(e) => setStudentCode(e.target.value)} className={`${fieldCls} font-bold tracking-wide`} placeholder="Ví dụ: SE192621" />
+                </div>
+              </div>
+            </section>
+
+            {/* ===== Section 2: Academic ===== */}
+            <section className="bg-brand-bg/30 border border-brand-border rounded-card p-5">
+              <SectionTitle n={2} icon={<School className="w-4 h-4 text-brand-terracotta" />} title="Cơ sở & Ngành học FPT" hint="Chọn ngành trước để mở danh sách chuyên ngành." />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Cơ sở học tập</label>
+                  <select required value={selectedCampus} onChange={(e) => setSelectedCampus(e.target.value)} className={`${fieldCls} cursor-pointer`}>
+                    <option value="">-- Chọn cơ sở --</option>
+                    {campuses.map((c) => (<option key={c.id} value={c.id}>{c.name} ({c.code})</option>))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Ngành học (Major)</label>
+                  <select required value={selectedProgram} onChange={(e) => setSelectedProgram(e.target.value)} className={`${fieldCls} cursor-pointer`}>
+                    <option value="">-- Chọn ngành học --</option>
+                    {programs.map((p) => (<option key={p.id} value={p.id}>{p.nameVi} ({p.code})</option>))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Chuyên ngành</label>
+                  <select required disabled={!selectedProgram} value={selectedSpecialization} onChange={(e) => setSelectedSpecialization(e.target.value)} className={`${fieldCls} cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}>
+                    <option value="">-- Chọn chuyên ngành --</option>
+                    {specializations.map((s) => (<option key={s.id} value={s.id}>{s.nameVi} ({s.code})</option>))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5 flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> Học kỳ hiện tại</label>
+                  <input type="number" required min={1} max={12} value={semester} onChange={(e) => setSemester(Number(e.target.value))} className={fieldCls} placeholder="Ví dụ: 5" />
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm nhập học</label>
+                  <input type="number" required min={2000} max={2030} value={intakeYear} onChange={(e) => setIntakeYear(Number(e.target.value))} className={fieldCls} placeholder="Ví dụ: 2022" />
+                </div>
+              </div>
+
+              {/* Alumni toggle */}
+              <div className="flex items-center gap-3 mt-4">
+                <label className="relative flex items-center cursor-pointer">
+                  <input type="checkbox" checked={isAlumni} onChange={(e) => setIsAlumni(e.target.checked)} className="sr-only peer" />
+                  <div className="w-9 h-5 bg-brand-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-terracotta"></div>
+                  <span className="ml-3 text-body font-bold text-brand-text-muted">Tôi là Cựu sinh viên (Alumni) đã tốt nghiệp</span>
+                </label>
+              </div>
+
+              {isAlumni && (
+                <div className="mt-4">
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm tốt nghiệp</label>
+                  <input type="number" required={isAlumni} min={2000} max={2030} value={graduationYear} onChange={(e) => setGraduationYear(Number(e.target.value))} className={`${fieldCls} max-w-xs`} />
+                </div>
+              )}
+            </section>
+
+            {/* ===== Section 3: Bio ===== */}
+            <section className="bg-brand-bg/30 border border-brand-border rounded-card p-5">
+              <SectionTitle n={3} icon={<FileText className="w-4 h-4 text-brand-terracotta" />} title="Giới thiệu bản thân" />
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
-                className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all resize-none placeholder-brand-grey font-medium"
+                className={`${fieldCls} resize-none font-medium`}
                 placeholder="Giới thiệu bản thân, kỹ năng bạn muốn chia sẻ (Ví dụ: React, Java) hoặc kỹ năng bạn đang tìm kiếm (Ví dụ: Python, UI/UX design)..."
               />
-            </div>
-          </div>
+            </section>
 
-          {/* Actions */}
-          <div className="pt-4 flex items-center gap-3">
+            {/* ===== Submit ===== */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white font-bold py-3 px-6 rounded-card cursor-pointer shadow-lg shadow-brand-terracotta/20 active:scale-[0.99] transition-all"
+              className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white font-bold py-3.5 px-6 rounded-card cursor-pointer shadow-lg shadow-brand-terracotta/25 active:scale-[0.99] transition-all disabled:opacity-60"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -398,10 +343,9 @@ export const CompleteProfile: React.FC = () => {
                 </>
               )}
             </button>
-          </div>
 
-        </form>
-
+          </form>
+        </div>
       </div>
     </div>
   );

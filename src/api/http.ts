@@ -15,5 +15,6 @@ export const http = {
   get: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(apiClient.get(url, config)),
   post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(apiClient.post(url, body, config)),
   put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(apiClient.put(url, body, config)),
+  patch: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(apiClient.patch(url, body, config)),
   del: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(apiClient.delete(url, config)),
 };

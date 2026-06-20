@@ -232,21 +232,21 @@ export default function AdminMentorVerificationDetailPage() {
               </span>
             </div>
             <div>
-              <span className="text-brand-text-muted font-bold">Campus ID:</span>
+              <span className="text-brand-text-muted font-bold">Campus:</span>
               <span className="ml-2 text-brand-text font-semibold">
-                {detail.studentProfile.campusId}
+                {detail.studentProfile.campus?.name ?? '-'}
               </span>
             </div>
             <div>
-              <span className="text-brand-text-muted font-bold">Program ID:</span>
+              <span className="text-brand-text-muted font-bold">Program:</span>
               <span className="ml-2 text-brand-text font-semibold">
-                {detail.studentProfile.programId}
+                {detail.studentProfile.program?.nameVi ?? '-'}
               </span>
             </div>
             <div>
-              <span className="text-brand-text-muted font-bold">Specialization ID:</span>
+              <span className="text-brand-text-muted font-bold">Specialization:</span>
               <span className="ml-2 text-brand-text font-semibold">
-                {detail.studentProfile.specializationId}
+                {detail.studentProfile.specialization?.nameVi ?? '-'}
               </span>
             </div>
             <div>
@@ -264,7 +264,7 @@ export default function AdminMentorVerificationDetailPage() {
             <div>
               <span className="text-brand-text-muted font-bold">Is Alumni:</span>
               <span className="ml-2 text-brand-text font-semibold">
-                {detail.studentProfile.isAlumni ? 'Yes' : 'No'}
+                {detail.studentProfile.alumni ? 'Yes' : 'No'}
               </span>
             </div>
             {detail.studentProfile.graduationYear !== null && detail.studentProfile.graduationYear !== undefined && (
@@ -298,68 +298,42 @@ export default function AdminMentorVerificationDetailPage() {
               <span className="text-brand-text-muted font-bold">Headline:</span>
               <p className="mt-1 text-brand-text font-semibold">{detail.mentorProfile.headline}</p>
             </div>
-            {detail.mentorProfile.currentPosition && (
+            {detail.mentorProfile.expertiseDescription && (
               <div>
-                <span className="text-brand-text-muted font-bold">Current Position:</span>
-                <span className="ml-2 text-brand-text font-semibold">{detail.mentorProfile.currentPosition}</span>
+                <span className="text-brand-text-muted font-bold">Expertise Description:</span>
+                <p className="mt-1 text-brand-text">{detail.mentorProfile.expertiseDescription}</p>
               </div>
             )}
-            {detail.mentorProfile.currentCompany && (
+            {detail.mentorProfile.supportingSubjects && (
               <div>
-                <span className="text-brand-text-muted font-bold">Current Company:</span>
-                <span className="ml-2 text-brand-text font-semibold">{detail.mentorProfile.currentCompany}</span>
+                <span className="text-brand-text-muted font-bold">Supporting Subjects:</span>
+                <p className="mt-1 text-brand-text">{detail.mentorProfile.supportingSubjects}</p>
               </div>
             )}
-            {detail.mentorProfile.industry && (
-              <div>
-                <span className="text-brand-text-muted font-bold">Industry:</span>
-                <span className="ml-2 text-brand-text font-semibold">{detail.mentorProfile.industry}</span>
-              </div>
-            )}
-            {detail.mentorProfile.yearsOfExperience !== undefined && (
-              <div>
-                <span className="text-brand-text-muted font-bold">Years of Experience:</span>
-                <span className="ml-2 text-brand-text font-semibold">{detail.mentorProfile.yearsOfExperience}</span>
-              </div>
-            )}
-            {detail.mentorProfile.teachingMode && (
-              <div>
-                <span className="text-brand-text-muted font-bold">Teaching Mode:</span>
-                <span className="ml-2 text-brand-text font-semibold">{detail.mentorProfile.teachingMode}</span>
-              </div>
-            )}
-            {detail.mentorProfile.expertiseSummary && (
-              <div>
-                <span className="text-brand-text-muted font-bold">Expertise Summary:</span>
-                <p className="mt-1 text-brand-text">{detail.mentorProfile.expertiseSummary}</p>
-              </div>
-            )}
-            {detail.mentorProfile.bio && (
-              <div>
-                <span className="text-brand-text-muted font-bold">Bio:</span>
-                <p className="mt-1 text-brand-text">{detail.mentorProfile.bio}</p>
-              </div>
-            )}
-            <div>
-              <span className="text-brand-text-muted font-bold">Expertise Tags:</span>
-              <div className="mt-1 flex flex-wrap gap-2">
-                {detail.mentorProfile.expertiseTagIds.map((tag) => (
-                  <span key={tag} className="bg-brand-bg border border-brand-border px-2 py-1 rounded-lg text-meta font-bold">
-                    {tag}
-                  </span>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {detail.mentorProfile.teachingMode && (
+                <span><span className="text-brand-text-muted font-bold">Teaching Mode:</span> <span className="text-brand-text font-semibold">{detail.mentorProfile.teachingMode}</span></span>
+              )}
+              {detail.mentorProfile.sessionDuration !== undefined && (
+                <span><span className="text-brand-text-muted font-bold">Session:</span> <span className="text-brand-text font-semibold">{detail.mentorProfile.sessionDuration} phút</span></span>
+              )}
+              {detail.mentorProfile.phoneNumber && (
+                <span><span className="text-brand-text-muted font-bold">Phone:</span> <span className="text-brand-text font-semibold">{detail.mentorProfile.phoneNumber}</span></span>
+              )}
+              <span><span className="text-brand-text-muted font-bold">Available:</span> <span className="text-brand-text font-semibold">{detail.mentorProfile.isAvailable ? 'Yes' : 'No'}</span></span>
             </div>
-            <div>
-              <span className="text-brand-text-muted font-bold">Help Topics:</span>
-              <div className="mt-1 flex flex-wrap gap-2">
-                {detail.mentorProfile.helpTopicIds.map((topic) => (
-                  <span key={topic} className="bg-brand-bg border border-brand-border px-2 py-1 rounded-lg text-meta font-bold">
-                    {topic}
-                  </span>
-                ))}
+            {detail.mentorProfile.helpTopics && detail.mentorProfile.helpTopics.length > 0 && (
+              <div>
+                <span className="text-brand-text-muted font-bold">Help Topics:</span>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {detail.mentorProfile.helpTopics.map((topic) => (
+                    <span key={topic.id} className="bg-brand-bg border border-brand-border px-2 py-1 rounded-lg text-meta font-bold">
+                      {topic.nameVi}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <div className="flex gap-4">
               {detail.mentorProfile.linkedinUrl && (
                 <a href={detail.mentorProfile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-brand-blue font-bold hover:underline">
@@ -391,12 +365,12 @@ export default function AdminMentorVerificationDetailPage() {
         {detail.documents && detail.documents.length > 0 ? (
           <div className="space-y-3">
             {detail.documents.map((doc) => (
-              <div key={doc.documentId} className="flex items-center justify-between bg-brand-bg border border-brand-border rounded-card p-3">
+              <div key={doc.id} className="flex items-center justify-between bg-brand-bg border border-brand-border rounded-card p-3">
                 <div>
-                  <span className="text-brand-text font-bold">{doc.fileName}</span>
+                  <span className="text-brand-text font-bold">{doc.originalFilename}</span>
                   <span className="ml-2 text-meta text-brand-text-muted font-semibold">({doc.documentType})</span>
-                  {doc.sizeKb && (
-                    <span className="ml-2 text-meta text-brand-text-muted font-semibold">• {(doc.sizeKb / 1024).toFixed(2)} MB</span>
+                  {doc.sizeBytes && (
+                    <span className="ml-2 text-meta text-brand-text-muted font-semibold">• {(doc.sizeBytes / 1024 / 1024).toFixed(2)} MB</span>
                   )}
                 </div>
                 {doc.fileUrl && (
@@ -448,19 +422,25 @@ export default function AdminMentorVerificationDetailPage() {
         <h2 className="text-xl font-bold text-brand-text font-serif mb-4">
           Checklist
         </h2>
-        {detail.checklist && detail.checklist.length > 0 ? (
+        {detail.checklist ? (
           <div className="space-y-3">
-            {detail.checklist.map((item) => (
-              <div key={item.checkId} className="flex items-start gap-3">
-                <span className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${item.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {item.passed ? 'Y' : 'N'}
-                </span>
-                <div>
-                  <p className="text-brand-text font-bold">{item.label}</p>
-                  {item.evidence && <p className="text-meta text-brand-text-muted font-semibold mt-0.5">{item.evidence}</p>}
+            {([
+              ['academicProfileCompleted', 'Hồ sơ học vấn hoàn thiện'],
+              ['mentorProfileCompleted', 'Hồ sơ mentor hoàn thiện'],
+              ['hasAffiliationProof', 'Có minh chứng liên kết FPTU'],
+              ['hasExpertiseProof', 'Có minh chứng chuyên môn'],
+              ['canSubmit', 'Đủ điều kiện nộp'],
+            ] as const).map(([key, label]) => {
+              const passed = detail.checklist![key];
+              return (
+                <div key={key} className="flex items-start gap-3">
+                  <span className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {passed ? 'Y' : 'N'}
+                  </span>
+                  <p className="text-brand-text font-bold">{label}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-brand-text-muted font-semibold">No checklist items.</p>

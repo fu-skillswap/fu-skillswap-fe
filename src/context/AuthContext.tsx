@@ -12,11 +12,22 @@ export interface UserMeResponse {
   hasStudentProfile: boolean;
 }
 
+/**
+ * Vai trò đang hoạt động ở FE. Một user vừa là MENTOR vừa có thể "đóng vai" MENTEE
+ * (vì mentor không được đặt lịch mentor khác — phải chuyển sang chế độ Mentee để đặt).
+ */
+export type ActiveRole = 'MENTOR' | 'MENTEE';
+const ACTIVE_ROLE_KEY = 'activeRole';
+
 interface AuthContextType {
   user: UserMeResponse | null;
   isAuthenticated: boolean;
   loading: boolean;
   isDevBypass: boolean;
+  /** Vai trò đang hoạt động (chỉ đổi được khi user có role MENTOR). */
+  activeRole: ActiveRole;
+  /** Đổi vai trò hoạt động (Mentor ⇄ Mentee). */
+  setActiveRole: (role: ActiveRole) => void;
   loginWithGoogle: (idToken: string) => Promise<UserMeResponse>;
   loginWithDevBypass: (role: 'MENTEE' | 'MENTOR' | 'ADMIN') => UserMeResponse;
   logout: () => Promise<void>;
@@ -41,6 +52,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserMeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDevBypass, setIsDevBypass] = useState(false);
+  const [activeRole, setActiveRoleState] = useState<ActiveRole>('MENTEE');
+
+  // Đồng bộ activeRole theo user: user không có role MENTOR thì luôn là MENTEE;
+  // có MENTOR thì khôi phục lựa chọn đã lưu (mặc định MENTOR).
+  useEffect(() => {
+    if (!user) return;
+    if (!user.roles?.includes('MENTOR')) {
+      setActiveRoleState('MENTEE');
+      return;
+    }
+    const stored = localStorage.getItem(ACTIVE_ROLE_KEY);
+    setActiveRoleState(stored === 'MENTEE' || stored === 'MENTOR' ? stored : 'MENTOR');
+  }, [user]);
+
+  const setActiveRole = (role: ActiveRole) => {
+    localStorage.setItem(ACTIVE_ROLE_KEY, role);
+    setActiveRoleState(role);
+  };
 
   const checkCurrentUser = async () => {
     const accessToken = localStorage.getItem('accessToken');
@@ -86,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('accessToken');
       localStorage.removeItem('isDevBypass');
       localStorage.removeItem('demoUser');
+      localStorage.removeItem(ACTIVE_ROLE_KEY);
     };
 
     window.addEventListener('auth-logout', handleLogoutEvent);
@@ -159,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('accessToken');
       localStorage.removeItem('isDevBypass');
       localStorage.removeItem('demoUser');
+      localStorage.removeItem(ACTIVE_ROLE_KEY);
       setUser(null);
       setIsDevBypass(false);
       setLoading(false);
@@ -193,6 +224,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         loading,
         isDevBypass,
+        activeRole,
+        setActiveRole,
         loginWithGoogle,
         loginWithDevBypass,
         logout,

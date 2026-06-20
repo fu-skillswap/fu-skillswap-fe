@@ -14,7 +14,6 @@ import { LandingPage } from './pages/LandingPage';
 // Admin Pages
 import { AdminMetrics } from './pages/admin/AdminMetrics';
 import { UserManagement } from './pages/admin/UserManagement';
-import { VerificationQueue } from './pages/admin/VerificationQueue';
 import AdminMentorVerificationQueuePage from './app/admin/mentor-verification/page';
 import AdminMentorVerificationDetailPage from './app/admin/mentor-verification/[requestId]/page';
 
@@ -65,7 +64,9 @@ function App() {
              <Route path="/admin" element={<Navigate to="/admin/metrics" replace />} />
              <Route path="/admin/metrics" element={<AdminMetrics />} />
              <Route path="/admin/users" element={<UserManagement />} />
-             <Route path="/admin/verifications" element={<VerificationQueue />} />
+             {/* Hàng đợi duyệt mentor đã hợp nhất vào trang dùng API thật bên dưới;
+                 route cũ /admin/verifications (mock localStorage) redirect sang đây. */}
+             <Route path="/admin/verifications" element={<Navigate to="/admin/mentor-verification" replace />} />
              <Route path="/admin/mentor-verification" element={<AdminMentorVerificationQueuePage />} />
              <Route path="/admin/mentor-verification/:requestId" element={<AdminMentorVerificationDetailPage />} />
 

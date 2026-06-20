@@ -9,8 +9,11 @@ import { mentorVerificationApi } from '../../api/mentorVerification';
 import { mentorProfileApi, helpTopicApi } from '../../api/mentorProfile';
 import type {
   VerificationRequest, VerificationStatus, DocumentType,
-  HelpTopic, TeachingMode, SessionDuration,
+  HelpTopic, TeachingMode, SessionDuration, MentorProfileResponse,
 } from '../../api/types';
+
+// SĐT VN — BE bắt buộc field này khi lưu hồ sơ mentor.
+const PHONE_RE = /^(0)(3|5|7|8|9)[0-9]{8}$/;
 
 // ---------------------------------------------------------------------------
 // Cấu hình hiển thị
@@ -128,6 +131,7 @@ export const MentorPanel: React.FC = () => {
   const [helpTopicIds, setHelpTopicIds] = useState<string[]>([]);
   const [teachingMode, setTeachingMode] = useState<TeachingMode>('ONLINE');
   const [sessionDuration, setSessionDuration] = useState<SessionDuration>(60);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
@@ -135,7 +139,6 @@ export const MentorPanel: React.FC = () => {
 
   // Document upload controls
   const [docType, setDocType] = useState<DocumentType>('FPTU_AFFILIATION_PROOF');
-  const [isPrimary, setIsPrimary] = useState(false);
   const [submitNote, setSubmitNote] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -146,14 +149,16 @@ export const MentorPanel: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 3000); };
 
-  const fillProfileForm = (p: { headline?: string; expertiseDescription?: string; supportingSubjects?: string; isAvailable?: boolean; helpTopicIds?: string[]; teachingMode?: TeachingMode; sessionDuration?: SessionDuration; linkedinUrl?: string; githubUrl?: string; portfolioUrl?: string }) => {
+  const fillProfileForm = (p: MentorProfileResponse) => {
     setHeadline(p.headline ?? '');
     setExpertiseDescription(p.expertiseDescription ?? '');
     setSupportingSubjects(p.supportingSubjects ?? '');
     setIsAvailable(p.isAvailable ?? true);
-    setHelpTopicIds(p.helpTopicIds ?? []);
+    // BE trả helpTopics (mảng tag), map về danh sách id để binding chip.
+    setHelpTopicIds((p.helpTopics ?? []).map((t) => t.id));
     setTeachingMode(p.teachingMode ?? 'ONLINE');
     setSessionDuration(p.sessionDuration ?? 60);
+    setPhoneNumber(p.phoneNumber ?? '');
     setLinkedinUrl(p.linkedinUrl ?? '');
     setGithubUrl(p.githubUrl ?? '');
     setPortfolioUrl(p.portfolioUrl ?? '');
@@ -197,9 +202,25 @@ export const MentorPanel: React.FC = () => {
   };
   useEffect(() => { load(); }, []);
 
+  /**
+   * Làm mới request (checklist/allowedActions/documents) NGẦM — KHÔNG bật `loading`
+   * để tránh remount cả panel (gây nhảy về đầu trang sau khi upload/xoá minh chứng).
+   */
+  const refreshRequest = async () => {
+    try {
+      const r = await mentorVerificationApi.getCurrent();
+      try { r.timeline = await mentorVerificationApi.getTimeline(); } catch { /* optional */ }
+      setReq(r);
+    } catch (err) {
+      console.warn('Không làm mới được hồ sơ xác thực.', err);
+    }
+  };
+
   const allowedActions = req?.allowedActions;
   const checklist = req?.checklist;
-  const docs = req?.documents ?? [];
+  // BE trả về cả document đã soft-delete (isActive=false) — chỉ hiển thị tài liệu còn hiệu lực,
+  // nếu không user thấy "doc ma" và bấm xoá lại sẽ bị 400 "đã bị xóa".
+  const docs = (req?.documents ?? []).filter((d) => d.isActive !== false);
 
   const validateProfile = (): string | null => {
     if (!headline.trim()) return 'Vui lòng điền Headline.';
@@ -209,6 +230,7 @@ export const MentorPanel: React.FC = () => {
     if (supportingSubjects.length > SUPPORTING_MAX) return `Môn học hỗ trợ tối đa ${SUPPORTING_MAX} ký tự.`;
     if (helpTopicIds.length === 0) return 'Vui lòng chọn ít nhất 1 chủ đề hỗ trợ.';
     if (helpTopicIds.length > HELP_TOPICS_MAX) return `Chỉ được chọn tối đa ${HELP_TOPICS_MAX} chủ đề.`;
+    if (!PHONE_RE.test(phoneNumber.trim())) return 'Vui lòng nhập số điện thoại Việt Nam hợp lệ (VD: 0901234567).';
     return null;
   };
 
@@ -220,6 +242,7 @@ export const MentorPanel: React.FC = () => {
     helpTopicIds,
     teachingMode,
     sessionDuration,
+    phoneNumber: phoneNumber.trim(),
     linkedinUrl: linkedinUrl || undefined,
     githubUrl: githubUrl || undefined,
     portfolioUrl: portfolioUrl || undefined,
@@ -307,11 +330,11 @@ export const MentorPanel: React.FC = () => {
     setBusy(true);
     setError(null);
     try {
-      const doc = await mentorVerificationApi.uploadDocument({ documentType: docType, isPrimary, file });
-      setReq({ ...req, documents: [...req.documents, doc] });
-      setIsPrimary(false);
+      const doc = await mentorVerificationApi.uploadDocument({ documentType: docType, file });
+      // cập nhật lạc quan + làm mới ngầm (giữ nguyên vị trí cuộn, không remount panel)
+      setReq((prev) => (prev ? { ...prev, documents: [...prev.documents, doc] } : prev));
       flash('Đã tải lên minh chứng.');
-      load();
+      await refreshRequest();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Tải minh chứng thất bại.');
     } finally {
@@ -325,9 +348,9 @@ export const MentorPanel: React.FC = () => {
     setError(null);
     try {
       await mentorVerificationApi.deleteDocument(documentId);
-      setReq({ ...req, documents: req.documents.filter((d) => d.documentId !== documentId) });
+      setReq((prev) => (prev ? { ...prev, documents: prev.documents.filter((d) => d.id !== documentId) } : prev));
       flash('Đã xoá minh chứng.');
-      load();
+      await refreshRequest();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Xoá minh chứng thất bại.');
     } finally {
@@ -444,6 +467,12 @@ export const MentorPanel: React.FC = () => {
               placeholder="Ví dụ: PRJ301, SWP391, EXE101..."
               className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
           </div>
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Số điện thoại liên hệ <span className="text-danger">*</span></label>
+            <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="VD: 0901234567"
+              className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+          </div>
           <label className="flex items-center gap-2 text-meta font-bold text-fg-muted cursor-pointer">
             <input type="checkbox" checked={isAvailable} onChange={(e) => setIsAvailable(e.target.checked)} className="cursor-pointer w-4 h-4 accent-[var(--primary)]" />
             Đang nhận mentee mới
@@ -471,7 +500,7 @@ export const MentorPanel: React.FC = () => {
               return (
                 <button key={topic.id} onClick={() => toggleHelpTopic(topic.id)}
                   className={`text-meta font-bold py-1.5 px-3 rounded-lg border transition-all cursor-pointer ${isSelected ? 'bg-primary-soft text-primary border-primary/25' : 'bg-surface border-line text-fg-muted hover:bg-surface-muted'}`}>
-                  {topic.name}
+                  {topic.nameVi}
                 </button>
               );
             })}
@@ -542,7 +571,7 @@ export const MentorPanel: React.FC = () => {
                 {resolvedHelpTopics.map((t) => (
                   <div key={t.id} className="flex items-center gap-3 p-3 rounded-field border border-line bg-surface-muted/40">
                     <div className="w-9 h-9 rounded-field bg-accent/12 text-accent flex items-center justify-center shrink-0"><Lightbulb className="w-4 h-4" /></div>
-                    <p className="text-body font-bold text-fg">{t.name}</p>
+                    <p className="text-body font-bold text-fg">{t.nameVi}</p>
                   </div>
                 ))}
               </div>
@@ -649,7 +678,6 @@ export const MentorPanel: React.FC = () => {
             docs={docs}
             canUpload={!!allowedActions?.canUploadDocuments}
             docType={docType} setDocType={setDocType}
-            isPrimary={isPrimary} setIsPrimary={setIsPrimary}
             onUpload={handleUpload} onDelete={handleDelete}
           />
 
@@ -666,7 +694,7 @@ export const MentorPanel: React.FC = () => {
             </label>
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <button disabled={busy} onClick={saveDraft} className="inline-flex items-center gap-2 bg-surface-muted hover:bg-line/40 text-fg text-body font-bold py-2.5 px-4 rounded-field cursor-pointer disabled:opacity-50 transition-all border border-line"><FileText className="w-4 h-4" /> Lưu bản nháp</button>
-              <button disabled={busy || !termsAccepted} onClick={submitVerification} className="ml-auto inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"><Send className="w-4 h-4" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại' : 'Nộp hồ sơ duyệt'}</button>
+              <button disabled={busy || !termsAccepted || !allowedActions?.canSubmit} onClick={submitVerification} className="ml-auto inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"><Send className="w-4 h-4" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại' : 'Nộp hồ sơ duyệt'}</button>
             </div>
             {!allowedActions?.canSubmit && (
               <p className="text-meta text-fg-faint font-medium inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> Hoàn thiện đủ các yêu cầu bắt buộc ở trên để có thể nộp hồ sơ.</p>
@@ -711,9 +739,8 @@ const DocumentsCard: React.FC<{
   docs: VerificationRequest['documents'];
   canUpload: boolean;
   docType?: DocumentType; setDocType?: (v: DocumentType) => void;
-  isPrimary?: boolean; setIsPrimary?: (v: boolean) => void;
   onUpload?: (file?: File) => void; onDelete?: (id: string) => void;
-}> = ({ docs, canUpload, docType, setDocType, isPrimary, setIsPrimary, onUpload, onDelete }) => (
+}> = ({ docs, canUpload, docType, setDocType, onUpload, onDelete }) => (
   <div className="meetmind-card p-6 rounded-card space-y-4">
     <div className="flex items-center justify-between border-b border-line-soft pb-2.5">
       <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Paperclip className="w-5 h-5 text-primary" /> Minh chứng đã tải</h3>
@@ -727,45 +754,42 @@ const DocumentsCard: React.FC<{
           <p className="text-meta text-fg-muted font-medium">Chưa có minh chứng nào.</p>
         </div>
       ) : docs.map((d) => {
-        const isImg = d.mime?.startsWith('image');
+        const isImg = d.contentType?.startsWith('image');
+        const sizeKb = d.sizeBytes ? Math.max(1, Math.round(d.sizeBytes / 1024)) : undefined;
         return (
-          <div key={d.documentId} className="flex items-center gap-3.5 bg-surface border border-line rounded-field p-3 transition-all hover:border-primary/30">
+          <div key={d.id} className="flex items-center gap-3.5 bg-surface border border-line rounded-field p-3 transition-all hover:border-primary/30">
             <div className={`w-12 h-12 rounded-field flex items-center justify-center shrink-0 ${isImg ? 'bg-accent/12 text-accent' : 'bg-danger/10 text-danger'}`}>
               {isImg ? <ImageIcon className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="text-body font-bold text-fg truncate">{d.fileName}</p>
-                {d.isPrimary && <span className="text-meta font-extrabold text-primary bg-primary-soft border border-primary/20 px-2 py-0.5 rounded-lg shrink-0">Chính</span>}
+                {d.fileUrl
+                  ? <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-body font-bold text-fg truncate hover:text-primary hover:underline">{d.originalFilename}</a>
+                  : <p className="text-body font-bold text-fg truncate">{d.originalFilename}</p>}
               </div>
-              <p className="text-meta text-fg-muted font-medium mt-0.5">{DOC_TYPES[d.documentType]}{d.sizeKb ? ` · ${d.sizeKb} KB` : ''}</p>
+              <p className="text-meta text-fg-muted font-medium mt-0.5">{DOC_TYPES[d.documentType]}{sizeKb ? ` · ${sizeKb} KB` : ''}</p>
             </div>
             {canUpload && onDelete && (
-              <button onClick={() => onDelete(d.documentId)} className="p-2 rounded-field text-fg-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-all" title="Xoá"><Trash2 className="w-4 h-4" /></button>
+              <button onClick={() => onDelete(d.id)} className="p-2 rounded-field text-fg-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-all" title="Xoá"><Trash2 className="w-4 h-4" /></button>
             )}
           </div>
         );
       })}
     </div>
 
-    {canUpload && setDocType && setIsPrimary && onUpload && (
+    {canUpload && setDocType && onUpload && (
       <div className="space-y-3 pt-1">
-        <div className="grid sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Loại minh chứng</label>
-            <select value={docType} onChange={(e) => setDocType(e.target.value as DocumentType)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold">
-              {Object.entries(DOC_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
-          <label className="flex items-end gap-2 text-meta font-bold text-fg-muted cursor-pointer pb-2.5 select-none">
-            <input type="checkbox" checked={isPrimary} onChange={(e) => setIsPrimary(e.target.checked)} className="w-4 h-4 accent-[var(--primary)]" /> Đặt làm minh chứng chính
-          </label>
+        <div>
+          <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Loại minh chứng</label>
+          <select value={docType} onChange={(e) => setDocType(e.target.value as DocumentType)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold">
+            {Object.entries(DOC_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
         </div>
         <label className="w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-line rounded-field py-8 text-fg-muted hover:text-primary hover:border-primary/40 transition-all cursor-pointer group">
           <span className="w-11 h-11 rounded-card bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition-transform"><UploadCloud className="w-5 h-5" /></span>
           <span className="text-body font-bold text-fg">Kéo thả tệp vào đây, hoặc <span className="text-primary">chọn từ máy</span></span>
           <span className="text-meta text-fg-faint font-medium">JPG, PNG hoặc PDF · tối đa 5MB</span>
-          <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
+          <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; onUpload(f); }} />
         </label>
       </div>
     )}
