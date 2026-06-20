@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { studentProfileApi } from '../api/studentProfile';
+import { mentorProfileApi } from '../api/mentorProfile';
 import { catalogApi } from '../api/catalog';
-import type { Campus, AcademicProgram, Specialization } from '../api/types';
+import type { Campus, AcademicProgram, Specialization, MentorProfileResponse, SessionDuration } from '../api/types';
 import {
   Check, AlertCircle, User, Camera, Loader2,
   Hash, GraduationCap, MapPin, Building2, BookOpen, CalendarDays, Clock, Award,
-  Pencil, ShieldCheck,
+  Pencil, ShieldCheck, X, Power,
 } from 'lucide-react';
 import { useImageUpload } from '../hooks/useImageUpload';
 import { MentorPanel } from './mentor/MentorPanel';
@@ -61,6 +62,58 @@ export const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Hồ sơ mentor + bật/tắt nhận booking (chỉ cho mentor đã có hồ sơ)
+  const [mentorProfile, setMentorProfile] = useState<MentorProfileResponse | null>(null);
+  const [availOpen, setAvailOpen] = useState(false);      // modal xác nhận
+  const [availTarget, setAvailTarget] = useState(false);  // trạng thái muốn đặt
+  const [availConfirmText, setAvailConfirmText] = useState('');
+  const [availBusy, setAvailBusy] = useState(false);
+  const isAvailable = mentorProfile?.isAvailable ?? false;
+
+  // Tải hồ sơ mentor để biết trạng thái nhận booking
+  useEffect(() => {
+    if (!isMentor || isDevBypass) return;
+    let active = true;
+    mentorProfileApi.get().then((p) => { if (active) setMentorProfile(p); }).catch(() => {});
+    return () => { active = false; };
+  }, [isMentor, isDevBypass]);
+
+  const openAvailModal = () => {
+    if (!mentorProfile) return;
+    setAvailTarget(!isAvailable);
+    setAvailConfirmText('');
+    setError(null);
+    setAvailOpen(true);
+  };
+
+  const confirmToggleAvailability = async () => {
+    if (!mentorProfile || availConfirmText.trim().toLowerCase() !== 'confirm') return;
+    setAvailBusy(true);
+    try {
+      const updated = await mentorProfileApi.update({
+        headline: mentorProfile.headline || '',
+        expertiseDescription: mentorProfile.expertiseDescription || '',
+        supportingSubjects: mentorProfile.supportingSubjects || undefined,
+        isAvailable: availTarget,
+        helpTopicIds: (mentorProfile.helpTopics || []).map((t) => t.id),
+        teachingMode: mentorProfile.teachingMode || 'ONLINE',
+        sessionDuration: (mentorProfile.sessionDuration || 60) as SessionDuration,
+        phoneNumber: mentorProfile.phoneNumber || '',
+        linkedinUrl: mentorProfile.linkedinUrl || undefined,
+        githubUrl: mentorProfile.githubUrl || undefined,
+        portfolioUrl: mentorProfile.portfolioUrl || undefined,
+      });
+      setMentorProfile(updated);
+      setAvailOpen(false);
+      setSuccess(availTarget ? 'Đã bật nhận booking.' : 'Đã tắt nhận booking.');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Cập nhật trạng thái nhận booking thất bại.');
+    } finally {
+      setAvailBusy(false);
+    }
+  };
 
   // Upload ảnh đại diện: FE upload trực tiếp lên Cloudinary, rồi lưu fileUrl vào avatarUrl.
   const avatarUpload = useImageUpload({ usage: 'AVATAR' });
@@ -544,9 +597,23 @@ export const Profile: React.FC = () => {
             <div className="relative overflow-hidden rounded-card ring-4 ring-surface bg-surface shrink-0" style={{ width: 96, height: 96 }}>
               <img src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'} alt="" className="w-full h-full object-cover object-top rounded-card bg-surface-muted" />
             </div>
-            <button onClick={() => setMode('edit')} className="shrink-0 mb-1 inline-flex items-center gap-2 bg-surface border border-line text-fg hover:bg-surface-muted text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all">
-              <Pencil className="w-4 h-4" /> Chỉnh sửa
-            </button>
+            <div className="shrink-0 mb-1 flex flex-col items-stretch gap-2">
+              <button onClick={() => setMode('edit')} className="inline-flex items-center justify-center gap-2 bg-surface border border-line text-fg hover:bg-surface-muted text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all">
+                <Pencil className="w-4 h-4" /> Chỉnh sửa
+              </button>
+              {/* Nút TO bật/tắt nhận booking — chỉ cho mentor đã có hồ sơ */}
+              {isMentor && mentorProfile && (
+                <button
+                  onClick={openAvailModal}
+                  className={`inline-flex items-center justify-between gap-3 py-2.5 px-4 rounded-field border font-bold text-body cursor-pointer transition-all ${isAvailable ? 'bg-success/10 border-success/30 text-success hover:bg-success/15' : 'bg-surface-muted border-line text-fg-muted hover:bg-line/30'}`}
+                >
+                  <span className="inline-flex items-center gap-2"><Power className="w-4 h-4" /> {isAvailable ? 'Đang nhận booking' : 'Tạm ngưng booking'}</span>
+                  <span className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${isAvailable ? 'bg-success' : 'bg-line'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface shadow transition-transform ${isAvailable ? 'translate-x-4' : ''}`} />
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="mt-4">
@@ -604,6 +671,47 @@ export const Profile: React.FC = () => {
           đã duyệt/từ chối) do BE quyết định qua status/checklist/allowedActions thật,
           MentorPanel chỉ render đúng theo đó — không tự suy luận ở FE. */}
       {viewTab === 'mentor' && <MentorPanel />}
+
+      {/* ===== Modal xác nhận bật/tắt nhận booking (gõ "confirm" như xoá repo GitHub) ===== */}
+      {availOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 relative shadow-2xl space-y-4">
+            <button onClick={() => setAvailOpen(false)} className="absolute top-4 right-4 p-1.5 rounded-full bg-surface-muted hover:opacity-80 text-fg-muted cursor-pointer transition-all"><X className="w-4 h-4" /></button>
+            <div className="flex items-start gap-3">
+              <div className={`w-11 h-11 rounded-card flex items-center justify-center shrink-0 ${availTarget ? 'bg-success/10 text-success' : 'bg-amber-500/12 text-amber-600'}`}><Power className="w-5 h-5" /></div>
+              <div>
+                <h3 className="text-title font-bold text-fg">{availTarget ? 'Bật nhận booking?' : 'Tạm ngưng nhận booking?'}</h3>
+                <p className="text-meta text-fg-muted font-medium mt-1" style={{ textWrap: 'pretty' }}>
+                  {availTarget
+                    ? 'Hồ sơ của bạn sẽ hiển thị công khai và mentee có thể đặt lịch hẹn mới.'
+                    : 'Hồ sơ sẽ tạm ẩn khỏi tìm kiếm và bạn sẽ không nhận lịch hẹn mới (các lịch đã nhận không bị ảnh hưởng).'}
+                </p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-meta font-bold text-fg-muted mb-1.5">Gõ <span className="font-extrabold text-fg">confirm</span> để xác nhận</label>
+              <input
+                type="text"
+                value={availConfirmText}
+                onChange={(e) => setAvailConfirmText(e.target.value)}
+                placeholder="confirm"
+                className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-1">
+              <button onClick={() => setAvailOpen(false)} className="py-2.5 px-4 rounded-field border border-line text-fg text-body font-bold hover:bg-surface-muted cursor-pointer transition-all">Huỷ</button>
+              <button
+                onClick={confirmToggleAvailability}
+                disabled={availBusy || availConfirmText.trim().toLowerCase() !== 'confirm'}
+                className={`inline-flex items-center gap-2 py-2.5 px-5 rounded-field text-on-action text-body font-bold cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed ${availTarget ? 'bg-success hover:opacity-90' : 'bg-amber-600 hover:opacity-90'}`}
+              >
+                {availBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                {availTarget ? 'Bật nhận booking' : 'Tạm ngưng'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

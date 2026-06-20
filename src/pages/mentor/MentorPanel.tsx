@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ShieldCheck, UploadCloud, FileText, Image as ImageIcon, Trash2, Send,
   Clock, CheckCircle2, XCircle, AlertTriangle, Undo2, Plus, Paperclip,
-  ListChecks, Lock, Inbox, Check, Square, CheckSquare, Settings, Tags, Link2,
+  ListChecks, Lock, Check, Square, CheckSquare, Settings, Tags, Link2,
   Pencil, Award, Briefcase, Monitor, ExternalLink, Lightbulb, UserPlus,
   ArrowRight, ArrowLeft,
 } from 'lucide-react';
@@ -192,6 +192,7 @@ export const MentorPanel: React.FC = () => {
   const [helpTopicsCatalog, setHelpTopicsCatalog] = useState<HelpTopic[]>([]);
   const [hydrated, setHydrated] = useState(false); // đã tải xong để bật tự lưu nháp
   const [uploading, setUploading] = useState(false); // đang upload minh chứng
+  const [uploadError, setUploadError] = useState<string | null>(null); // lỗi upload — hiện ngay dưới nút tải
 
   // Document upload controls
   const [docType, setDocType] = useState<DocumentType>('FPTU_AFFILIATION_PROOF');
@@ -443,7 +444,7 @@ export const MentorPanel: React.FC = () => {
   const handleUpload = async (file?: File) => {
     if (!req || !file) return;
     setUploading(true);
-    setError(null);
+    setUploadError(null);
     try {
       const doc = await mentorVerificationApi.uploadDocument({ documentType: docType, file });
       // cập nhật lạc quan + làm mới ngầm (giữ nguyên vị trí cuộn, không remount panel)
@@ -451,7 +452,8 @@ export const MentorPanel: React.FC = () => {
       flash('Đã tải lên minh chứng.');
       await refreshRequest();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Tải minh chứng thất bại.');
+      // Hiển thị lỗi ngay dưới nút tải (bong bóng chat), không đẩy lên đầu trang.
+      setUploadError(err.response?.data?.message || 'Tải minh chứng thất bại. Vui lòng thử lại.');
     } finally {
       setUploading(false);
     }
@@ -460,14 +462,14 @@ export const MentorPanel: React.FC = () => {
   const handleDelete = async (documentId: string) => {
     if (!req) return;
     setBusy(true);
-    setError(null);
+    setUploadError(null);
     try {
       await mentorVerificationApi.deleteDocument(documentId);
       setReq((prev) => (prev ? { ...prev, documents: prev.documents.filter((d) => d.id !== documentId) } : prev));
       flash('Đã xoá minh chứng.');
       await refreshRequest();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Xoá minh chứng thất bại.');
+      setUploadError(err.response?.data?.message || 'Xoá minh chứng thất bại.');
     } finally {
       setBusy(false);
     }
@@ -590,26 +592,6 @@ export const MentorPanel: React.FC = () => {
             <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="VD: 0901234567"
               className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
-          </div>
-          {/* Toggle trạng thái sẵn sàng — to, rõ, có chú thích có thể tắt đi */}
-          <div className="flex items-start justify-between gap-3 p-3.5 rounded-field border border-line bg-surface-muted/40">
-            <div className="min-w-0">
-              <p className="text-body font-bold text-fg">Sẵn sàng nhận mentee</p>
-              <p className="text-meta text-fg-muted font-medium mt-0.5">
-                {isAvailable
-                  ? 'Hồ sơ đang hiển thị công khai và nhận lịch hẹn mới.'
-                  : 'Đang tạm ngưng — bạn sẽ không nhận lịch hẹn mới. Có thể bật lại bất cứ lúc nào.'}
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isAvailable}
-              onClick={() => setIsAvailable((v) => !v)}
-              className={`relative shrink-0 w-12 h-7 rounded-full transition-colors cursor-pointer ${isAvailable ? 'bg-success' : 'bg-line'}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-surface shadow transition-transform ${isAvailable ? 'translate-x-5' : ''}`} />
-            </button>
           </div>
         </div>
       </div>
@@ -882,6 +864,7 @@ export const MentorPanel: React.FC = () => {
                 canUpload={!!allowedActions?.canUploadDocuments}
                 docType={docType} setDocType={setDocType}
                 uploading={uploading}
+                uploadError={uploadError}
                 onUpload={handleUpload} onDelete={handleDelete}
               />
               <div className="flex items-center justify-between gap-3">
@@ -957,9 +940,10 @@ const DocumentsCard: React.FC<{
   docs: VerificationRequest['documents'];
   canUpload: boolean;
   uploading?: boolean;
+  uploadError?: string | null;
   docType?: DocumentType; setDocType?: (v: DocumentType) => void;
   onUpload?: (file?: File) => void; onDelete?: (id: string) => void;
-}> = ({ docs, canUpload, uploading, docType, setDocType, onUpload, onDelete }) => (
+}> = ({ docs, canUpload, uploading, uploadError, docType, setDocType, onUpload, onDelete }) => (
   <div className="meetmind-card p-6 rounded-card space-y-4">
     <div className="flex items-center justify-between border-b border-line-soft pb-2.5">
       <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Paperclip className="w-5 h-5 text-primary" /> Minh chứng</h3>
@@ -993,16 +977,21 @@ const DocumentsCard: React.FC<{
           )}
           <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; onUpload(f); }} />
         </label>
+
+        {/* Lỗi tải lên — bong bóng chat nổi ngay dưới nút tải, có chấm đỏ đầu câu */}
+        {uploadError && (
+          <div className="relative inline-flex items-start gap-2 max-w-full bg-danger/10 border border-danger/25 text-danger rounded-2xl rounded-tl-md py-2.5 px-3.5 text-meta font-semibold shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-danger mt-1.5 shrink-0" />
+            <span className="leading-snug">{uploadError}</span>
+          </div>
+        )}
       </div>
     )}
 
-    <div className="space-y-2.5">
-      {docs.length === 0 ? (
-        <div className="text-center py-6 border border-dashed border-line rounded-field">
-          <div className="w-11 h-11 rounded-card bg-surface-muted text-fg-faint flex items-center justify-center mx-auto mb-2"><Inbox className="w-5 h-5" /></div>
-          <p className="text-meta text-fg-muted font-medium">Chưa có minh chứng nào.</p>
-        </div>
-      ) : docs.map((d) => {
+    {/* Chỉ mở rộng hiển thị danh sách khi ĐÃ có minh chứng (bỏ ô "chưa có minh chứng nào") */}
+    {docs.length > 0 && (
+      <div className="space-y-2.5">
+        {docs.map((d) => {
         const isImg = d.contentType?.startsWith('image');
         const sizeKb = d.sizeBytes ? Math.max(1, Math.round(d.sizeBytes / 1024)) : undefined;
         return (
@@ -1029,8 +1018,9 @@ const DocumentsCard: React.FC<{
             )}
           </div>
         );
-      })}
-    </div>
+        })}
+      </div>
+    )}
   </div>
 );
 

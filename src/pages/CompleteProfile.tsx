@@ -180,7 +180,7 @@ export const CompleteProfile: React.FC = () => {
 
     if (isAlumni) {
       if (!graduationYear || graduationYear < 2000) errs.graduationYear = 'Năm tốt nghiệp không hợp lệ.';
-      else if (graduationYear < intakeYear) errs.graduationYear = 'Năm tốt nghiệp không thể nhỏ hơn năm nhập học.';
+      else if (graduationYear <= intakeYear) errs.graduationYear = 'Năm tốt nghiệp phải lớn hơn năm nhập học.';
     }
 
     if (!bio.trim()) errs.bio = 'Vui lòng nhập phần giới thiệu bản thân.';
@@ -326,36 +326,56 @@ export const CompleteProfile: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                {/* Cựu sinh viên thì ẩn ô Học kỳ hiện tại */}
-                {!isAlumni && (
+              {/* Chọn đối tượng: 2 ô loại trừ nhau — chọn 1 ô sẽ bỏ chọn ô kia */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                {[
+                  { alumni: false, label: 'Tôi là sinh viên', desc: 'Đang theo học tại FPT' },
+                  { alumni: true, label: 'Tôi là cựu sinh viên', desc: 'Đã tốt nghiệp (Alumni)' },
+                ].map((opt) => {
+                  const sel = isAlumni === opt.alumni;
+                  return (
+                    <button
+                      type="button"
+                      key={opt.label}
+                      onClick={() => { setIsAlumni(opt.alumni); clearErr('semester'); clearErr('graduationYear'); }}
+                      className={`flex items-start gap-3 p-3.5 rounded-field border text-left transition-all cursor-pointer ${sel ? 'border-brand-terracotta bg-brand-terracotta/5 ring-1 ring-brand-terracotta/30' : 'border-brand-border bg-brand-bg/30 hover:border-brand-terracotta/40'}`}
+                    >
+                      <span className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 ${sel ? 'bg-brand-terracotta border-brand-terracotta text-white' : 'border-brand-border'}`}>{sel && <Check className="w-3.5 h-3.5" />}</span>
+                      <span className="min-w-0">
+                        <span className="block text-body font-bold text-brand-text">{opt.label}</span>
+                        <span className="block text-meta text-brand-text-muted font-medium">{opt.desc}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sinh viên: Học kỳ + Năm nhập học · Cựu sinh viên: Năm nhập học + Năm tốt nghiệp */}
+              {!isAlumni ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div>
                     <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5 flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> Học kỳ hiện tại</label>
                     <input type="number" value={semester} onChange={(e) => { setSemester(Number(e.target.value)); clearErr('semester'); }} className={fieldCls + errCls(fieldErrors.semester)} placeholder="Ví dụ: 5 (1–9)" />
                     <FieldError msg={fieldErrors.semester} />
                   </div>
-                )}
-                <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm nhập học</label>
-                  <input type="number" value={intakeYear} onChange={(e) => { setIntakeYear(Number(e.target.value)); clearErr('intakeYear'); }} className={fieldCls + errCls(fieldErrors.intakeYear)} placeholder="Ví dụ: 2022" />
-                  <FieldError msg={fieldErrors.intakeYear} />
+                  <div>
+                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm nhập học</label>
+                    <input type="number" value={intakeYear} onChange={(e) => { setIntakeYear(Number(e.target.value)); clearErr('intakeYear'); }} className={fieldCls + errCls(fieldErrors.intakeYear)} placeholder="Ví dụ: 2022" />
+                    <FieldError msg={fieldErrors.intakeYear} />
+                  </div>
                 </div>
-              </div>
-
-              {/* Alumni toggle */}
-              <div className="flex items-center gap-3 mt-4">
-                <label className="relative flex items-center cursor-pointer">
-                  <input type="checkbox" checked={isAlumni} onChange={(e) => { setIsAlumni(e.target.checked); clearErr('semester'); clearErr('graduationYear'); }} className="sr-only peer" />
-                  <div className="w-9 h-5 bg-brand-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-terracotta"></div>
-                  <span className="ml-3 text-body font-bold text-brand-text-muted">Tôi là Cựu sinh viên (Alumni) đã tốt nghiệp</span>
-                </label>
-              </div>
-
-              {isAlumni && (
-                <div className="mt-4">
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm tốt nghiệp</label>
-                  <input type="number" value={graduationYear} onChange={(e) => { setGraduationYear(Number(e.target.value)); clearErr('graduationYear'); }} className={`${fieldCls} max-w-xs` + errCls(fieldErrors.graduationYear)} />
-                  <FieldError msg={fieldErrors.graduationYear} />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm nhập học</label>
+                    <input type="number" value={intakeYear} onChange={(e) => { setIntakeYear(Number(e.target.value)); clearErr('intakeYear'); }} className={fieldCls + errCls(fieldErrors.intakeYear)} placeholder="Ví dụ: 2018" />
+                    <FieldError msg={fieldErrors.intakeYear} />
+                  </div>
+                  <div>
+                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5">Năm tốt nghiệp</label>
+                    <input type="number" value={graduationYear} onChange={(e) => { setGraduationYear(Number(e.target.value)); clearErr('graduationYear'); }} className={fieldCls + errCls(fieldErrors.graduationYear)} placeholder="Ví dụ: 2022" />
+                    <FieldError msg={fieldErrors.graduationYear} />
+                  </div>
                 </div>
               )}
             </section>
