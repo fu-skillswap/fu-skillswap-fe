@@ -1,9 +1,9 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth, type ActiveRole } from '../context/AuthContext';
 import {
   UserCheck, X, BarChart3, Users, FileCheck, Calendar,
-  ListTodo, Bookmark, MessageSquare, Send, Home, User,
+  ListTodo, Bookmark, MessageSquare, Send, Home, User, GraduationCap,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -12,8 +12,9 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { user } = useAuth();
+  const { user, activeRole, setActiveRole } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -54,10 +55,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
   ];
 
-  // Base nav theo vai trò hoạt động. Nếu là ADMIN, chỉ hiển thị các tab quản trị.
-  // Base nav theo vai trò hoạt động (mentor hoặc mentee). Nếu account còn có role
-  // ADMIN, các tab quản trị sẽ được hiện thêm bên dưới, không thay thế nav gốc.
-  const navLinks = isMentor ? mentorLinks : menteeLinks;
+  // Nav theo VAI TRÒ ĐANG HOẠT ĐỘNG (không phải role gốc): mentor có thể chuyển sang
+  // chế độ Mentee để thấy "Khám phá Mentor" và đặt lịch. Account ADMIN vẫn được thêm
+  // các tab quản trị bên dưới, không thay thế nav gốc.
+  const navLinks = isMentor && activeRole === 'MENTOR' ? mentorLinks : menteeLinks;
+
+  // Đổi vai trò + điều hướng tới nơi hợp lý cho vai trò đó.
+  const switchTo = (role: ActiveRole) => {
+    if (role === activeRole) return;
+    setActiveRole(role);
+    onClose();
+    navigate(role === 'MENTEE' ? '/mentors' : '/dashboard');
+  };
 
   return (
     <>
@@ -87,6 +96,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <X className="w-5 h-5" />
             </button>
           </div>
+
+          {/* Role switcher — chỉ hiện cho user có vai trò MENTOR (đóng được cả 2 vai) */}
+          {isMentor && (
+            <div className="mb-4">
+              <p className="px-1 mb-1.5 text-meta font-bold uppercase tracking-wide text-fg-faint">Chế độ hoạt động</p>
+              <div className="flex p-1 bg-surface-muted rounded-field gap-1">
+                {([
+                  { role: 'MENTOR' as ActiveRole, label: 'Mentor', icon: <GraduationCap className="w-4 h-4" /> },
+                  { role: 'MENTEE' as ActiveRole, label: 'Mentee', icon: <UserCheck className="w-4 h-4" /> },
+                ]).map((opt) => {
+                  const selected = activeRole === opt.role;
+                  return (
+                    <button
+                      key={opt.role}
+                      onClick={() => switchTo(opt.role)}
+                      title={opt.role === 'MENTEE' ? 'Chuyển sang Mentee để đặt lịch với mentor khác' : 'Chế độ Mentor'}
+                      className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-meta font-bold transition-all cursor-pointer ${
+                        selected ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'
+                      }`}
+                    >
+                      <span className={selected ? 'text-primary' : ''}>{opt.icon}</span>{opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto pr-1 scrollbar-none">
