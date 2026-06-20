@@ -11,13 +11,15 @@ async function authFetchWithRefresh<T>(
   body?: unknown,
   config?: AxiosRequestConfig
 ): Promise<T> {
-  const response = await apiClient.request<T>({
+  // BE bọc mọi response trong ApiResponse { data: ... }. Phải unwrap `.data.data`,
+  // nếu không `result.content`/`result.status`... = undefined (trang admin bị trống).
+  const response = await apiClient.request<{ data: T }>({
     url,
     method,
     data: body,
     ...config,
   });
-  return response.data;
+  return response.data.data;
 }
 
 export type AdminVerificationQueueItem = {
@@ -48,22 +50,25 @@ export type AdminVerificationDetail = {
   reviewNote: string | null;
   canReview: boolean;
   lockedByAdminEmail: string | null;
+  // Khớp MentorVerificationDocumentResponse của BE mới.
   documents: Array<{
-    documentId: string;
+    id: string;
     documentType: string;
-    isPrimary: boolean;
-    fileName: string;
-    mime?: string;
-    sizeKb?: number;
+    status?: string;
+    originalFilename: string;
+    contentType?: string;
+    sizeBytes?: number;
     uploadedAt?: string;
     fileUrl?: string;
+    isActive?: boolean;
   }>;
-  checklist: Array<{
-    checkId: string;
-    label: string;
-    passed: boolean;
-    evidence?: string;
-  }>;
+  checklist: {
+    academicProfileCompleted: boolean;
+    mentorProfileCompleted: boolean;
+    hasAffiliationProof: boolean;
+    hasExpertiseProof: boolean;
+    canSubmit: boolean;
+  } | null;
   timeline: Array<{
     event: string;
     label?: string;
@@ -71,35 +76,33 @@ export type AdminVerificationDetail = {
     by?: string;
     note?: string;
   }>;
+  // Khớp StudentProfileResponse: campus/program/specialization là object lồng.
   studentProfile: {
     studentCode: string;
     displayName: string;
     avatarUrl?: string;
-    campusId: string;
-    programId: string;
-    specializationId: string;
+    campus?: { id: string; name: string };
+    program?: { id: string; nameVi: string };
+    specialization?: { id: string; nameVi: string };
     semester: number;
     intakeYear: number;
-    isAlumni: boolean;
+    alumni?: boolean;
     graduationYear?: number | null;
     bio?: string;
   } | null;
+  // Khớp MentorProfileResponse: helpTopics là mảng tag.
   mentorProfile: {
-    headline: string;
-    currentPosition?: string;
-    currentCompany?: string;
-    avatarUrl?: string;
-    bio?: string;
-    isAvailable: boolean;
-    expertiseTagIds: string[];
-    helpTopicIds: string[];
-    yearsOfExperience: number;
-    industry?: string;
-    expertiseSummary?: string;
+    headline?: string;
+    expertiseDescription?: string;
+    supportingSubjects?: string;
+    isAvailable?: boolean;
+    helpTopics?: Array<{ id: string; nameVi: string }>;
+    teachingMode?: string;
+    sessionDuration?: number;
+    phoneNumber?: string;
     linkedinUrl?: string;
     githubUrl?: string;
     portfolioUrl?: string;
-    teachingMode?: string;
   } | null;
 };
 

@@ -135,13 +135,20 @@ export type VerificationStatus =
 
 export type DocumentType = 'FPTU_AFFILIATION_PROOF' | 'EXPERTISE_PROOF';
 
+/** Khớp MentorVerificationDocumentResponse (BE mới): id, originalFilename, contentType, sizeBytes... */
 export interface VerificationDocument {
-  documentId: string;
+  id: string;
   documentType: DocumentType;
-  isPrimary: boolean;
-  fileName: string;
-  mime?: string;
-  sizeKb?: number;
+  status?: string;
+  storageKind?: string;
+  originalFilename: string;
+  contentType?: string;
+  sizeBytes?: number;
+  fileUrl?: string;
+  isActive?: boolean;
+  version?: number;
+  reviewNote?: string;
+  rejectedReason?: string;
   uploadedAt?: string;
 }
 

@@ -139,7 +139,6 @@ export const MentorPanel: React.FC = () => {
 
   // Document upload controls
   const [docType, setDocType] = useState<DocumentType>('FPTU_AFFILIATION_PROOF');
-  const [isPrimary, setIsPrimary] = useState(false);
   const [submitNote, setSubmitNote] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -329,10 +328,9 @@ export const MentorPanel: React.FC = () => {
     setBusy(true);
     setError(null);
     try {
-      const doc = await mentorVerificationApi.uploadDocument({ documentType: docType, isPrimary, file });
+      const doc = await mentorVerificationApi.uploadDocument({ documentType: docType, file });
       // cập nhật lạc quan + làm mới ngầm (giữ nguyên vị trí cuộn, không remount panel)
       setReq((prev) => (prev ? { ...prev, documents: [...prev.documents, doc] } : prev));
-      setIsPrimary(false);
       flash('Đã tải lên minh chứng.');
       await refreshRequest();
     } catch (err: any) {
@@ -348,7 +346,7 @@ export const MentorPanel: React.FC = () => {
     setError(null);
     try {
       await mentorVerificationApi.deleteDocument(documentId);
-      setReq((prev) => (prev ? { ...prev, documents: prev.documents.filter((d) => d.documentId !== documentId) } : prev));
+      setReq((prev) => (prev ? { ...prev, documents: prev.documents.filter((d) => d.id !== documentId) } : prev));
       flash('Đã xoá minh chứng.');
       await refreshRequest();
     } catch (err: any) {
@@ -678,7 +676,6 @@ export const MentorPanel: React.FC = () => {
             docs={docs}
             canUpload={!!allowedActions?.canUploadDocuments}
             docType={docType} setDocType={setDocType}
-            isPrimary={isPrimary} setIsPrimary={setIsPrimary}
             onUpload={handleUpload} onDelete={handleDelete}
           />
 
@@ -740,9 +737,8 @@ const DocumentsCard: React.FC<{
   docs: VerificationRequest['documents'];
   canUpload: boolean;
   docType?: DocumentType; setDocType?: (v: DocumentType) => void;
-  isPrimary?: boolean; setIsPrimary?: (v: boolean) => void;
   onUpload?: (file?: File) => void; onDelete?: (id: string) => void;
-}> = ({ docs, canUpload, docType, setDocType, isPrimary, setIsPrimary, onUpload, onDelete }) => (
+}> = ({ docs, canUpload, docType, setDocType, onUpload, onDelete }) => (
   <div className="meetmind-card p-6 rounded-card space-y-4">
     <div className="flex items-center justify-between border-b border-line-soft pb-2.5">
       <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Paperclip className="w-5 h-5 text-primary" /> Minh chứng đã tải</h3>
@@ -756,39 +752,36 @@ const DocumentsCard: React.FC<{
           <p className="text-meta text-fg-muted font-medium">Chưa có minh chứng nào.</p>
         </div>
       ) : docs.map((d) => {
-        const isImg = d.mime?.startsWith('image');
+        const isImg = d.contentType?.startsWith('image');
+        const sizeKb = d.sizeBytes ? Math.max(1, Math.round(d.sizeBytes / 1024)) : undefined;
         return (
-          <div key={d.documentId} className="flex items-center gap-3.5 bg-surface border border-line rounded-field p-3 transition-all hover:border-primary/30">
+          <div key={d.id} className="flex items-center gap-3.5 bg-surface border border-line rounded-field p-3 transition-all hover:border-primary/30">
             <div className={`w-12 h-12 rounded-field flex items-center justify-center shrink-0 ${isImg ? 'bg-accent/12 text-accent' : 'bg-danger/10 text-danger'}`}>
               {isImg ? <ImageIcon className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="text-body font-bold text-fg truncate">{d.fileName}</p>
-                {d.isPrimary && <span className="text-meta font-extrabold text-primary bg-primary-soft border border-primary/20 px-2 py-0.5 rounded-lg shrink-0">Chính</span>}
+                {d.fileUrl
+                  ? <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-body font-bold text-fg truncate hover:text-primary hover:underline">{d.originalFilename}</a>
+                  : <p className="text-body font-bold text-fg truncate">{d.originalFilename}</p>}
               </div>
-              <p className="text-meta text-fg-muted font-medium mt-0.5">{DOC_TYPES[d.documentType]}{d.sizeKb ? ` · ${d.sizeKb} KB` : ''}</p>
+              <p className="text-meta text-fg-muted font-medium mt-0.5">{DOC_TYPES[d.documentType]}{sizeKb ? ` · ${sizeKb} KB` : ''}</p>
             </div>
             {canUpload && onDelete && (
-              <button onClick={() => onDelete(d.documentId)} className="p-2 rounded-field text-fg-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-all" title="Xoá"><Trash2 className="w-4 h-4" /></button>
+              <button onClick={() => onDelete(d.id)} className="p-2 rounded-field text-fg-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-all" title="Xoá"><Trash2 className="w-4 h-4" /></button>
             )}
           </div>
         );
       })}
     </div>
 
-    {canUpload && setDocType && setIsPrimary && onUpload && (
+    {canUpload && setDocType && onUpload && (
       <div className="space-y-3 pt-1">
-        <div className="grid sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Loại minh chứng</label>
-            <select value={docType} onChange={(e) => setDocType(e.target.value as DocumentType)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold">
-              {Object.entries(DOC_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
-          <label className="flex items-end gap-2 text-meta font-bold text-fg-muted cursor-pointer pb-2.5 select-none">
-            <input type="checkbox" checked={isPrimary} onChange={(e) => setIsPrimary(e.target.checked)} className="w-4 h-4 accent-[var(--primary)]" /> Đặt làm minh chứng chính
-          </label>
+        <div>
+          <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Loại minh chứng</label>
+          <select value={docType} onChange={(e) => setDocType(e.target.value as DocumentType)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold">
+            {Object.entries(DOC_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
         </div>
         <label className="w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-line rounded-field py-8 text-fg-muted hover:text-primary hover:border-primary/40 transition-all cursor-pointer group">
           <span className="w-11 h-11 rounded-card bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition-transform"><UploadCloud className="w-5 h-5" /></span>

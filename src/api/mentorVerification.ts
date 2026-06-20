@@ -29,11 +29,11 @@ export const mentorVerificationApi = {
    * trước, sau đó gửi metadata (fileUrl, publicId, sizeBytes, contentType,
    * originalFilename...) về BE để lưu vào DB, giống luồng avatar/forum.
    */
-  uploadDocument: async (params: { documentType: DocumentType; isPrimary: boolean; file: File }) => {
+  uploadDocument: async (params: { documentType: DocumentType; file: File }) => {
     const result = await uploadToCloudinary(params.file, { resourceType: 'auto' });
+    // BE mới yêu cầu: documentType, fileUrl, publicId, originalFilename, contentType, sizeBytes (KHÔNG còn isPrimary).
     return http.post<VerificationDocument>('/api/me/mentor-verification/documents', {
       documentType: params.documentType,
-      isPrimary: params.isPrimary,
       fileUrl: result.fileUrl,
       publicId: result.publicId,
       sizeBytes: result.sizeBytes,
