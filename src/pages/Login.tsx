@@ -148,7 +148,7 @@ export const Login: React.FC = () => {
             Skill<span className="text-brand-terracotta">Swap</span>
           </h1>
           <p className="text-brand-text-muted text-body font-medium max-w-xs leading-relaxed">
-            Nền tảng trao đổi kỹ năng học thuật dành riêng cho sinh viên FPT University
+            Nền tảng trao đổi kỹ năng học thuật dành cho sinh viên đại học
           </p>
         </div>
 

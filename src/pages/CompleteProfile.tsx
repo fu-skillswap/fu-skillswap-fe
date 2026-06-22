@@ -292,7 +292,8 @@ export const CompleteProfile: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1.5 flex items-center gap-1"><Hash className="w-3.5 h-3.5" /> Mã số sinh viên</label>
-                  <input type="text" value={studentCode} onChange={(e) => { setStudentCode(e.target.value); clearErr('studentCode'); }} className={`${fieldCls} font-bold tracking-wide` + errCls(fieldErrors.studentCode)} placeholder="Ví dụ: SE192621" />
+                  {/* Không gợi ý định dạng MSSV — là cơ chế lọc người ngoài trường nhập sai format */}
+                  <input type="text" value={studentCode} onChange={(e) => { setStudentCode(e.target.value); clearErr('studentCode'); }} className={`${fieldCls} font-bold tracking-wide` + errCls(fieldErrors.studentCode)} />
                   <FieldError msg={fieldErrors.studentCode} />
                 </div>
               </div>
