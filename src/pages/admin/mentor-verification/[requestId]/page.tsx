@@ -34,20 +34,14 @@ export default function AdminMentorVerificationDetailPage() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Dynamically load Google Fonts (Inter) and Material Symbols Outlined stylesheet
+  // Dynamically load Material Symbols Outlined stylesheet
   useEffect(() => {
-    const linkInter = document.createElement('link');
-    linkInter.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap';
-    linkInter.rel = 'stylesheet';
-    document.head.appendChild(linkInter);
-
     const linkSymbols = document.createElement('link');
     linkSymbols.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap';
     linkSymbols.rel = 'stylesheet';
     document.head.appendChild(linkSymbols);
 
     return () => {
-      document.head.removeChild(linkInter);
       document.head.removeChild(linkSymbols);
     };
   }, []);

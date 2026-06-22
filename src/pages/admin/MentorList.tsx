@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, Users, CheckCircle, PauseCircle, Star, Plus, 
-  SlidersHorizontal, Loader2, AlertCircle, Ban, Check, GraduationCap 
+  SlidersHorizontal, Loader2, AlertCircle, Ban, Check, GraduationCap,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { adminUsersApi } from '../../api/adminUsers';
 import { useAuth } from '../../context/AuthContext';
@@ -456,10 +457,9 @@ export const MentorList: React.FC = () => {
             <button 
               disabled={currentPage === 0}
               onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-              className="px-3 py-1.5 border border-surface-border bg-surface-container-lowest text-text-muted rounded-lg hover:bg-surface-background hover:text-text-main transition-colors font-body-md text-body-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+              className="w-8 h-8 flex items-center justify-center border border-surface-border bg-surface-container-lowest text-text-muted rounded-lg hover:bg-surface-background hover:text-text-main transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[18px] align-middle mr-1">chevron_left</span>
-              Trang trước
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-1 font-body-md text-body-md text-text-main">
               {renderPageButtons()}
@@ -467,10 +467,9 @@ export const MentorList: React.FC = () => {
             <button 
               disabled={currentPage + 1 >= totalPages}
               onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-              className="px-3 py-1.5 border border-surface-border bg-surface-container-lowest text-text-main rounded-lg hover:bg-surface-background transition-colors font-body-md text-body-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+              className="w-8 h-8 flex items-center justify-center border border-surface-border bg-surface-container-lowest text-text-main rounded-lg hover:bg-surface-background transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              Trang sau
-              <span className="material-symbols-outlined text-[18px] align-middle ml-1">chevron_right</span>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
