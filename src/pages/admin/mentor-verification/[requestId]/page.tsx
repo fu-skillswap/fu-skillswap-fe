@@ -25,7 +25,7 @@ export default function AdminMentorVerificationDetailPage() {
   const [detail, setDetail] = useState<AdminVerificationDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [note, setNote] = useState('');
+  const [showApproveModal, setShowApproveModal] = useState(false);
   
   // Custom states for visual perfection
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
@@ -154,9 +154,12 @@ export default function AdminMentorVerificationDetailPage() {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
-  const handleApproveClick = async () => {
-    const confirmed = confirm('Xác nhận phê duyệt hồ sơ này?');
-    if (!confirmed) return;
+  const handleApproveClick = () => {
+    setShowApproveModal(true);
+  };
+
+  const handleConfirmApprove = async () => {
+    setShowApproveModal(false);
     setProcessing(true);
     try {
       await approveVerification(requestId);
@@ -245,6 +248,39 @@ export default function AdminMentorVerificationDetailPage() {
     ? detail.mentorFullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 3)
     : 'M';
 
+  const affiliationProofs = detail.documents?.filter(doc => doc.documentType === 'FPTU_AFFILIATION_PROOF') ?? [];
+  const expertiseProofs = detail.documents?.filter(doc => doc.documentType === 'EXPERTISE_PROOF') ?? [];
+
+  const getTimelineEventLabel = (event: NonNullable<AdminVerificationDetail['timeline']>[number]) => {
+    if (event.label) return event.label;
+    const type = event.eventType || event.event || '';
+    switch (type) {
+      case 'REQUEST_CREATED':
+        return 'Tạo yêu cầu';
+      case 'SUBMITTED':
+        return 'Nộp hồ sơ';
+      case 'UNDER_REVIEW':
+        return 'Đang đánh giá';
+      case 'APPROVED':
+        return 'Phê duyệt';
+      case 'REJECTED':
+        return 'Từ chối';
+      case 'REVISION_REQUESTED':
+        return 'Yêu cầu chỉnh sửa';
+      case 'RESUBMITTED':
+        return 'Nộp lại hồ sơ';
+      case 'WITHDRAWN':
+        return 'Rút hồ sơ';
+      case 'LOCK_ACQUIRED':
+        return 'Khóa xét duyệt';
+      case 'LOCK_RELEASED':
+        return 'Mở khóa';
+      default:
+        return type || 'Hành động khác';
+    }
+  };
+
+
   return (
     <div className="max-w-[1200px] mx-auto space-y-6 relative text-left">
       {/* Toast Notification */}
@@ -296,9 +332,17 @@ export default function AdminMentorVerificationDetailPage() {
       {/* Header & Actions Section */}
       <div className="bg-surface-container-lowest border border-surface-border rounded-xl p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary-soft/80 border border-surface-border flex items-center justify-center text-primary font-headline-md font-bold shrink-0 select-none">
-            {initials}
-          </div>
+          {(detail.mentorAvatarUrl || detail.mentorProfile?.avatarUrl || detail.studentProfile?.avatarUrl) ? (
+            <img 
+              src={detail.mentorAvatarUrl || detail.mentorProfile?.avatarUrl || detail.studentProfile?.avatarUrl} 
+              alt={detail.mentorFullName} 
+              className="w-16 h-16 rounded-full object-cover border border-surface-border shrink-0" 
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-primary-soft/80 border border-surface-border flex items-center justify-center text-primary font-headline-md font-bold shrink-0 select-none">
+              {initials}
+            </div>
+          )}
           <div>
             <h2 className="font-headline-md text-headline-md text-text-main flex items-center gap-3 flex-wrap">
               {detail.mentorFullName}
@@ -390,47 +434,78 @@ export default function AdminMentorVerificationDetailPage() {
           <div className="bg-surface-container-lowest border border-surface-border rounded-xl p-6">
             <h3 className="font-headline-sm text-headline-sm text-text-main border-b border-surface-border pb-3 mb-4 flex items-center gap-2 font-bold">
               <span className="material-symbols-outlined text-primary align-middle">badge</span>
-              Xác Minh Danh Tính
+              Xác Minh Liên Kết FPTU
             </h3>
             <div className="space-y-4">
               <div>
                 <span className="block font-label-md text-text-muted mb-1 text-xs uppercase">HỌ VÀ TÊN</span>
                 <span className="block font-body-md text-text-main font-medium">{detail.mentorFullName}</span>
               </div>
-              <div>
-                <span className="block font-label-md text-text-muted mb-1 text-xs uppercase">SỐ CCCD/CMND</span>
-                <span className="block font-body-md text-text-main font-semibold font-mono text-sm">001099123456</span>
-              </div>
+              
               <div className="space-y-3 mt-4 pt-4 border-t border-surface-border">
-                <span className="block font-label-md text-text-muted text-xs uppercase">ẢNH GIẤY TỜ TRƯỚC/SAU</span>
-                <div className="grid grid-cols-2 gap-3">
-                  <div
-                    onClick={() => window.open('https://lh3.googleusercontent.com/aida-public/AB6AXuDVC3IeriFY0p_UhYps6_kFW6WMjgO0-pcalQQur0tbYMDxzyrnWoB3DgEo_fjWDd2ehrXPNANd5WrDFznX9vmf3mRvE_pdRLiJuhp_IohdwmTbn5ADnhgH34rScrhkwwQ44t1W0K1yRSqHK7M6GWnBDgw5hP7lHc554Y2SMZW_P5n8Go8kTUL6RRd2NCNACFUUHvYXhH_UMr6IcTjEauG9q2vPUNWNiCzTvS0mOjMReXn-NYTlBqX0FrVuUoYw9Zt1W34vQ2KWqHw', '_blank')}
-                    className="aspect-[3/2] bg-surface-container-low rounded border border-surface-border relative group overflow-hidden cursor-pointer"
-                  >
-                    <img
-                      className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVC3IeriFY0p_UhYps6_kFW6WMjgO0-pcalQQur0tbYMDxzyrnWoB3DgEo_fjWDd2ehrXPNANd5WrDFznX9vmf3mRvE_pdRLiJuhp_IohdwmTbn5ADnhgH34rScrhkwwQ44t1W0K1yRSqHK7M6GWnBDgw5hP7lHc554Y2SMZW_P5n8Go8kTUL6RRd2NCNACFUUHvYXhH_UMr6IcTjEauG9q2vPUNWNiCzTvS0mOjMReXn-NYTlBqX0FrVuUoYw9Zt1W34vQ2KWqHw"
-                      alt="CCCD Mặt trước"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="material-symbols-outlined text-white">zoom_in</span>
-                    </div>
+                <span className="block font-label-md text-text-muted text-xs uppercase">MINH CHỨNG LIÊN KẾT FPTU</span>
+                {affiliationProofs.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-3">
+                    {affiliationProofs.map((doc) => {
+                      const isImage = doc.fileUrl && (
+                        doc.contentType?.startsWith('image/') ||
+                        doc.originalFilename.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)
+                      );
+                      
+                      return (
+                        <div key={doc.id} className="space-y-2">
+                          <div className="flex items-center justify-between p-3 bg-surface-container-low border border-surface-border rounded gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="material-symbols-outlined text-primary text-[20px] shrink-0">
+                                {isImage ? 'image' : 'description'}
+                              </span>
+                              <div className="truncate text-left">
+                                <span className="font-body-md text-text-main font-semibold block truncate text-sm" title={doc.originalFilename}>
+                                  {doc.originalFilename}
+                                </span>
+                                {doc.sizeBytes !== undefined && (
+                                  <span className="text-[11px] text-text-muted block">
+                                    {(doc.sizeBytes / 1024 / 1024).toFixed(2)} MB
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {doc.fileUrl && (
+                              <a
+                                href={doc.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-primary text-white rounded font-label-md text-xs hover:opacity-90 whitespace-nowrap"
+                              >
+                                Xem file
+                              </a>
+                            )}
+                          </div>
+                          {isImage && doc.fileUrl && (
+                            <div 
+                              onClick={() => window.open(doc.fileUrl, '_blank')}
+                              className="aspect-[3/2] bg-surface-container-low rounded border border-surface-border relative group overflow-hidden cursor-pointer w-full"
+                            >
+                              <img
+                                className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
+                                src={doc.fileUrl}
+                                alt={doc.originalFilename}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="material-symbols-outlined text-white">zoom_in</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div
-                    onClick={() => window.open('https://lh3.googleusercontent.com/aida-public/AB6AXuAw_xGH9EocIpuBUWgXD0__8vzVjcaUEUl8ClF02zsN-1WKSJOujpAueuwV0TdpJlFwKqEeaatXSAvjWOxkIC0glY1H6BTPGuGHUtNlyzgrNg3W2p85CwOheg05NUorK8cjaFFfheYvfDX2iB0-PtWdoSgR8TYl-gbsuLe6aA7n1zevl0gT74joHS3Khg2NO0e92XYqahdVe1VjE4Q3E2umbhH_b7vKWtyTkar8UTSa-R5F_Fp72bcCPJ9O3-hAU3ptVrfW0PDoweY', '_blank')}
-                    className="aspect-[3/2] bg-surface-container-low rounded border border-surface-border relative group overflow-hidden cursor-pointer"
-                  >
-                    <img
-                      className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuAw_xGH9EocIpuBUWgXD0__8vzVjcaUEUl8ClF02zsN-1WKSJOujpAueuwV0TdpJlFwKqEeaatXSAvjWOxkIC0glY1H6BTPGuGHUtNlyzgrNg3W2p85CwOheg05NUorK8cjaFFfheYvfDX2iB0-PtWdoSgR8TYl-gbsuLe6aA7n1zevl0gT74joHS3Khg2NO0e92XYqahdVe1VjE4Q3E2umbhH_b7vKWtyTkar8UTSa-R5F_Fp72bcCPJ9O3-hAU3ptVrfW0PDoweY"
-                      alt="CCCD Mặt sau"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="material-symbols-outlined text-white">zoom_in</span>
-                    </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-3 bg-surface-container-low border border-surface-border rounded text-text-muted font-body-md italic text-sm justify-center">
+                    <span className="material-symbols-outlined text-[18px] align-middle">info</span>
+                    Chưa cung cấp minh chứng liên kết FPTU.
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -585,34 +660,61 @@ export default function AdminMentorVerificationDetailPage() {
 
               <div>
                 <span className="block font-label-md text-text-muted mb-2 text-xs uppercase">CHỨNG CHỈ &amp; THÀNH TÍCH</span>
-                {detail.documents && detail.documents.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {detail.documents.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between p-3 bg-surface-container-low border border-surface-border rounded gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="material-symbols-outlined text-primary text-[20px] shrink-0">description</span>
-                          <div className="truncate text-left">
-                            <span className="font-body-md text-text-main font-semibold block truncate text-sm" title={doc.originalFilename}>
-                              {doc.originalFilename}
-                            </span>
-                            <span className="text-[11px] text-text-muted block">
-                              {doc.documentType === 'FPTU_AFFILIATION_PROOF' ? 'Minh chứng FPTU' : 'Minh chứng chuyên môn'}
-                              {doc.sizeBytes ? ` • ${(doc.sizeBytes / 1024 / 1024).toFixed(2)} MB` : ''}
-                            </span>
+                {expertiseProofs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {expertiseProofs.map((doc) => {
+                      const isImage = doc.fileUrl && (
+                        doc.contentType?.startsWith('image/') ||
+                        doc.originalFilename.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)
+                      );
+
+                      return (
+                        <div key={doc.id} className="space-y-2 border border-surface-border rounded-lg p-3 bg-surface-container-low">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="material-symbols-outlined text-primary text-[20px] shrink-0">
+                                {isImage ? 'image' : 'description'}
+                              </span>
+                              <div className="truncate text-left">
+                                <span className="font-body-md text-text-main font-semibold block truncate text-sm" title={doc.originalFilename}>
+                                  {doc.originalFilename}
+                                </span>
+                                {doc.sizeBytes !== undefined && (
+                                  <span className="text-[11px] text-text-muted block">
+                                    {(doc.sizeBytes / 1024 / 1024).toFixed(2)} MB
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {doc.fileUrl && (
+                              <a
+                                href={doc.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-primary text-white rounded font-label-md text-xs hover:opacity-90 whitespace-nowrap"
+                              >
+                                Xem file
+                              </a>
+                            )}
                           </div>
+                          {isImage && doc.fileUrl && (
+                            <div 
+                              onClick={() => window.open(doc.fileUrl, '_blank')}
+                              className="aspect-[3/2] bg-surface-container-low rounded border border-surface-border relative group overflow-hidden cursor-pointer w-full"
+                            >
+                              <img
+                                className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all"
+                                src={doc.fileUrl}
+                                alt={doc.originalFilename}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="material-symbols-outlined text-white">zoom_in</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        {doc.fileUrl && (
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1.5 bg-primary text-white rounded font-label-md text-xs hover:opacity-90 whitespace-nowrap"
-                          >
-                            Tải file
-                          </a>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 p-3 bg-surface-container-low border border-surface-border rounded text-text-muted font-body-md italic text-sm justify-center">
@@ -669,24 +771,31 @@ export default function AdminMentorVerificationDetailPage() {
                 <tbody className="divide-y divide-surface-border font-body-md text-sm text-text-main">
                   {detail.timeline && detail.timeline.length > 0 ? (
                     detail.timeline.map((event, index) => {
+                      const eventTypeStr = event.eventType || event.event || '';
                       let badgeClass = 'bg-surface-container text-text-main border border-surface-border';
-                      if (event.event.includes('REJECT') || event.event.includes('TU_CHOI')) {
+                      if (eventTypeStr.includes('REJECT') || eventTypeStr.includes('TU_CHOI')) {
                         badgeClass = 'bg-status-rejected/10 text-status-rejected border border-status-rejected/20';
-                      } else if (event.event.includes('APPROVE') || event.event.includes('PHE_DUYET')) {
+                      } else if (eventTypeStr.includes('APPROVE') || eventTypeStr.includes('PHE_DUYET')) {
                         badgeClass = 'bg-status-approved/10 text-status-approved border border-status-approved/20';
-                      } else if (event.event.includes('REVISION') || event.event.includes('CHINH_SUA')) {
+                      } else if (eventTypeStr.includes('REVISION') || eventTypeStr.includes('CHINH_SUA')) {
                         badgeClass = 'bg-status-revision/10 text-status-revision border border-status-revision/20';
+                      } else if (eventTypeStr.includes('SUBMIT') || eventTypeStr.includes('CREATE') || eventTypeStr.includes('NOUP')) {
+                        badgeClass = 'bg-primary-soft/30 text-primary border border-primary/20';
                       }
+
+                      const labelText = getTimelineEventLabel(event);
+                      const actorName = event.actorFullName || event.by || (event.actorEmail ? event.actorEmail.split('@')[0] : 'Hệ thống');
+                      const eventTime = event.createdAt || event.at || null;
 
                       return (
                         <tr key={index} className="hover:bg-surface-background/50 transition-colors">
-                          <td className="px-4 py-3 text-text-muted whitespace-nowrap">{formatDateTime(event.at)}</td>
+                          <td className="px-4 py-3 text-text-muted whitespace-nowrap">{formatDateTime(eventTime)}</td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${badgeClass}`}>
-                              {event.label || event.event}
+                              {labelText}
                             </span>
                           </td>
-                          <td className="px-4 py-3 font-medium">{event.by || 'Hệ thống'}</td>
+                          <td className="px-4 py-3 font-medium">{actorName}</td>
                           <td className="px-4 py-3 text-text-muted whitespace-pre-wrap max-w-xs break-words font-medium">
                             {event.note ? event.note : <span className="italic text-text-muted/60 font-normal">-</span>}
                           </td>
@@ -705,10 +814,58 @@ export default function AdminMentorVerificationDetailPage() {
             </div>
           </div>
 
+
         </div>
 
       </div>
       <div className="h-8"></div>
+
+      {/* Custom Confirmation Modal */}
+      {showApproveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div 
+            className="bg-surface-container-lowest border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
+              <h3 className="font-headline-sm text-headline-sm text-text-main font-bold">
+                Xác nhận phê duyệt hồ sơ
+              </h3>
+              <button 
+                onClick={() => setShowApproveModal(false)}
+                className="text-text-muted hover:text-text-main transition-colors focus:outline-none cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-container-low"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 text-left">
+              <p className="font-body-md text-text-muted leading-relaxed text-sm">
+                Bạn có chắc chắn muốn phê duyệt hồ sơ của <strong className="text-text-main font-semibold">{detail.mentorFullName}</strong> trở thành Mentor?
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-container-low border-t border-surface-border">
+              <button
+                onClick={() => setShowApproveModal(false)}
+                className="px-4 py-2 border border-surface-border rounded-lg bg-surface text-text-main hover:bg-surface-container transition-colors font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={processing}
+                onClick={handleConfirmApprove}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {processing ? 'Đang xử lý...' : 'Xác nhận phê duyệt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

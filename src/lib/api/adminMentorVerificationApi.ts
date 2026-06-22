@@ -43,27 +43,38 @@ export type VerificationLockStatus = {
 
 export type AdminVerificationDetail = {
   requestId: string;
-  status: string;
-  mentorFullName: string;
+  mentorUserId: string;
   mentorEmail: string;
+  mentorFullName: string;
+  mentorAvatarUrl?: string | null;
+  status: string;
+  submitNote?: string | null;
+  reviewNote?: string | null;
+  rejectionReason?: string | null;
   revisionCount: number;
-  submittedAt: string | null;
-  updatedAt: string | null;
-  submitNote: string | null;
-  reviewNote: string | null;
+  reviewerEmail?: string | null;
+  lockedByAdminEmail?: string | null;
+  lockedAt?: string | null;
+  lockExpiresAt?: string | null;
   canReview: boolean;
-  lockedByAdminEmail: string | null;
+  submittedAt: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   // Khớp MentorVerificationDocumentResponse của BE mới.
   documents: Array<{
     id: string;
     documentType: string;
     status?: string;
+    storageKind?: string;
     originalFilename: string;
     contentType?: string;
     sizeBytes?: number;
-    uploadedAt?: string;
     fileUrl?: string;
     isActive?: boolean;
+    version?: number;
+    reviewNote?: string | null;
+    rejectedReason?: string | null;
+    uploadedAt?: string;
   }>;
   checklist: {
     academicProfileCompleted: boolean;
@@ -73,39 +84,61 @@ export type AdminVerificationDetail = {
     canSubmit: boolean;
   } | null;
   timeline: Array<{
-    event: string;
+    id?: string;
+    event?: string; // fallback
+    eventType?: string;
+    fromStatus?: string;
+    toStatus?: string;
+    actorUserId?: string;
+    actorEmail?: string;
+    actorFullName?: string;
     label?: string;
-    at: string;
-    by?: string;
-    note?: string;
+    at?: string; // fallback
+    createdAt?: string;
+    by?: string; // fallback
+    note?: string | null;
   }>;
   // Khớp StudentProfileResponse: campus/program/specialization là object lồng.
   studentProfile: {
+    userId?: string;
+    email?: string;
     studentCode: string;
     displayName: string;
     avatarUrl?: string;
-    campus?: { id: string; name: string };
-    program?: { id: string; nameVi: string };
-    specialization?: { id: string; nameVi: string };
+    campus?: { id: string; code?: string; name: string; city?: string };
+    program?: { id: string; code?: string; nameVi: string; nameEn?: string };
+    specialization?: { id: string; programId?: string; code?: string; nameVi: string; nameEn?: string; expected?: boolean; other?: boolean };
     semester: number;
     intakeYear: number;
     alumni?: boolean;
     graduationYear?: number | null;
     bio?: string;
+    createdAt?: string;
+    updatedAt?: string;
   } | null;
   // Khớp MentorProfileResponse: helpTopics là mảng tag.
   mentorProfile: {
+    exists?: boolean;
+    requiredFieldsCompleted?: boolean;
+    userId?: string;
+    email?: string;
+    displayName?: string;
+    avatarUrl?: string;
+    mentorStatus?: string;
     headline?: string;
     expertiseDescription?: string;
     supportingSubjects?: string;
     isAvailable?: boolean;
-    helpTopics?: Array<{ id: string; nameVi: string }>;
+    verifiedAt?: string;
+    helpTopics?: Array<{ id: string; code?: string; nameVi: string; nameEn?: string; type?: string; primary?: boolean }>;
     teachingMode?: string;
     sessionDuration?: number;
     phoneNumber?: string;
     linkedinUrl?: string;
     githubUrl?: string;
     portfolioUrl?: string;
+    createdAt?: string;
+    updatedAt?: string;
   } | null;
 };
 
