@@ -79,19 +79,20 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Hero Section with Full Image Background */}
-      <section 
-        className="relative overflow-hidden text-white py-28 lg:py-36 text-left bg-cover bg-center"
-        style={{ backgroundImage: "url('/fpt-banner.png')" }}
+      {/* Hero Section — nền gradient (bỏ ảnh campus để tránh dấu vết thương hiệu trường) */}
+      <section
+        className="relative overflow-hidden text-white py-28 lg:py-36 text-left"
+        style={{ background: 'linear-gradient(120deg, #051138 0%, #0a2a6e 55%, #1e3a8a 105%)' }}
       >
-        {/* Gradient Overlay for Legibility */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#051138]/95 via-[#051138]/75 to-transparent pointer-events-none"></div>
+        {/* Hoạ tiết chấm + overlay cho chiều sâu */}
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.4px)', backgroundSize: '22px 22px' }}></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#051138]/90 via-[#051138]/40 to-transparent pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           {/* Hero Content Left */}
           <div className="max-w-2xl space-y-6">
             <span className="inline-flex items-center gap-1.5 bg-brand-primary text-white text-meta font-extrabold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md shadow-brand-primary/25 animate-pulse">
-              <Sparkles className="w-3.5 h-3.5" /> Cộng đồng trao đổi kỹ năng FPTU
+              <Sparkles className="w-3.5 h-3.5" /> Cộng đồng trao đổi kỹ năng học thuật
             </span>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight">
@@ -100,7 +101,7 @@ export const LandingPage: React.FC = () => {
             </h1>
             
             <p className="text-slate-200 text-body sm:text-body font-semibold max-w-xl leading-relaxed">
-              SkillSwap là nền tảng trao đổi kỹ năng chéo học thuật độc quyền cho sinh viên FPT University. 
+              SkillSwap là nền tảng trao đổi kỹ năng chéo học thuật dành cho sinh viên đại học.
               Bạn chia sẻ thế mạnh lập trình, đổi lấy sự trợ giúp về thiết kế UI/UX hay ngoại ngữ từ bạn cùng trường.
             </p>
 
@@ -135,7 +136,7 @@ export const LandingPage: React.FC = () => {
 
             <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
               <span className="text-3xl font-bold text-fg block">450+</span>
-              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Thành viên FPTU</span>
+              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Thành viên cộng đồng</span>
             </div>
 
             <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
@@ -279,11 +280,11 @@ export const LandingPage: React.FC = () => {
             </span>
             <h2 className="text-3xl font-bold text-fg tracking-tight">Trải nghiệm phân vai trò tương tác</h2>
             <p className="text-fg-muted text-body sm:text-body font-semibold leading-relaxed">
-              SkillSwap xây dựng ba vai trò tương thích hoàn chỉnh, mô phỏng chính xác các hoạt động kiểm duyệt và kết nối tại FPT University.
+              SkillSwap xây dựng hai vai trò tương thích, mô phỏng chính xác các hoạt động kết nối và trao đổi học thuật.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 max-w-3xl mx-auto">
             
             {/* Mentee card */}
             <div className="p-6 bg-surface border border-line rounded-card hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
@@ -310,20 +311,6 @@ export const LandingPage: React.FC = () => {
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Chấp nhận hoặc từ chối lịch kèm lý do.</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Cập nhật link phòng trực tuyến (Zoom/Meet).</span></li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Cấu hình portfolio, kinh nghiệm & dịch vụ.</span></li>
-              </ul>
-            </div>
-
-            {/* Admin card */}
-            <div className="p-6 bg-surface border border-line rounded-card hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
-              <div className="w-9 h-9 rounded-full bg-surface-muted text-brand-primary flex items-center justify-center font-bold">
-                <Compass className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-fg">Dành cho Admin (Quản trị)</h3>
-              <ul className="space-y-2.5 text-body text-fg-muted font-semibold">
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-brand-secondary shrink-0 mt-0.5" /> <span>Xem dashboard báo cáo chỉ số MVP vận hành.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Quản lý khóa/mở hoạt động của tài khoản.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Phê duyệt hàng chờ chứng chỉ xin lên Mentor.</span></li>
-                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-fg shrink-0 mt-0.5" /> <span>Giám sát hệ thống logs đăng ký & đặt chỗ.</span></li>
               </ul>
             </div>
 
@@ -420,7 +407,7 @@ export const LandingPage: React.FC = () => {
             Nâng cao năng lực học tập và kết nối hôm nay!
           </h2>
           <p className="text-white/80 text-body font-semibold max-w-md mx-auto leading-relaxed">
-            Đăng nhập ngay bằng Chế độ Bypass để trải nghiệm các vai trò, đặt lịch học và trao đổi kiến thức học thuật tại FPT University.
+            Đăng nhập ngay để trải nghiệm các vai trò, đặt lịch học và trao đổi kiến thức học thuật cùng cộng đồng.
           </p>
           <div className="pt-2">
             <Link
@@ -446,7 +433,7 @@ export const LandingPage: React.FC = () => {
               </span>
             </div>
             <p className="leading-relaxed font-semibold">
-              Cộng đồng trao đổi kỹ năng học thuật miễn phí dành riêng cho sinh viên FPT University.
+              Cộng đồng trao đổi kỹ năng học thuật miễn phí dành cho sinh viên đại học.
             </p>
           </div>
 
@@ -462,24 +449,24 @@ export const LandingPage: React.FC = () => {
           <div className="space-y-3">
             <span className="text-white font-bold block uppercase tracking-wider text-meta">Định hướng học tập</span>
             <ul className="space-y-2 font-semibold">
-              <li><a href="https://fpt.edu.vn" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Đại học FPT HCM</a></li>
-              <li><a href="https://fpt.edu.vn" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Đại học FPT Hà Nội</a></li>
-              <li><a href="https://fpt.edu.vn" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Đại học FPT Đà Nẵng</a></li>
+              <li><a href="#features" className="hover:text-white transition-colors">Trao đổi kỹ năng</a></li>
+              <li><a href="#mentors" className="hover:text-white transition-colors">Tìm mentor</a></li>
+              <li><a href="#about" className="hover:text-white transition-colors">Lộ trình học tập</a></li>
             </ul>
           </div>
 
           <div className="space-y-3">
             <span className="text-white font-bold block uppercase tracking-wider text-meta">Liên hệ & Hỗ trợ</span>
             <p className="leading-relaxed font-semibold">
-              Phòng Công tác Sinh viên (SRO) - FPTU Campus Quận 9, TP. Hồ Chí Minh.<br />
-              Email: sro.hcm@fpt.edu.vn
+              Đội ngũ SkillSwap — dự án học tập thực chiến.<br />
+              Email: support@skillswap.asia
             </p>
           </div>
 
         </div>
 
         <div className="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-slate-800 text-center text-meta text-fg-muted font-semibold">
-          © {new Date().getFullYear()} SkillSwap FPT. Dự án học tập thực chiến EXE101. Bảo lưu mọi quyền.
+          © {new Date().getFullYear()} SkillSwap. Dự án học tập thực chiến EXE101. Bảo lưu mọi quyền.
         </div>
       </footer>
 
