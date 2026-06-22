@@ -422,7 +422,6 @@ export const Profile: React.FC = () => {
                     value={studentCode}
                     onChange={(e) => setStudentCode(e.target.value)}
                     className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all font-semibold"
-                    placeholder="SE192621"
                   />
                 </div>
               </div>
