@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, Users, CheckCircle, PauseCircle, Star, Plus, 
   SlidersHorizontal, Loader2, AlertCircle, Ban, Check,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import { adminUsersApi } from '../../api/adminUsers';
 import { useAuth } from '../../context/AuthContext';
@@ -35,6 +35,12 @@ export const MentorList: React.FC = () => {
   
   // Status action states
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Modal states for Lock/Unlock
+  const [selectedMentor, setSelectedMentor] = useState<AdminMentorListItem | null>(null);
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [lockReason, setLockReason] = useState('Vi phạm điều khoản cộng đồng');
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({
@@ -122,31 +128,52 @@ export const MentorList: React.FC = () => {
   };
 
   // Toggle user active/banned status for Admin management
-  const handleToggleStatus = async (item: AdminMentorListItem) => {
+  const handleToggleStatus = (item: AdminMentorListItem) => {
+    setSelectedMentor(item);
     const isBanned = item.userStatus === 'BANNED';
-    const actionText = isBanned ? 'Kích hoạt lại' : 'Khóa (Ban)';
-    const confirmed = confirm(`Bạn có chắc chắn muốn ${actionText.toLowerCase()} mentor ${item.displayName}?`);
-    if (!confirmed) return;
+    if (isBanned) {
+      setShowUnlockModal(true);
+    } else {
+      setLockReason('Vi phạm điều khoản cộng đồng');
+      setShowLockModal(true);
+    }
+  };
 
-    setBusyId(item.mentorUserId);
+  const handleConfirmLock = async () => {
+    if (!selectedMentor || !lockReason.trim()) return;
+    setBusyId(selectedMentor.mentorUserId);
+    setShowLockModal(false);
     try {
-      if (isBanned) {
-        await adminUsersApi.unban(item.mentorUserId, 'Mở khóa bởi quản trị viên');
-      } else {
-        const reason = prompt('Lý do khóa tài khoản:', 'Vi phạm điều khoản cộng đồng');
-        if (reason === null) return; // cancelled
-        await adminUsersApi.ban(item.mentorUserId, reason || 'Vi phạm điều khoản');
-      }
+      await adminUsersApi.ban(selectedMentor.mentorUserId, lockReason);
       await loadMentors();
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Không thể thay đổi trạng thái.');
     } finally {
       setBusyId(null);
+      setSelectedMentor(null);
+    }
+  };
+
+  const handleConfirmUnlock = async () => {
+    if (!selectedMentor) return;
+    setBusyId(selectedMentor.mentorUserId);
+    setShowUnlockModal(false);
+    try {
+      await adminUsersApi.unban(selectedMentor.mentorUserId, 'Mở khóa bởi quản trị viên');
+      await loadMentors();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không thể thay đổi trạng thái.');
+    } finally {
+      setBusyId(null);
+      setSelectedMentor(null);
     }
   };
 
   // Local client side filtering for the mock/live values
   const filteredMentors = mentors.filter(item => {
+    // Không hiển thị các tài khoản Inactive
+    if (item.userStatus === 'INACTIVE' || (item.mentorStatus as string) === 'INACTIVE') return false;
+
     const spec = getSpecialization(item).label;
     const matchesSpec = selectedSpecialization === 'ALL' || spec === selectedSpecialization;
     
@@ -348,7 +375,6 @@ export const MentorList: React.FC = () => {
                   const spec = getSpecialization(item);
                   const initial = item.displayName ? item.displayName.charAt(0).toUpperCase() : '?';
                   const isBanned = item.userStatus === 'BANNED';
-                  const isActive = item.mentorStatus === 'ACTIVE' && !isBanned;
 
                   return (
                     <tr key={item.mentorUserId} className="hover:bg-surface-background/50 transition-colors">
@@ -396,19 +422,34 @@ export const MentorList: React.FC = () => {
                       {/* Status Dot Badge */}
                       <td className="py-3 px-4">
                         {isBanned ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                            Banned
+                            Đã khóa
                           </span>
-                        ) : isActive ? (
+                        ) : item.mentorStatus === 'ACTIVE' ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                            Active
+                            Đang hoạt động
+                          </span>
+                        ) : item.mentorStatus === 'PAUSED' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            Tạm nghỉ
+                          </span>
+                        ) : item.mentorStatus === 'PENDING_VERIFICATION' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                            Chờ xác minh
+                          </span>
+                        ) : item.mentorStatus === 'SUSPENDED' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                            Đình chỉ
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                            Inactive
+                            {item.mentorStatus}
                           </span>
                         )}
                       </td>
@@ -475,6 +516,114 @@ export const MentorList: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Custom Lock Mentor Modal */}
+      {showLockModal && selectedMentor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div 
+            className="bg-surface-container-lowest border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
+              <h3 className="font-headline-sm text-headline-sm text-text-main font-bold">
+                Khóa tài khoản Mentor
+              </h3>
+              <button 
+                onClick={() => { setShowLockModal(false); setSelectedMentor(null); }}
+                className="text-text-muted hover:text-text-main transition-colors focus:outline-none cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-container-low"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 text-left space-y-4">
+              <p className="font-body-md text-text-muted leading-relaxed text-sm">
+                Bạn có chắc chắn muốn khóa tài khoản của mentor <strong className="text-text-main font-semibold">{selectedMentor.displayName}</strong>?
+              </p>
+              
+              <div>
+                <label htmlFor="lock-reason" className="block font-label-md text-text-muted text-xs uppercase tracking-wider mb-2 font-semibold">
+                  Lý do khóa <span className="text-status-rejected font-bold">*</span>
+                </label>
+                <textarea
+                  id="lock-reason"
+                  rows={3}
+                  className="w-full bg-white border border-surface-border rounded-lg p-3 text-text-main font-body-md text-sm placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-status-rejected focus:border-transparent resize-none"
+                  placeholder="Nhập lý do khóa tài khoản tại đây..."
+                  value={lockReason}
+                  onChange={(e) => setLockReason(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-container-low border-t border-surface-border">
+              <button
+                onClick={() => { setShowLockModal(false); setSelectedMentor(null); }}
+                className="px-4 py-2 border border-surface-border rounded-lg bg-surface text-text-main hover:bg-surface-container transition-colors font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={busyId === selectedMentor.mentorUserId || !lockReason.trim()}
+                onClick={handleConfirmLock}
+                className="px-4 py-2 bg-status-rejected text-on-error rounded-lg hover:opacity-90 transition-opacity shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {busyId === selectedMentor.mentorUserId ? 'Đang xử lý...' : 'Khóa tài khoản'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Unlock Mentor Modal */}
+      {showUnlockModal && selectedMentor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div 
+            className="bg-surface-container-lowest border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
+              <h3 className="font-headline-sm text-headline-sm text-text-main font-bold">
+                Kích hoạt lại tài khoản Mentor
+              </h3>
+              <button 
+                onClick={() => { setShowUnlockModal(false); setSelectedMentor(null); }}
+                className="text-text-muted hover:text-text-main transition-colors focus:outline-none cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-container-low"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 text-left">
+              <p className="font-body-md text-text-muted leading-relaxed text-sm">
+                Bạn có chắc chắn muốn kích hoạt lại tài khoản của mentor <strong className="text-text-main font-semibold">{selectedMentor.displayName}</strong>?
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-container-low border-t border-surface-border">
+              <button
+                onClick={() => { setShowUnlockModal(false); setSelectedMentor(null); }}
+                className="px-4 py-2 border border-surface-border rounded-lg bg-surface text-text-main hover:bg-surface-container transition-colors font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={busyId === selectedMentor.mentorUserId}
+                onClick={handleConfirmUnlock}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {busyId === selectedMentor.mentorUserId ? 'Đang xử lý...' : 'Kích hoạt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

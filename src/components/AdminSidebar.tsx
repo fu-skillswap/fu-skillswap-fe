@@ -26,10 +26,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   };
 
   const adminLinks = [
-    { path: '/admin/mentor-verification', label: 'Verification Queue', icon: <ShieldCheck className="w-5 h-5" /> },
-    { path: '/admin/mentor-list', label: 'Mentor Management', icon: <GraduationCap className="w-5 h-5" /> },
-    { path: '/admin/users', label: 'User Management', icon: <Users className="w-5 h-5" /> },
-    { path: '/admin/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
+    { path: '/admin/mentor-verification', label: 'Duyệt hồ sơ Mentor', icon: <ShieldCheck className="w-5 h-5" /> },
+    { path: '/admin/mentor-list', label: 'Quản lý Mentor', icon: <GraduationCap className="w-5 h-5" /> },
+    { path: '/admin/users', label: 'Quản lý Mentee', icon: <Users className="w-5 h-5" /> },
+    { path: '/admin/settings', label: 'Cài đặt', icon: <Settings className="w-5 h-5" /> },
   ];
 
   return (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Ban, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Search, Ban, CheckCircle, Loader2, AlertCircle, X } from 'lucide-react';
 import { adminUsersApi } from '../../api/adminUsers';
 import { onAvatarError } from '../../lib/img';
 import type { SystemUser } from '../../api/types';
@@ -16,17 +16,48 @@ export const UserManagement: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Custom modal states
+  const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null);
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [lockReason, setLockReason] = useState('Vi phạm quy định cộng đồng');
+
+  // Toast notifications
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const triggerToast = (message: string, type: 'success' | 'error' | 'warning') => {
+    setToast({ message, type });
+    setToastVisible(true);
+  };
+
+  useEffect(() => {
+    if (toastVisible) {
+      const dismissTimer = setTimeout(() => {
+        setToastVisible(false);
+      }, 3000);
+      return () => clearTimeout(dismissTimer);
+    }
+  }, [toastVisible]);
+
+  useEffect(() => {
+    if (!toastVisible && toast) {
+      const cleanTimer = setTimeout(() => {
+        setToast(null);
+      }, 300);
+      return () => clearTimeout(cleanTimer);
+    }
+  }, [toastVisible, toast]);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const paged = await adminUsersApi.listUsers({ size: 100 });
       setUsers(paged?.content ?? []);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Không tải được danh sách người dùng.');
+      triggerToast(err?.response?.data?.message || 'Không tải được danh sách người dùng.', 'error');
     } finally {
       setLoading(false);
     }
@@ -34,22 +65,46 @@ export const UserManagement: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleToggleStatus = async (u: SystemUser) => {
+  const handleToggleStatus = (u: SystemUser) => {
+    setSelectedUser(u);
     const banning = u.status !== 'BANNED';
-    const reason = window.prompt(
-      banning ? 'Lý do khoá tài khoản này:' : 'Lý do mở khoá tài khoản này:',
-      banning ? 'Vi phạm quy định cộng đồng' : 'Đã xác minh lại',
-    );
-    if (reason === null) return; // huỷ
-    setBusyId(u.userId);
+    if (banning) {
+      setLockReason('Vi phạm quy định cộng đồng');
+      setShowLockModal(true);
+    } else {
+      setShowUnlockModal(true);
+    }
+  };
+
+  const handleConfirmLock = async () => {
+    if (!selectedUser || !lockReason.trim()) return;
+    setBusyId(selectedUser.userId);
+    setShowLockModal(false);
     try {
-      if (banning) await adminUsersApi.ban(u.userId, reason || 'N/A');
-      else await adminUsersApi.unban(u.userId, reason || undefined);
+      await adminUsersApi.ban(selectedUser.userId, lockReason);
+      triggerToast('Đã khóa tài khoản thành công', 'success');
       await load();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Thao tác thất bại.');
+      triggerToast(err?.response?.data?.message || 'Thao tác thất bại.', 'error');
     } finally {
       setBusyId(null);
+      setSelectedUser(null);
+    }
+  };
+
+  const handleConfirmUnlock = async () => {
+    if (!selectedUser) return;
+    setBusyId(selectedUser.userId);
+    setShowUnlockModal(false);
+    try {
+      await adminUsersApi.unban(selectedUser.userId, 'Đã xác minh lại');
+      triggerToast('Đã kích hoạt tài khoản thành công', 'success');
+      await load();
+    } catch (err: any) {
+      triggerToast(err?.response?.data?.message || 'Thao tác thất bại.', 'error');
+    } finally {
+      setBusyId(null);
+      setSelectedUser(null);
     }
   };
 
@@ -70,7 +125,39 @@ export const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 text-left">
+    <div className="space-y-6 text-left relative">
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 z-50 flex items-start gap-3 rounded-lg p-4 shadow-lg text-white w-96 transition-all duration-300 ease-in-out ${
+            toastVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6 pointer-events-none'
+          } ${
+            toast.type === 'success' 
+              ? 'bg-status-approved' 
+              : toast.type === 'warning' 
+                ? 'bg-status-revision' 
+                : 'bg-status-rejected'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle className="w-5 h-5 shrink-0 mt-0.5 text-white" />
+          ) : (
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-white" />
+          )}
+          <div className="flex-1 text-left min-w-0">
+            <div className="font-bold text-sm leading-none mb-1 text-white">
+              {toast.type === 'success' ? 'Thành công' : toast.type === 'warning' ? 'Thông báo' : 'Thất bại'}
+            </div>
+            <div className="text-xs text-white/90 leading-tight break-words font-medium">{toast.message}</div>
+          </div>
+          <button
+            onClick={() => setToastVisible(false)}
+            className="text-white/80 hover:text-white shrink-0 focus:outline-none cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Title */}
       <div className="space-y-1">
@@ -81,13 +168,6 @@ export const UserManagement: React.FC = () => {
           Xem thông tin cơ bản, vai trò học tập và quản lý trạng thái kích hoạt tài khoản sinh viên.
         </p>
       </div>
-
-      {error && (
-        <div className="flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-card text-body font-semibold">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* Filter Controls */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface border border-brand-border p-4 rounded-card shadow-sm">
@@ -207,11 +287,23 @@ export const UserManagement: React.FC = () => {
 
                       {/* Status */}
                       <td className="py-4 px-4">
-                        <span className={`inline-flex items-center gap-1 text-meta font-bold ${
-                          u.status === 'ACTIVE' ? 'text-green-600' : isBanned ? 'text-red-600' : 'text-amber-600'
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                          u.status === 'ACTIVE'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : isBanned
+                            ? 'bg-red-50 text-red-700 border-red-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'ACTIVE' ? 'bg-green-500' : isBanned ? 'bg-red-500' : 'bg-amber-500'}`}></span>
-                          {u.status}
+                          {u.status === 'ACTIVE'
+                            ? 'Đang hoạt động'
+                            : isBanned
+                            ? 'Đã khóa'
+                            : u.status === 'INACTIVE'
+                            ? 'Chưa kích hoạt'
+                            : u.status === 'DELETED'
+                            ? 'Đã xóa'
+                            : u.status}
                         </span>
                       </td>
 
@@ -246,6 +338,113 @@ export const UserManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Custom Lock User Modal */}
+      {showLockModal && selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div 
+            className="bg-surface border border-brand-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
+              <h3 className="font-headline-sm text-headline-sm text-fg font-bold">
+                Khóa tài khoản người dùng
+              </h3>
+              <button 
+                onClick={() => { setShowLockModal(false); setSelectedUser(null); }}
+                className="text-fg-muted hover:text-fg transition-colors focus:outline-none cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-muted"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 text-left space-y-4">
+              <p className="font-body-md text-fg-muted leading-relaxed text-sm">
+                Bạn có chắc chắn muốn khóa tài khoản của người dùng <strong className="text-fg font-semibold">{selectedUser.fullName}</strong>?
+              </p>
+              
+              <div>
+                <label htmlFor="lock-reason" className="block font-label-md text-fg-muted text-xs uppercase tracking-wider mb-2 font-semibold">
+                  Lý do khóa <span className="text-danger font-bold">*</span>
+                </label>
+                <textarea
+                  id="lock-reason"
+                  rows={3}
+                  className="w-full bg-white border border-brand-border rounded-lg p-3 text-fg font-body-md text-sm placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-danger focus:border-transparent resize-none"
+                  placeholder="Nhập lý do khóa tài khoản tại đây..."
+                  value={lockReason}
+                  onChange={(e) => setLockReason(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-muted border-t border-brand-border">
+              <button
+                onClick={() => { setShowLockModal(false); setSelectedUser(null); }}
+                className="px-4 py-2 border border-brand-border rounded-lg bg-surface text-fg hover:bg-surface-muted transition-colors font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={busyId === selectedUser.userId || !lockReason.trim()}
+                onClick={handleConfirmLock}
+                className="px-4 py-2 bg-danger text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {busyId === selectedUser.userId ? 'Đang xử lý...' : 'Khóa tài khoản'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Unlock User Modal */}
+      {showUnlockModal && selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div 
+            className="bg-surface border border-brand-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
+              <h3 className="font-headline-sm text-headline-sm text-fg font-bold">
+                Kích hoạt lại tài khoản
+              </h3>
+              <button 
+                onClick={() => { setShowUnlockModal(false); setSelectedUser(null); }}
+                className="text-fg-muted hover:text-fg transition-colors focus:outline-none cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-muted"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 text-left">
+              <p className="font-body-md text-fg-muted leading-relaxed text-sm">
+                Bạn có chắc chắn muốn kích hoạt lại tài khoản của người dùng <strong className="text-fg font-semibold">{selectedUser.fullName}</strong>?
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-muted border-t border-brand-border">
+              <button
+                onClick={() => { setShowUnlockModal(false); setSelectedUser(null); }}
+                className="px-4 py-2 border border-brand-border rounded-lg bg-surface text-fg hover:bg-surface-muted transition-colors font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={busyId === selectedUser.userId}
+                onClick={handleConfirmUnlock}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {busyId === selectedUser.userId ? 'Đang xử lý...' : 'Kích hoạt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

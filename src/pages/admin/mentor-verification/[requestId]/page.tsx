@@ -24,8 +24,11 @@ export default function AdminMentorVerificationDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
+  const [approveNote, setApproveNote] = useState('Hồ sơ đã đạt yêu cầu');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
+  const [revisionNote, setRevisionNote] = useState('');
   
   // Custom states for visual perfection
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
@@ -159,14 +162,16 @@ export default function AdminMentorVerificationDetailPage() {
   };
 
   const handleApproveClick = () => {
+    setApproveNote('Hồ sơ đã đạt yêu cầu');
     setShowApproveModal(true);
   };
 
   const handleConfirmApprove = async () => {
+    if (!approveNote.trim()) return;
     setShowApproveModal(false);
     setProcessing(true);
     try {
-      await approveVerification(requestId);
+      await approveVerification(requestId, approveNote);
       triggerToast('Đã phê duyệt hồ sơ thành công', 'success');
       await fetchDetail();
     } catch (err) {
@@ -206,16 +211,17 @@ export default function AdminMentorVerificationDetailPage() {
     }
   };
 
-  const handleRequestRevisionClick = async () => {
-    const reason = prompt('Vui lòng nhập yêu cầu chỉnh sửa (Bắt buộc):');
-    if (reason === null) return; // user cancelled
-    if (!reason.trim()) {
-      alert('Ghi chú là bắt buộc để yêu cầu chỉnh sửa.');
-      return;
-    }
+  const handleRequestRevisionClick = () => {
+    setRevisionNote('');
+    setShowRevisionModal(true);
+  };
+
+  const handleConfirmRevision = async () => {
+    if (!revisionNote.trim()) return;
     setProcessing(true);
     try {
-      await requestRevision(requestId, reason);
+      await requestRevision(requestId, revisionNote);
+      setShowRevisionModal(false);
       triggerToast('Đã gửi yêu cầu chỉnh sửa thành công', 'warning');
       await fetchDetail();
     } catch (err) {
@@ -858,10 +864,24 @@ export default function AdminMentorVerificationDetailPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 text-left">
+            <div className="p-6 text-left space-y-4">
               <p className="font-body-md text-text-muted leading-relaxed text-sm">
                 Bạn có chắc chắn muốn phê duyệt hồ sơ của <strong className="text-text-main font-semibold">{detail.mentorFullName}</strong> trở thành Mentor?
               </p>
+              
+              <div>
+                <label htmlFor="approve-note" className="block font-label-md text-text-muted text-xs uppercase tracking-wider mb-2 font-semibold">
+                  Ghi chú phê duyệt <span className="text-status-rejected font-bold">*</span>
+                </label>
+                <textarea
+                  id="approve-note"
+                  rows={3}
+                  className="w-full bg-white border border-surface-border rounded-lg p-3 text-text-main font-body-md text-sm placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                  placeholder="Nhập ghi chú phê duyệt tại đây..."
+                  value={approveNote}
+                  onChange={(e) => setApproveNote(e.target.value)}
+                />
+              </div>
             </div>
 
             {/* Modal Footer */}
@@ -873,7 +893,7 @@ export default function AdminMentorVerificationDetailPage() {
                 Hủy
               </button>
               <button
-                disabled={processing}
+                disabled={processing || !approveNote.trim()}
                 onClick={handleConfirmApprove}
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
               >
@@ -939,6 +959,67 @@ export default function AdminMentorVerificationDetailPage() {
                 className="px-4 py-2 bg-status-rejected text-on-error rounded-lg hover:opacity-90 transition-opacity shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
               >
                 {processing ? 'Đang từ chối...' : 'Từ chối'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Revision Confirmation Modal */}
+      {showRevisionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div 
+            className="bg-surface-container-lowest border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
+              <h3 className="font-headline-sm text-headline-sm text-text-main font-bold">
+                Yêu cầu chỉnh sửa hồ sơ
+              </h3>
+              <button 
+                onClick={() => setShowRevisionModal(false)}
+                className="text-text-muted hover:text-text-main transition-colors focus:outline-none cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-container-low"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 text-left space-y-4">
+              <p className="font-body-md text-text-muted leading-relaxed text-sm">
+                Vui lòng mô tả chi tiết những nội dung Mentor cần cập nhật hoặc bổ sung để hoàn thiện hồ sơ.
+              </p>
+              
+              <div>
+                <label htmlFor="revision-note" className="block font-label-md text-text-muted text-xs uppercase tracking-wider mb-2 font-semibold">
+                  NỘI DUNG CẦN BỔ SUNG <span className="text-status-rejected font-bold">*</span>
+                </label>
+                <textarea
+                  id="revision-note"
+                  rows={4}
+                  className="w-full bg-white border border-surface-border rounded-lg p-3 text-text-main font-body-md text-sm placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                  placeholder="Nhập nội dung yêu cầu chỉnh sửa tại đây..."
+                  value={revisionNote}
+                  onChange={(e) => setRevisionNote(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-container-low border-t border-surface-border">
+              <button
+                onClick={() => setShowRevisionModal(false)}
+                className="px-4 py-2 border border-surface-border rounded-lg bg-surface text-text-main hover:bg-surface-container transition-colors font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={processing || !revisionNote.trim()}
+                onClick={handleConfirmRevision}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {processing ? 'Đang gửi...' : 'Gửi yêu cầu'}
               </button>
             </div>
           </div>
