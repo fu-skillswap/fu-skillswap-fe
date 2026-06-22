@@ -1,10 +1,27 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Award, Star, Check, Compass, Sparkles, Smile } from 'lucide-react';
+import { ArrowRight, Award, Star, Check, Compass, Sparkles, Smile, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { onAvatarError } from '../lib/img';
 
 export const LandingPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  const handleLogout = async () => {
+    setMenuOpen(false);
+    await logout();
+  };
 
   const mockTopMentors = [
     {
@@ -58,15 +75,49 @@ export const LandingPage: React.FC = () => {
             <a href="#stats" className="hover:text-fg transition-colors">Số liệu thống kê</a>
           </nav>
 
-          {/* CTA Button */}
+          {/* CTA / Tài khoản */}
           <div>
             {isAuthenticated ? (
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center justify-center bg-brand-primary hover:bg-brand-primary-hover text-white text-body font-bold py-2 px-5.5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
-              >
-                Vào Dashboard
-              </Link>
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center justify-center bg-brand-primary hover:bg-brand-primary-hover text-white text-body font-bold py-2 px-5 rounded-full transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  Vào Dashboard
+                </Link>
+
+                {/* Avatar tài khoản + dropdown đăng xuất */}
+                <div className="relative" ref={menuRef}>
+                  <button
+                    onClick={() => setMenuOpen((o) => !o)}
+                    className="flex items-center gap-2 py-1 pl-1 pr-2 rounded-full border border-line hover:bg-surface-muted transition-all cursor-pointer"
+                  >
+                    <img
+                      src={user?.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                      onError={onAvatarError}
+                      alt={user?.fullName || ''}
+                      className="w-8 h-8 rounded-full object-cover border border-line"
+                    />
+                    <span className="hidden sm:block text-body font-bold text-fg max-w-[120px] truncate">{user?.fullName}</span>
+                    <ChevronDown className={`w-4 h-4 text-fg-muted transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {menuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-surface border border-line rounded-card shadow-xl p-2 z-50 text-left">
+                      <div className="px-3 py-2 border-b border-line-soft">
+                        <p className="text-body font-bold text-fg truncate">{user?.fullName}</p>
+                        <p className="text-meta text-fg-muted truncate">{user?.email}</p>
+                      </div>
+                      <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="w-full flex items-center gap-2 px-3 py-2 mt-1 rounded-field text-fg hover:bg-surface-muted font-bold text-body">
+                        <ArrowRight className="w-4 h-4" /> Vào Dashboard
+                      </Link>
+                      <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-field text-danger hover:bg-danger/10 font-bold text-body cursor-pointer">
+                        <LogOut className="w-4 h-4" /> Đăng xuất
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : (
               <Link
                 to="/login"

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth, getPostLoginRedirect } from '../context/AuthContext';
 import { apiClient } from '../api/client';
 import { User, School, Check, AlertCircle, FileText, Sparkles, Hash, CalendarDays } from 'lucide-react';
-import { onAvatarError } from '../lib/img';
 
 // input/select dùng chung 1 style để đồng nhất
 const fieldCls =
@@ -234,39 +233,31 @@ export const CompleteProfile: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-brand-bg flex items-center justify-center py-10 px-4 overflow-hidden text-left">
+    <div className="min-h-screen flex bg-surface text-left">
 
-      {/* Background Neon Glows */}
-      <div className="absolute -top-[10%] -left-[10%] w-[45vw] h-[45vw] rounded-full bg-brand-terracotta/5 blur-[130px] pointer-events-none"></div>
-      <div className="absolute -bottom-[10%] -right-[10%] w-[45vw] h-[45vw] rounded-full bg-brand-blue/4 blur-[130px] pointer-events-none"></div>
-
-      <div className="relative w-full max-w-3xl bg-surface border border-brand-border backdrop-blur-xl rounded-card z-10 shadow-2xl shadow-brand-text/10 overflow-hidden">
-
-        {/* ===== Header banner ===== */}
-        <div className="relative h-28" style={{ background: 'linear-gradient(110deg, var(--brand-terracotta, #c1654f) 0%, #c97b63 45%, var(--brand-blue, #3b6ea5) 130%)' }}>
-          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.18) 1px, transparent 1.4px)', backgroundSize: '14px 14px' }} />
-          <span className="absolute top-4 right-5 inline-flex items-center gap-1.5 bg-white/15 backdrop-blur text-white text-meta font-bold py-1 px-3 rounded-full border border-white/25">
-            <Sparkles className="w-3.5 h-3.5" /> Bước cuối để bắt đầu
-          </span>
+      {/* ===== LEFT: panel minh hoạ (ẩn trên mobile) ===== */}
+      <div
+        className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 text-white sticky top-0 h-screen overflow-hidden"
+        style={{ background: 'linear-gradient(140deg, #c1654f 0%, #c97b63 42%, #3b6ea5 120%)' }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.10) 1px, transparent 1.4px)', backgroundSize: '20px 20px' }} />
+        <span className="absolute top-8 right-8 inline-flex items-center gap-1.5 bg-white/15 backdrop-blur text-white text-meta font-bold py-1 px-3 rounded-full border border-white/25">
+          <Sparkles className="w-3.5 h-3.5" /> Bước cuối để bắt đầu
+        </span>
+        <div className="relative z-10 flex flex-col items-center text-center max-w-md">
+          <img src="/illustration-profile.svg" alt="Hồ sơ học thuật" className="w-[420px] max-w-full drop-shadow-xl" />
+          <h2 className="text-3xl font-extrabold tracking-tight mt-6">Hoàn thiện hồ sơ học thuật</h2>
+          <p className="text-white/85 text-body font-medium mt-3 leading-relaxed">
+            Cung cấp thông tin học tập để hệ thống gợi ý trao đổi kỹ năng phù hợp với bạn.
+          </p>
         </div>
+      </div>
 
-        <div className="px-6 sm:px-9 pb-9">
-          {/* Avatar overlapping banner */}
-          <div className="-mt-11 mb-4">
-            <div className="relative w-[84px] h-[84px] rounded-card ring-4 ring-surface bg-surface-muted overflow-hidden shadow-lg">
-              <img
-                src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
-                onError={onAvatarError}
-                alt={displayName || user?.fullName || ''}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-          {/* Greeting — đặt dưới banner để không bị đè/cắt chữ */}
+      {/* ===== RIGHT: form ===== */}
+      <div className="w-full lg:w-1/2 flex justify-center px-6 py-10 sm:py-12 bg-surface overflow-y-auto">
+        <div className="w-full max-w-2xl">
           <div className="mb-6">
-            <h2 className="text-xl sm:text-2xl font-extrabold font-serif text-brand-text tracking-tight leading-tight">
-              Hoàn thiện hồ sơ học thuật
-            </h2>
+            <h1 className="text-2xl font-extrabold tracking-tight font-serif text-brand-text">Hoàn thiện hồ sơ học thuật</h1>
             <p className="text-brand-text-muted text-body font-semibold mt-1">
               Xin chào{user?.fullName ? `, ${user.fullName}` : ''} — điền thông tin để nhận gợi ý trao đổi phù hợp.
             </p>

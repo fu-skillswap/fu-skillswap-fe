@@ -127,40 +127,51 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-brand-bg flex items-center justify-center px-4 overflow-hidden">
-      
-      {/* Background Glowing Blobs (Warm Terracotta & Soft Blue Concept) */}
-      <div className="absolute top-[15%] left-[5%] w-[40vw] h-[40vw] rounded-full bg-brand-terracotta/6.5 blur-[130px] animate-float-1 pointer-events-none"></div>
-      <div className="absolute bottom-[15%] right-[5%] w-[40vw] h-[40vw] rounded-full bg-brand-blue/6 blur-[130px] pointer-events-none"></div>
+    <div className="min-h-screen flex bg-surface text-left">
 
-      {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(21,16,13,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(21,16,13,0.015)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] pointer-events-none"></div>
-
-      {/* Login Card (Warm Light Glassmorphism) */}
-      <div className="relative w-full max-w-md bg-surface/80 border border-brand-border backdrop-blur-xl rounded-card p-8 lg:p-10 z-10 shadow-xl shadow-brand-text/5">
-        
-        {/* Brand Logo & Header */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-14 h-14 rounded-card bg-brand-terracotta flex items-center justify-center shadow-lg shadow-brand-terracotta/25 mb-4">
-            <ArrowLeftRight className="w-7 h-7 text-white" />
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight font-serif text-brand-text mb-2">
-            Skill<span className="text-brand-terracotta">Swap</span>
-          </h1>
-          <p className="text-brand-text-muted text-body font-medium max-w-xs leading-relaxed">
-            Nền tảng trao đổi kỹ năng học thuật dành cho sinh viên đại học
+      {/* ===== LEFT: panel minh hoạ (ẩn trên mobile) ===== */}
+      <div
+        className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 overflow-hidden text-white"
+        style={{ background: 'linear-gradient(140deg, #10b981 0%, #1d6fd6 58%, #1e3a8a 112%)' }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.07) 1px, transparent 1.4px)', backgroundSize: '22px 22px' }} />
+        <div className="relative z-10 flex flex-col items-center text-center max-w-md">
+          <img src="/illustration-connect.svg" alt="Trao đổi kỹ năng" className="w-[420px] max-w-full drop-shadow-xl" />
+          <h2 className="text-3xl font-extrabold tracking-tight mt-6">Chào mừng đến SkillSwap</h2>
+          <p className="text-white/85 text-body font-medium mt-3 leading-relaxed">
+            Trao đổi kỹ năng học thuật, kết nối với mentor và cùng nhau phát triển.
           </p>
         </div>
+      </div>
 
-        {error && (
-          <div className="mb-6 flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-card text-body text-left">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
+      {/* ===== RIGHT: form đăng nhập ===== */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 bg-surface">
+        <div className="w-full max-w-md">
+
+          {/* Logo (mobile + desktop) */}
+          <div className="flex items-center gap-2.5 mb-8">
+            <div className="w-11 h-11 rounded-card bg-brand-terracotta flex items-center justify-center shadow-lg shadow-brand-terracotta/25">
+              <ArrowLeftRight className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-extrabold tracking-tight font-serif text-brand-text">
+              Skill<span className="text-brand-terracotta">Swap</span>
+            </span>
           </div>
-        )}
 
-        {/* Login Action */}
-        <div className="space-y-4">
+          <h1 className="text-2xl font-extrabold tracking-tight text-brand-text">Đăng nhập</h1>
+          <p className="text-brand-text-muted text-body font-medium mt-1 mb-6">
+            Tiếp tục với tài khoản của bạn để bắt đầu trao đổi kỹ năng.
+          </p>
+
+          {error && (
+            <div className="mb-6 flex items-start gap-3 bg-red-500/5 border border-red-200 text-red-600 p-4 rounded-card text-body text-left">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Login Action */}
+          <div className="space-y-4">
           {GOOGLE_CLIENT_ID ? (
             <div className="flex flex-col items-center gap-3">
               {/* Nút Google Sign-In thật, render bởi Google Identity Services SDK */}
@@ -275,7 +286,8 @@ export const Login: React.FC = () => {
         </>
         )}
 
+          </div>
+        </div>
       </div>
-    </div>
   );
 };
