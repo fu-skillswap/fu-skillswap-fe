@@ -439,13 +439,18 @@ export interface AdminMentorListItem {
   userStatus: 'ACTIVE' | 'INACTIVE' | 'BANNED' | 'DELETED';
   mentorStatus: AdminMentorStatus;
   isAvailable: boolean;
+  bookingSuspendedUntil?: string | null;
   headline?: string;
   teachingMode?: TeachingMode;
+  sessionDuration?: number;
   ratingAverage?: number;
   reviewCount?: number;
   completedSessions?: number;
+  rejectedBookings?: number;
+  lateCancellationPenaltyPoints?: number;
   verifiedAt?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PageParams {

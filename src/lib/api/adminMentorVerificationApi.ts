@@ -24,11 +24,14 @@ async function authFetchWithRefresh<T>(
 
 export type AdminVerificationQueueItem = {
   requestId: string;
-  mentorFullName: string;
+  mentorUserId: string;
   mentorEmail: string;
+  mentorFullName: string;
+  mentorAvatarUrl: string | null;
   status: string;
   revisionCount: number;
   submittedAt: string | null;
+  createdAt: string | null;
   updatedAt: string | null;
 };
 
