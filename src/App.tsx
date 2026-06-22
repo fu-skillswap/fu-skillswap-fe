@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
+import { AdminLayout } from './components/AdminLayout';
 import { Login } from './pages/Login';
 import { CompleteProfile } from './pages/CompleteProfile';
 import { Dashboard } from './pages/Dashboard';
@@ -61,17 +62,6 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
 
-{/* Admin Workspaces */}
-             <Route path="/admin" element={<Navigate to="/admin/metrics" replace />} />
-             <Route path="/admin/metrics" element={<AdminMetrics />} />
-             <Route path="/admin/users" element={<UserManagement />} />
-             <Route path="/admin/mentor-list" element={<MentorList />} />
-             {/* Hàng đợi duyệt mentor đã hợp nhất vào trang dùng API thật bên dưới;
-                 route cũ /admin/verifications (mock localStorage) redirect sang đây. */}
-             <Route path="/admin/verifications" element={<Navigate to="/admin/mentor-verification" replace />} />
-             <Route path="/admin/mentor-verification" element={<AdminMentorVerificationQueuePage />} />
-             <Route path="/admin/mentor-verification/:requestId" element={<AdminMentorVerificationDetailPage />} />
-
             {/* Mentor Workspaces */}
             <Route path="/mentor/slots" element={<AvailabilitySlots />} />
             {/* Hồ sơ + xác thực mentor đã gộp vào tab "Hồ sơ Mentor" trong /profile */}
@@ -86,6 +76,26 @@ function App() {
             {/* Forum & Chat */}
             <Route path="/forum" element={<Forum />} />
             <Route path="/chat" element={<Chat />} />
+          </Route>
+
+          {/* Admin Routes wrapped in AdminLayout */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/admin" element={<Navigate to="/admin/mentor-verification" replace />} />
+            <Route path="/admin/metrics" element={<AdminMetrics />} />
+            <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/mentor-list" element={<MentorList />} />
+            {/* Hàng đợi duyệt mentor đã hợp nhất vào trang dùng API thật bên dưới;
+                route cũ /admin/verifications (mock localStorage) redirect sang đây. */}
+            <Route path="/admin/verifications" element={<Navigate to="/admin/mentor-verification" replace />} />
+            <Route path="/admin/mentor-verification" element={<AdminMentorVerificationQueuePage />} />
+            <Route path="/admin/mentor-verification/:requestId" element={<AdminMentorVerificationDetailPage />} />
+            <Route path="/admin/settings" element={<Settings />} />
           </Route>
 
           {/* Wildcard Fallback */}

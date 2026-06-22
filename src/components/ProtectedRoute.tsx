@@ -44,8 +44,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // Role-based route guards
   if (user) {
     if (isAdmin) {
-      // Admin can only access routes starting with /admin and the /settings page
-      const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname === '/settings';
+      if (location.pathname === '/settings') {
+        return <Navigate to="/admin/settings" replace />;
+      }
+      // Admin can only access routes starting with /admin
+      const isAdminRoute = location.pathname.startsWith('/admin');
       if (!isAdminRoute) {
         return <Navigate to="/admin" replace />;
       }
