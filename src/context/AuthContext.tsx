@@ -113,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setIsDevBypass(false);
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('isDevBypass');
       localStorage.removeItem('demoUser');
       localStorage.removeItem(ACTIVE_ROLE_KEY);
@@ -130,9 +131,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // refreshToken được BE set vào HttpOnly Cookie (skillswap_refresh_token) —
       // FE chỉ nhận và lưu accessToken, không đọc/lưu refreshToken.
       const response = await apiClient.post('/api/auth/google', { idToken });
-      const { accessToken } = response.data.data;
+      const { accessToken, refreshToken } = response.data.data;
 
       localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
       localStorage.setItem('isDevBypass', 'false');
       setIsDevBypass(false);
 
@@ -179,14 +183,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isBypass = localStorage.getItem('isDevBypass') === 'true';
 
     try {
-      // BE tự lấy refreshToken từ HttpOnly Cookie để revoke, FE không gửi body.
       if (!isBypass) {
-        await apiClient.post('/api/auth/logout');
+        const refreshToken = localStorage.getItem('refreshToken');
+        await apiClient.post('/api/auth/logout', { refreshToken });
       }
     } catch (error) {
       console.error('Đăng xuất API thất bại:', error);
     } finally {
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('isDevBypass');
       localStorage.removeItem('demoUser');
       localStorage.removeItem(ACTIVE_ROLE_KEY);

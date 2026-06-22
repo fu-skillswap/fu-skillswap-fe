@@ -147,6 +147,9 @@ export const MentorList: React.FC = () => {
 
   // Local client side filtering for the mock/live values
   const filteredMentors = mentors.filter(item => {
+    // Không hiển thị các tài khoản Inactive
+    if (item.userStatus === 'INACTIVE' || (item.mentorStatus as string) === 'INACTIVE') return false;
+
     const spec = getSpecialization(item).label;
     const matchesSpec = selectedSpecialization === 'ALL' || spec === selectedSpecialization;
     
@@ -348,7 +351,6 @@ export const MentorList: React.FC = () => {
                   const spec = getSpecialization(item);
                   const initial = item.displayName ? item.displayName.charAt(0).toUpperCase() : '?';
                   const isBanned = item.userStatus === 'BANNED';
-                  const isActive = item.mentorStatus === 'ACTIVE' && !isBanned;
 
                   return (
                     <tr key={item.mentorUserId} className="hover:bg-surface-background/50 transition-colors">
@@ -396,19 +398,34 @@ export const MentorList: React.FC = () => {
                       {/* Status Dot Badge */}
                       <td className="py-3 px-4">
                         {isBanned ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                            Banned
+                            Đã khóa
                           </span>
-                        ) : isActive ? (
+                        ) : item.mentorStatus === 'ACTIVE' ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                            Active
+                            Đang hoạt động
+                          </span>
+                        ) : item.mentorStatus === 'PAUSED' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            Tạm nghỉ
+                          </span>
+                        ) : item.mentorStatus === 'PENDING_VERIFICATION' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                            Chờ xác minh
+                          </span>
+                        ) : item.mentorStatus === 'SUSPENDED' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                            Đình chỉ
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                            Inactive
+                            {item.mentorStatus}
                           </span>
                         )}
                       </td>

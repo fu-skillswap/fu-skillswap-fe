@@ -78,17 +78,19 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // refreshToken nằm trong HttpOnly Cookie (skillswap_refresh_token) do BE set.
-        // FE không đọc/lưu refreshToken — không gửi body, browser tự kèm cookie nhờ withCredentials.
+        const refreshToken = localStorage.getItem('refreshToken');
         const response = await axios.post(
           `${API_BASE_URL}/api/auth/refresh`,
-          {},
+          { refreshToken },
           { withCredentials: true }
         );
 
-        const { accessToken: newAccessToken } = response.data.data;
+        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
 
         localStorage.setItem('accessToken', newAccessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
 
         apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -101,6 +103,7 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         isRefreshing = false;
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         window.dispatchEvent(new Event('auth-logout'));
         return Promise.reject(refreshError);
       }
