@@ -4,8 +4,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useParams, Link } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 import {
   getVerificationDetail,
   refreshLock as refreshLockApi,
@@ -18,8 +18,6 @@ import {
 export default function AdminMentorVerificationDetailPage() {
   const params = useParams<{ requestId: string }>();
   const requestId = params.requestId as string;
-  const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AdminVerificationDetail | null>(null);
@@ -54,8 +52,12 @@ export default function AdminMentorVerificationDetailPage() {
       const data = await getVerificationDetail(requestId);
       setDetail(data);
     } catch (err) {
-      setError('Failed to load verification detail.');
       console.error(err);
+      let errMsg = 'Không thể tải chi tiết yêu cầu xét duyệt.';
+      if (isAxiosError<{ message?: string; error?: string }>(err)) {
+        errMsg = err.response?.data?.message || err.response?.data?.error || errMsg;
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -169,7 +171,11 @@ export default function AdminMentorVerificationDetailPage() {
       await fetchDetail();
     } catch (err) {
       console.error(err);
-      setError('Failed to approve request.');
+      let errMsg = 'Phê duyệt yêu cầu thất bại.';
+      if (isAxiosError<{ message?: string; error?: string }>(err)) {
+        errMsg = err.response?.data?.message || err.response?.data?.error || errMsg;
+      }
+      setError(errMsg);
     } finally {
       setProcessing(false);
     }
@@ -190,7 +196,11 @@ export default function AdminMentorVerificationDetailPage() {
       await fetchDetail();
     } catch (err) {
       console.error(err);
-      setError('Failed to reject request.');
+      let errMsg = 'Từ chối yêu cầu thất bại.';
+      if (isAxiosError<{ message?: string; error?: string }>(err)) {
+        errMsg = err.response?.data?.message || err.response?.data?.error || errMsg;
+      }
+      setError(errMsg);
     } finally {
       setProcessing(false);
     }
@@ -210,7 +220,11 @@ export default function AdminMentorVerificationDetailPage() {
       await fetchDetail();
     } catch (err) {
       console.error(err);
-      setError('Failed to request revision.');
+      let errMsg = 'Yêu cầu chỉnh sửa thất bại.';
+      if (isAxiosError<{ message?: string; error?: string }>(err)) {
+        errMsg = err.response?.data?.message || err.response?.data?.error || errMsg;
+      }
+      setError(errMsg);
     } finally {
       setProcessing(false);
     }

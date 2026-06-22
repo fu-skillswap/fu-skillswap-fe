@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import { getVerificationQueue, type AdminVerificationQueueItem } from '@/lib/api/adminMentorVerificationApi';
 
@@ -99,8 +100,12 @@ export default function AdminMentorVerificationQueuePage() {
         setTotalElements(result.totalElements);
         setTotalPages(result.totalPages);
       } catch (err) {
-        setError('Failed to load verification queue.');
         console.error(err);
+        let errMsg = 'Không thể tải danh sách hàng đợi xét duyệt.';
+        if (isAxiosError<{ message?: string; error?: string }>(err)) {
+          errMsg = err.response?.data?.message || err.response?.data?.error || errMsg;
+        }
+        setError(errMsg);
       } finally {
         setLoading(false);
       }

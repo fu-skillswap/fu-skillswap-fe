@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, Users, CheckCircle, PauseCircle, Star, Plus, 
-  SlidersHorizontal, Loader2, AlertCircle, Ban, Check, GraduationCap,
+  SlidersHorizontal, Loader2, AlertCircle, Ban, Check,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { adminUsersApi } from '../../api/adminUsers';

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, useNavigate, Link } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { AdminSidebar } from './AdminSidebar';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { Menu, Bell, Search, LogOut, Settings, HelpCircle } from 'lucide-react';
@@ -9,7 +9,6 @@ export const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
