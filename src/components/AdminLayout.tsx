@@ -1,18 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
+import { Outlet, useNavigate, Link } from 'react-router-dom';
+import { AdminSidebar } from './AdminSidebar';
 import { ThemeSwitcher } from './ThemeSwitcher';
-import { Menu, Bell, MessageSquare, Search, User, LogOut, Settings } from 'lucide-react';
+import { Menu, Bell, Search, LogOut, Settings, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export const Layout: React.FC = () => {
+export const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,47 +22,39 @@ export const Layout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    if (location.pathname.startsWith('/forum')) {
-      navigate(`/forum?q=${encodeURIComponent(searchQuery)}`);
-    } else {
-      navigate(`/mentors?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-app text-fg font-sans">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="flex h-screen w-screen overflow-hidden bg-app text-fg font-sans admin-page">
+      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full">
         {/* Desktop / tablet header */}
         <header className="hidden md:flex items-center bg-transparent h-18 px-6 lg:px-8 shrink-0">
           <div className="max-w-7xl mx-auto w-full flex lg:grid lg:grid-cols-3 gap-6 items-center">
-            {/* Search aligns with the feed (center) column */}
-            <form onSubmit={handleSearchSubmit} className="relative flex-1 lg:col-span-2 text-left">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-faint" />
+            {/* Search */}
+            <div className="relative flex-1 lg:col-span-2 max-w-xs text-left">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={location.pathname.startsWith('/forum') ? 'Tìm kiếm chủ đề thảo luận...' : 'Tìm kiếm kỹ năng, mentor...'}
-                className="w-full bg-surface border border-line focus:border-primary/40 rounded-pill py-3 pl-12 pr-5 text-body font-semibold text-fg focus:outline-none transition-all placeholder-fg-faint shadow-card"
+                placeholder="Search..."
+                className="w-full bg-surface-container-lowest border border-surface-border rounded-full py-2.5 pl-11 pr-5 text-sm font-semibold text-text-main focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all placeholder:text-text-muted"
               />
-            </form>
+            </div>
 
-            {/* Right utilities sits over the widgets column */}
+            {/* Right utilities */}
             <div className="flex items-center justify-end gap-5 lg:col-span-1">
-              <ThemeSwitcher />
-              <Link to="/chat" title="Tin nhắn" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative">
-                <MessageSquare className="w-5 h-5" />
-              </Link>
-
-              <button title="Thông báo" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative cursor-pointer focus:outline-none">
+              <span className="text-body font-semibold text-text-muted select-none whitespace-nowrap">
+                Admin
+              </span>
+              <span className="text-body font-bold text-primary border-b-2 border-primary pb-1 mr-2 select-none whitespace-nowrap">
+                Verification
+              </span>
+              <button title="Thông báo" className="text-text-muted hover:text-text-main transition-colors relative cursor-pointer focus:outline-none">
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-danger border-2 border-surface"></span>
               </button>
+              <button title="Trợ giúp" className="text-text-muted hover:text-text-main transition-colors cursor-pointer focus:outline-none">
+                <HelpCircle className="w-5 h-5" />
+              </button>
+              <ThemeSwitcher />
 
               {user && (
                 <div className="relative" ref={dropdownRef}>
@@ -82,13 +71,10 @@ export const Layout: React.FC = () => {
                       <div className="px-4 py-2.5 border-b border-line-soft">
                         <span className="text-body font-bold text-fg block truncate">{user.fullName}</span>
                         <span className="text-meta text-primary font-extrabold uppercase tracking-wider block mt-0.5">
-                          {user.roles?.[0] || 'MENTEE'}
+                          {user.roles?.[0] || 'ADMIN'}
                         </span>
                       </div>
-                      <Link to="/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-primary transition-all">
-                        <User className="w-4.5 h-4.5" /><span>Hồ sơ cá nhân</span>
-                      </Link>
-                      <Link to="/settings" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-primary transition-all">
+                      <Link to="/admin/settings" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-primary transition-all">
                         <Settings className="w-4.5 h-4.5" /><span>Cài đặt tài khoản</span>
                       </Link>
                       <hr className="border-line-soft my-1" />

@@ -26,6 +26,8 @@ export default function AdminMentorVerificationDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   
   // Custom states for visual perfection
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
@@ -173,17 +175,18 @@ export default function AdminMentorVerificationDetailPage() {
     }
   };
 
-  const handleRejectClick = async () => {
-    const reason = prompt('Vui lòng nhập lý do từ chối (Bắt buộc):');
-    if (reason === null) return; // user cancelled
-    if (!reason.trim()) {
-      alert('Lý do là bắt buộc để từ chối.');
-      return;
-    }
+  const handleRejectClick = () => {
+    setRejectReason('');
+    setShowRejectModal(true);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectReason.trim()) return;
     setProcessing(true);
     try {
-      await rejectVerification(requestId, reason);
-      triggerToast('Đã từ chối hồ sơ', 'error');
+      await rejectVerification(requestId, rejectReason);
+      setShowRejectModal(false);
+      triggerToast('Đã gửi từ chối hồ sơ thành công đến mentor', 'success');
       await fetchDetail();
     } catch (err) {
       console.error(err);
@@ -861,6 +864,67 @@ export default function AdminMentorVerificationDetailPage() {
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
               >
                 {processing ? 'Đang xử lý...' : 'Xác nhận phê duyệt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Reject Confirmation Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div 
+            className="bg-surface-container-lowest border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
+              <h3 className="font-headline-sm text-headline-sm text-text-main font-bold">
+                Xác nhận từ chối hồ sơ
+              </h3>
+              <button 
+                onClick={() => setShowRejectModal(false)}
+                className="text-text-muted hover:text-text-main transition-colors focus:outline-none cursor-pointer flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-container-low"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 text-left space-y-4">
+              <p className="font-body-md text-text-muted leading-relaxed text-sm">
+                Bạn có chắc chắn muốn từ chối hồ sơ của <strong className="text-text-main font-semibold">{detail.mentorFullName}</strong>? Vui lòng cung cấp lý do cụ thể để người dùng có thể cải thiện.
+              </p>
+              
+              <div>
+                <label htmlFor="reject-reason" className="block font-label-md text-text-muted text-xs uppercase tracking-wider mb-2 font-semibold">
+                  LÝ DO TỪ CHỐI <span className="text-status-rejected font-bold">*</span>
+                </label>
+                <textarea
+                  id="reject-reason"
+                  rows={4}
+                  className="w-full bg-white border border-surface-border rounded-lg p-3 text-text-main font-body-md text-sm placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-status-rejected focus:border-transparent resize-none"
+                  placeholder="Nhập lý do từ chối tại đây..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-container-low border-t border-surface-border">
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="px-4 py-2 border border-surface-border rounded-lg bg-surface text-text-main hover:bg-surface-container transition-colors font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                disabled={processing || !rejectReason.trim()}
+                onClick={handleConfirmReject}
+                className="px-4 py-2 bg-status-rejected text-on-error rounded-lg hover:opacity-90 transition-opacity shadow-sm font-label-md text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {processing ? 'Đang từ chối...' : 'Từ chối'}
               </button>
             </div>
           </div>
