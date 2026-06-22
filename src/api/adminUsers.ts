@@ -5,9 +5,9 @@ import { http } from './http';
 import type { SystemUser, AdminMentorListItem, Paged, PageParams } from './types';
 
 export const adminUsersApi = {
-  /** GET /api/system/users — toàn bộ user (phân trang) */
+  /** GET /api/admin/users — toàn bộ user (phân trang) */
   listUsers: (params: PageParams = {}) =>
-    http.get<Paged<SystemUser>>('/api/system/users', {
+    http.get<Paged<SystemUser>>('/api/admin/users', {
       params: {
         page: params.page ?? 0,
         size: params.size ?? 50,

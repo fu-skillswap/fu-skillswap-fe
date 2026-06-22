@@ -270,22 +270,22 @@ export default function AdminMentorVerificationQueuePage() {
     <div className="verification-page space-y-6 text-left">
       {/* Header Section */}
       <div className="mb-stack-lg">
-        <h2 className="font-headline-lg text-headline-lg text-text-main mb-2">Danh sách Mentor đang chờ duyệt</h2>
+        <h2 className="font-headline-lg text-headline-lg text-text-main font-extrabold mb-2">Danh sách Mentor đang chờ duyệt</h2>
         <p className="font-body-md text-body-md text-text-muted">Quản lý và xét duyệt các yêu cầu trở thành Mentor trên hệ thống.</p>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-stack-lg">
         <div className="bg-surface-container-lowest border border-surface-border rounded-xl p-stack-md flex flex-col gap-2 shadow-xs">
-          <span className="font-label-md text-label-md text-text-muted uppercase tracking-wider">Tổng yêu cầu</span>
+          <span className="font-label-md text-label-md text-text-muted uppercase tracking-wider font-bold">Tổng yêu cầu</span>
           <span className="font-headline-lg text-headline-lg text-text-main">{stats.total}</span>
         </div>
         <div className="bg-surface-container-lowest border border-surface-border rounded-xl p-stack-md flex flex-col gap-2 border-l-4 border-l-status-pending shadow-xs">
-          <span className="font-label-md text-label-md text-text-muted uppercase tracking-wider">Chờ duyệt</span>
+          <span className="font-label-md text-label-md text-text-muted uppercase tracking-wider font-bold">Chờ duyệt</span>
           <span className="font-headline-lg text-headline-lg text-text-main">{stats.pending}</span>
         </div>
         <div className="bg-surface-container-lowest border border-surface-border rounded-xl p-stack-md flex flex-col gap-2 border-l-4 border-l-status-revision shadow-xs">
-          <span className="font-label-md text-label-md text-text-muted uppercase tracking-wider">Cần chỉnh sửa</span>
+          <span className="font-label-md text-label-md text-text-muted uppercase tracking-wider font-bold">Cần chỉnh sửa</span>
           <span className="font-headline-lg text-headline-lg text-text-main">{stats.revision}</span>
         </div>
       </div>

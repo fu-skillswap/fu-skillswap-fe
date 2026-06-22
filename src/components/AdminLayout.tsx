@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { AdminSidebar } from './AdminSidebar';
 import { ThemeSwitcher } from './ThemeSwitcher';
-import { Menu, Bell, Search, LogOut, Settings, HelpCircle } from 'lucide-react';
+import { Menu, Bell, LogOut, Settings, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const AdminLayout: React.FC = () => {
@@ -28,25 +28,9 @@ export const AdminLayout: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full">
         {/* Desktop / tablet header */}
         <header className="hidden md:flex items-center bg-transparent h-18 px-6 lg:px-8 shrink-0">
-          <div className="max-w-7xl mx-auto w-full flex lg:grid lg:grid-cols-3 gap-6 items-center">
-            {/* Search */}
-            <div className="relative flex-1 lg:col-span-2 max-w-xs text-left">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full bg-surface-container-lowest border border-surface-border rounded-full py-2.5 pl-11 pr-5 text-sm font-semibold text-text-main focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all placeholder:text-text-muted"
-              />
-            </div>
-
+          <div className="max-w-7xl mx-auto w-full flex justify-end items-center">
             {/* Right utilities */}
-            <div className="flex items-center justify-end gap-5 lg:col-span-1">
-              <span className="text-body font-semibold text-text-muted select-none whitespace-nowrap">
-                Admin
-              </span>
-              <span className="text-body font-bold text-primary border-b-2 border-primary pb-1 mr-2 select-none whitespace-nowrap">
-                Verification
-              </span>
+            <div className="flex items-center justify-end gap-5">
               <button title="Thông báo" className="text-text-muted hover:text-text-main transition-colors relative cursor-pointer focus:outline-none">
                 <Bell className="w-5 h-5" />
               </button>
