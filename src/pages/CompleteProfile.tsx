@@ -5,8 +5,9 @@ import { apiClient } from '../api/client';
 import { User, School, Check, AlertCircle, FileText, Sparkles, Hash, CalendarDays } from 'lucide-react';
 
 // input/select dùng chung 1 style để đồng nhất
+// Nền trắng + viền rõ (outline-variant) để ô nổi bật trên card, không bị chìm vào nền.
 const fieldCls =
-  'w-full bg-brand-bg/40 border border-brand-border focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20 rounded-field py-2.5 px-3.5 text-body text-brand-text focus:outline-none transition-all font-semibold placeholder-brand-grey';
+  'w-full bg-surface-container-lowest border border-outline-variant focus:border-brand-terracotta focus:ring-2 focus:ring-brand-terracotta/20 rounded-field py-2.5 px-3.5 text-body text-brand-text focus:outline-none transition-all font-semibold placeholder-brand-grey shadow-sm';
 
 const SectionTitle: React.FC<{ n: number; icon: React.ReactNode; title: string; hint?: string }> = ({ n, icon, title, hint }) => (
   <div className="flex items-center gap-3 mb-4">
@@ -254,7 +255,7 @@ export const CompleteProfile: React.FC = () => {
       </div>
 
       {/* ===== RIGHT: form ===== */}
-      <div className="w-full lg:w-1/2 flex justify-center px-6 py-10 sm:py-12 bg-surface overflow-y-auto">
+      <div className="w-full lg:w-1/2 flex justify-center px-6 py-10 sm:py-12 bg-app overflow-y-auto">
         <div className="w-full max-w-2xl">
           <div className="mb-6">
             <h1 className="text-2xl font-extrabold tracking-tight font-serif text-brand-text">Hoàn thiện hồ sơ học thuật</h1>
@@ -273,7 +274,7 @@ export const CompleteProfile: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-7">
 
             {/* ===== Section 1: Personal ===== */}
-            <section className="bg-brand-bg/30 border border-brand-border rounded-card p-5">
+            <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-5 shadow-card">
               <SectionTitle n={1} icon={<User className="w-4 h-4 text-brand-terracotta" />} title="Thông tin cá nhân" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -291,7 +292,7 @@ export const CompleteProfile: React.FC = () => {
             </section>
 
             {/* ===== Section 2: Academic ===== */}
-            <section className="bg-brand-bg/30 border border-brand-border rounded-card p-5">
+            <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-5 shadow-card">
               <SectionTitle n={2} icon={<School className="w-4 h-4 text-brand-terracotta" />} title="Cơ sở & Ngành học FPT" hint="Chọn ngành trước để mở danh sách chuyên ngành." />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -332,9 +333,9 @@ export const CompleteProfile: React.FC = () => {
                       type="button"
                       key={opt.label}
                       onClick={() => { setIsAlumni(opt.alumni); clearErr('semester'); clearErr('graduationYear'); }}
-                      className={`flex items-start gap-3 p-3.5 rounded-field border text-left transition-all cursor-pointer ${sel ? 'border-brand-terracotta bg-brand-terracotta/5 ring-1 ring-brand-terracotta/30' : 'border-brand-border bg-brand-bg/30 hover:border-brand-terracotta/40'}`}
+                      className={`flex items-start gap-3 p-3.5 rounded-field border text-left transition-all cursor-pointer ${sel ? 'border-brand-terracotta bg-brand-terracotta/5 ring-1 ring-brand-terracotta/30' : 'border-outline-variant bg-surface-container-low hover:border-brand-terracotta/40'}`}
                     >
-                      <span className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 ${sel ? 'bg-brand-terracotta border-brand-terracotta text-white' : 'border-brand-border'}`}>{sel && <Check className="w-3.5 h-3.5" />}</span>
+                      <span className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 ${sel ? 'bg-brand-terracotta border-brand-terracotta text-white' : 'border-outline-variant bg-surface-container-lowest'}`}>{sel && <Check className="w-3.5 h-3.5" />}</span>
                       <span className="min-w-0">
                         <span className="block text-body font-bold text-brand-text">{opt.label}</span>
                         <span className="block text-meta text-brand-text-muted font-medium">{opt.desc}</span>
@@ -375,7 +376,7 @@ export const CompleteProfile: React.FC = () => {
             </section>
 
             {/* ===== Section 3: Bio ===== */}
-            <section className="bg-brand-bg/30 border border-brand-border rounded-card p-5">
+            <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-5 shadow-card">
               <SectionTitle n={3} icon={<FileText className="w-4 h-4 text-brand-terracotta" />} title="Giới thiệu bản thân" hint="Bắt buộc — giúp hệ thống gợi ý trao đổi phù hợp." />
               <textarea
                 value={bio}
