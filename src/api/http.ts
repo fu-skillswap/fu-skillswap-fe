@@ -5,11 +5,16 @@ import { apiClient } from './client';
 import type { ApiResponse } from './types';
 import type { AxiosRequestConfig } from 'axios';
 
-/** Gọi API và trả thẳng phần `data` đã unwrap khỏi ApiResponse. */
-export async function unwrap<T>(p: Promise<{ data: ApiResponse<T> }>): Promise<T> {
+/** Gọi API và trả thẳng phần `data` đã unwrap khỏi ApiResponse, hỗ trợ cả API trả trực tiếp object không bọc. */
+export async function unwrap<T>(p: Promise<{ data: ApiResponse<T> | T }>): Promise<T> {
   const res = await p;
-  return res.data.data;
+  if (res.data && typeof res.data === 'object' && 'data' in (res.data as any) && ('code' in (res.data as any) || 'status' in (res.data as any))) {
+    return (res.data as ApiResponse<T>).data;
+  }
+  return res.data as T;
 }
+
+
 
 export const http = {
   get: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(apiClient.get(url, config)),

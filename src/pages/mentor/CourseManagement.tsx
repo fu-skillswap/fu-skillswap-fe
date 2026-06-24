@@ -65,7 +65,7 @@ export const CourseManagement: React.FC = () => {
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('active');
 
   // Modal / Form state
   const [showModal, setShowModal] = useState(false);
@@ -226,8 +226,12 @@ export const CourseManagement: React.FC = () => {
       setShowModal(false);
       await fetchServices();
     } catch (err: any) {
-      console.error(err);
-      showAlert('danger', err?.response?.data?.message || 'Có lỗi xảy ra khi lưu khóa học.');
+      console.error('Lưu khóa học thất bại:', err);
+      const serverData = err?.response?.data;
+      const detailMsg = serverData 
+        ? (serverData.message || JSON.stringify(serverData)) 
+        : 'Có lỗi xảy ra khi lưu khóa học.';
+      showAlert('danger', detailMsg);
       setLoading(false);
     }
   };
@@ -339,7 +343,7 @@ export const CourseManagement: React.FC = () => {
       {/* Filter and Search Bar */}
       <div className="meetmind-card p-4 rounded-card flex flex-col md:flex-row gap-4 items-center justify-between">
         {/* Search */}
-        <div className="relative w-full md:max-w-md">
+        <div className="relative w-full md:flex-1 md:max-w-2xl">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-fg-faint" />
           <input
             type="text"
@@ -508,7 +512,7 @@ export const CourseManagement: React.FC = () => {
                       <ToggleLeft className="w-8 h-8 text-fg-faint transition-all group-hover:scale-105" />
                     )}
                     <span className={`text-meta font-bold ${course.active ? 'text-fg' : 'text-fg-faint'}`}>
-                      {course.active ? 'Hiển thị' : 'Đang ẩn'}
+                      {course.active ? 'Đang hiển thị' : 'Đang tạm ẩn'}
                     </span>
                   </button>
 

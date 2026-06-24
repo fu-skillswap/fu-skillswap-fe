@@ -401,12 +401,14 @@ export interface AvailabilityRule {
   timezone?: string;
   active: boolean;
   note?: string;
+  serviceId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface UpsertAvailabilityRulePayload {
   ruleType: AvailabilityRuleType;
+  serviceId?: string;
   repeatType: AvailabilityRepeatType;
   daysOfWeek?: string[];
   effectiveFrom?: string;
