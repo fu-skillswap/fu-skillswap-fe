@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { apiClient } from '../api/client';
+import { chatSocket } from '../lib/chatSocket';
 
 export interface UserMeResponse {
   publicId: string;
@@ -110,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for automatic logout event from API client
     const handleLogoutEvent = () => {
+      chatSocket.disconnect();
       setUser(null);
       setIsDevBypass(false);
       localStorage.removeItem('accessToken');
@@ -190,6 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Đăng xuất API thất bại:', error);
     } finally {
+      chatSocket.disconnect();
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('isDevBypass');

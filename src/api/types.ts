@@ -315,7 +315,6 @@ export interface MentorSearchParams {
   campusId?: string;
   specializationId?: string;
   teachingMode?: TeachingMode;
-  isAvailable?: boolean;
 }
 
 // ---------- Bookings (4.9 / 4.10) ----------
@@ -458,4 +457,75 @@ export interface PageParams {
   size?: number;
   sortBy?: string;
   direction?: 'ASC' | 'DESC';
+}
+
+// ---------- Notifications ----------
+export type NotificationType =
+  | 'MENTOR_VERIFICATION_APPROVED' | 'MENTOR_VERIFICATION_REJECTED' | 'MENTOR_VERIFICATION_NEEDS_REVISION'
+  | 'BOOKING_REQUEST_CREATED' | 'BOOKING_ACCEPTED' | 'BOOKING_REJECTED'
+  | 'BOOKING_CANCELLED_BY_MENTEE' | 'BOOKING_CANCELLED_BY_MENTOR' | 'BOOKING_AUTO_REJECTED'
+  | 'MEETING_LINK_UPDATED' | 'SESSION_COMPLETED' | 'FEEDBACK_RECEIVED'
+  | string;
+
+/** Khớp NotificationResponse của BE. */
+export interface NotificationItem {
+  notificationId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+  read: boolean;
+  readAt?: string;
+  createdAt?: string;
+}
+
+// ---------- Chat / Conversations ----------
+// Conversation được BE tạo TỰ ĐỘNG sau khi booking được accept — FE không tạo thủ công.
+export type ConversationSourceType = 'BOOKING' | 'DIRECT' | string;
+export type ConversationType = 'DIRECT' | 'GROUP' | string;
+export type ConversationStatus = 'ACTIVE' | 'ARCHIVED' | 'CLOSED' | string;
+export type MessageType = 'TEXT' | 'SYSTEM' | string;
+
+/** Khớp ConversationResponse của BE — 1 phần tử trong inbox. */
+export interface Conversation {
+  id: string;
+  sourceType?: ConversationSourceType;
+  sourceId?: string;
+  type?: ConversationType;
+  status?: ConversationStatus;
+  /** Đối phương (từ góc nhìn user hiện tại). */
+  otherUserId?: string;
+  otherUserName?: string;
+  otherUserAvatarUrl?: string;
+  lastMessageContent?: string;
+  lastMessageAt?: string;
+  createdAt?: string;
+}
+
+/**
+ * Payload realtime đẩy qua WebSocket (/user/queue/messages) — khớp ChatMessageEvent của BE.
+ * Lưu ý: KHÔNG có `isMine`; FE tự suy ra bằng cách so senderId với user hiện tại.
+ */
+export interface ChatMessageEvent {
+  conversationId: string;
+  messageId: string;
+  senderId?: string;
+  senderName?: string;
+  messageType: MessageType;
+  content: string;
+  createdAt?: string;
+}
+
+/** Khớp MessageResponse của BE. */
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId?: string;
+  senderName?: string;
+  messageType: MessageType;
+  content: string;
+  createdAt?: string;
+  /** True nếu tin nhắn do user hiện tại gửi. */
+  isMine: boolean;
 }

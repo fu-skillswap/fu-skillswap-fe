@@ -26,7 +26,6 @@ export const mentorsApi = {
         campusId: params.campusId || undefined,
         specializationId: params.specializationId || undefined,
         teachingMode: params.teachingMode || undefined,
-        isAvailable: typeof params.isAvailable === 'boolean' ? params.isAvailable : undefined,
       },
     }),
 

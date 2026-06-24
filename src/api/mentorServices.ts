@@ -34,7 +34,7 @@ export const mentorServicesApi = {
   delete: (serviceId: string) => 
     http.del<MentorServiceItem>(`/api/me/mentor-services/${serviceId}`),
 
-  /** PUT /api/me/mentor-services/{serviceId}/active — Bật/tắt trạng thái hiển thị của dịch vụ */
-  toggleActive: (serviceId: string, active: boolean) => 
-    http.put<MentorServiceItem>(`/api/me/mentor-services/${serviceId}/active`, { active }),
+  /** PATCH /api/me/mentor-services/{serviceId}/active — Bật/tắt trạng thái hiển thị của dịch vụ */
+  toggleActive: (serviceId: string, active: boolean) =>
+    http.patch<MentorServiceItem>(`/api/me/mentor-services/${serviceId}/active`, { active }),
 };
