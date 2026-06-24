@@ -21,6 +21,8 @@ import AdminMentorVerificationDetailPage from './pages/admin/mentor-verification
 
 // Mentor Pages
 import { AvailabilitySlots } from './pages/mentor/AvailabilitySlots';
+import { CourseManagement } from './pages/mentor/CourseManagement';
+import { CourseDetailPage } from './pages/mentor/CourseDetailPage';
 
 // Lịch của tôi (hợp nhất mentor + mentee)
 import { MyBookings } from './pages/MyBookings';
@@ -64,6 +66,8 @@ function App() {
 
             {/* Mentor Workspaces */}
             <Route path="/mentor/slots" element={<AvailabilitySlots />} />
+            <Route path="/mentor/courses" element={<CourseManagement />} />
+            <Route path="/mentor/courses/:serviceId" element={<CourseDetailPage />} />
             {/* Hồ sơ + xác thực mentor đã gộp vào tab "Hồ sơ Mentor" trong /profile */}
             <Route path="/mentor/profile-setup" element={<Navigate to="/profile" replace />} />
             <Route path="/mentor/verification" element={<Navigate to="/profile" replace />} />

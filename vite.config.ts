@@ -14,6 +14,13 @@ export default defineConfig({
   },
   plugins: [react(), tailwindcss(), cloudflare()],
   server: {
+    proxy: {
+      '/api': {
+        target: 'https://api.skillswap.asia',
+        changeOrigin: true,
+        secure: false,
+      }
+    },
     watch: {
       ignored: [
         '**/tsconfig.json',

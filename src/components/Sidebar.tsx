@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, type ActiveRole } from '../context/AuthContext';
 import {
   UserCheck, X, Calendar,
-  ListTodo, Bookmark, MessageSquare, Send, Home, User, GraduationCap
+  ListTodo, Bookmark, MessageSquare, Send, Home, User, GraduationCap, BookOpen
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,8 +21,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const linkClass = (path: string) => {
     return `flex items-center gap-4 py-3 px-4 rounded-field text-body font-bold transition-all duration-200 ${
       isActive(path)
-        ? 'text-fg bg-surface-muted font-extrabold'
-        : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
+        ? 'text-white bg-primary font-extrabold'
+        : 'text-fg-muted hover:text-white hover:bg-primary'
     }`;
   };
 
@@ -35,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
     { path: '/mentor/slots', label: 'Khung giờ rảnh', icon: <Calendar className="w-5 h-5" /> },
     { path: '/bookings', label: 'Lịch của tôi', icon: <ListTodo className="w-5 h-5" /> },
+    { path: '/mentor/courses', label: 'Quản lý khóa học', icon: <BookOpen className="w-5 h-5" /> },
     { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
   ];
 
