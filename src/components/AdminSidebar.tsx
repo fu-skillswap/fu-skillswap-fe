@@ -21,7 +21,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
     return `flex items-center gap-3 px-4 py-3 rounded-lg text-body font-bold transition-all duration-200 ${
       isActive(path)
         ? 'text-white bg-primary font-bold shadow-sm'
-        : 'text-text-muted hover:text-text-main hover:bg-surface-container'
+        : 'text-text-muted hover:text-white hover:bg-primary'
     }`;
   };
 
