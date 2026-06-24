@@ -7,6 +7,10 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 
 // https://vite.dev/config/
 export default defineConfig({
+  // sockjs-client tham chiếu biến `global` của Node — polyfill sang globalThis cho trình duyệt.
+  define: {
+    global: 'globalThis',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

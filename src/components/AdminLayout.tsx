@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { AdminSidebar } from './AdminSidebar';
 import { ThemeSwitcher } from './ThemeSwitcher';
-import { Menu, Bell, LogOut, Settings, HelpCircle } from 'lucide-react';
+import { Menu, LogOut, Settings, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { NotificationBell } from './NotificationBell';
 
 export const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,9 +32,7 @@ export const AdminLayout: React.FC = () => {
           <div className="max-w-7xl mx-auto w-full flex justify-end items-center">
             {/* Right utilities */}
             <div className="flex items-center justify-end gap-5">
-              <button title="Thông báo" className="text-text-muted hover:text-text-main transition-colors relative cursor-pointer focus:outline-none">
-                <Bell className="w-5 h-5" />
-              </button>
+              <NotificationBell />
               <button title="Trợ giúp" className="text-text-muted hover:text-text-main transition-colors cursor-pointer focus:outline-none">
                 <HelpCircle className="w-5 h-5" />
               </button>

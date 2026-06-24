@@ -1,192 +1,236 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Search, Video, Phone, ShieldAlert, Sparkles, Check, CheckCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, Search, ShieldAlert, Sparkles, Check, Clock, Loader2, MessagesSquare } from 'lucide-react';
+import { chatApi } from '../api/chat';
+import { chatSocket } from '../lib/chatSocket';
+import { useAuth } from '../context/AuthContext';
+import type { Conversation, ChatMessage, ChatMessageEvent } from '../api/types';
 
-interface ChatPartner {
-  id: string;
-  name: string;
-  avatarUrl: string;
-  role: string;
-  status: 'ONLINE' | 'OFFLINE';
-  lastMessage: string;
-  time: string;
-  unread?: boolean;
-}
+// Tin nhắn hiển thị: ChatMessage thật + cờ tạm thời (optimistic) khi đang gửi.
+type DisplayMessage = ChatMessage & { pending?: boolean; failed?: boolean };
 
-interface ChatMessage {
-  id: string;
-  sender: 'ME' | 'PARTNER';
-  text: string;
-  time: string;
-  status?: 'SENT' | 'DELIVERED' | 'READ';
-}
+const avatarFor = (c: Pick<Conversation, 'otherUserAvatarUrl' | 'otherUserName' | 'otherUserId'>) =>
+  c.otherUserAvatarUrl ||
+  `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(c.otherUserName || c.otherUserId || 'user')}`;
+
+/** ISO LocalDateTime (không timezone) -> HH:mm hôm nay, hoặc dd/MM cho ngày khác. */
+const fmtTime = (iso?: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  return sameDay
+    ? d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+};
+
+const fmtClock = (iso?: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+};
 
 export const Chat: React.FC = () => {
-  // List of active conversations
-  const [inbox, setInbox] = useState<ChatPartner[]>([
-    {
-      id: 'm1',
-      name: 'Trần Hoàng Long',
-      avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=long',
-      role: 'Mentor Trí tuệ nhân tạo (K18)',
-      status: 'ONLINE',
-      lastMessage: 'Ok em, tối nay 20:00 mình call nhé!',
-      time: '10:30',
-      unread: true
-    },
-    {
-      id: 'm2',
-      name: 'Lê Minh Hương',
-      avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=huong',
-      role: 'Mentor Lập trình Fullstack (K18)',
-      status: 'ONLINE',
-      lastMessage: 'Bạn sửa lỗi render React được chưa?',
-      time: 'Hôm qua',
-      unread: false
-    },
-    {
-      id: 'm5',
-      name: 'Nguyễn Hoàng Nam',
-      avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=nam',
-      role: 'Mentee Thiết kế đồ họa (K19)',
-      status: 'OFFLINE',
-      lastMessage: 'Cho mình xin file Auto Layout Figma hôm trước nha.',
-      time: '2 ngày trước',
-      unread: false
-    }
-  ]);
+  const { user } = useAuth();
+  const myUserId = user?.publicId;
 
-  const [activePartnerId, setActivePartnerId] = useState('m1');
-  const [messagesMap, setMessagesMap] = useState<Record<string, ChatMessage[]>>({
-    m1: [
-      { id: 'm1_1', sender: 'PARTNER', text: 'Chào em, anh thấy em gửi đề xuất đặt lịch học PyTorch cơ bản.', time: '10:20' },
-      { id: 'm1_2', sender: 'ME', text: 'Dạ vâng anh, tối nay em đang làm dở Lab 2 mà không biết code model mạng neural sao cho đúng.', time: '10:25' },
-      { id: 'm1_3', sender: 'PARTNER', text: 'Ok em, tối nay 20:00 mình call nhé!', time: '10:30', status: 'READ' }
-    ],
-    m2: [
-      { id: 'm2_1', sender: 'PARTNER', text: 'Bạn đã xem qua cấu trúc Context API mình gửi chưa?', time: 'Hôm qua' },
-      { id: 'm2_2', sender: 'ME', text: 'Dạ em xem rồi, nó chạy mượt mà lắm, hết bị re-render vô hạn rồi chị.', time: 'Hôm qua' },
-      { id: 'm2_3', sender: 'PARTNER', text: 'Bạn sửa lỗi render React được chưa?', time: 'Hôm qua', status: 'READ' }
-    ],
-    m5: [
-      { id: 'm5_1', sender: 'ME', text: 'Cảm ơn Nam đã hướng dẫn mình cách căn chỉnh lưới Figma nha!', time: '2 ngày trước' },
-      { id: 'm5_2', sender: 'PARTNER', text: 'Cho mình xin file Auto Layout Figma hôm trước nha.', time: '2 ngày trước', status: 'READ' }
-    ]
-  });
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
 
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [loadingConvos, setLoadingConvos] = useState(true);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const activePartner = inbox.find((p) => p.id === activePartnerId) || inbox[0];
-  const activeMessages = messagesMap[activePartnerId] || [];
-
-  // Scroll to bottom of message list on updates
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  const activeIdRef = useRef<string | null>(null);
   useEffect(() => {
-    scrollToBottom();
-  }, [activePartnerId, messagesMap]);
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
-  // Mark unread conversation as read
-  useEffect(() => {
-    if (activePartner.unread) {
-      setInbox(
-        inbox.map((p) => {
-          if (p.id === activePartner.id) {
-            return { ...p, unread: false };
-          }
-          return p;
-        })
-      );
+  const activeConversation = conversations.find((c) => c.id === activeId) || null;
+
+  // ---------- Data loaders ----------
+  const loadConversations = useCallback(async (selectFirst = false) => {
+    try {
+      const res = await chatApi.listConversations({ size: 50 });
+      const list = res.content ?? [];
+      setConversations(list);
+      if (selectFirst && !activeIdRef.current && list.length > 0) {
+        setActiveId(list[0].id);
+      }
+      setError(null);
+    } catch (e) {
+      console.error('Lỗi tải danh sách hội thoại:', e);
+      setError('Không tải được danh sách hội thoại.');
+    } finally {
+      setLoadingConvos(false);
     }
-  }, [activePartnerId]);
+  }, []);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
+  const loadMessages = useCallback(async (conversationId: string, showSpinner = false) => {
+    if (showSpinner) setLoadingMsgs(true);
+    try {
+      const res = await chatApi.getMessages(conversationId, { size: 50 });
+      // BE trả newest-first -> đảo lại thành thứ tự thời gian tăng dần để hiển thị.
+      const ordered = [...(res.content ?? [])].reverse();
+      // Chỉ cập nhật nếu vẫn đang xem đúng conversation này (tránh race khi đổi thread).
+      if (activeIdRef.current === conversationId) {
+        setMessages((prev) => {
+          // Giữ lại các tin đang gửi dở (pending) chưa có trong response.
+          const pending = prev.filter((m) => m.pending || m.failed);
+          return [...ordered, ...pending];
+        });
+      }
+    } catch (e) {
+      console.error('Lỗi tải tin nhắn:', e);
+    } finally {
+      if (showSpinner) setLoadingMsgs(false);
+    }
+  }, []);
 
-    const currentTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    const userMsg: ChatMessage = {
-      id: `msg_user_${Date.now()}`,
-      sender: 'ME',
-      text: inputText,
-      time: currentTime,
-      status: 'SENT'
-    };
+  // Tải inbox lần đầu.
+  useEffect(() => {
+    loadConversations(true);
+  }, [loadConversations]);
 
-    // Update messages map
-    const updatedMessages = [...activeMessages, userMsg];
-    setMessagesMap({
-      ...messagesMap,
-      [activePartnerId]: updatedMessages
-    });
+  // Đổi thread -> tải tin nhắn của thread đó.
+  useEffect(() => {
+    if (!activeId) {
+      setMessages([]);
+      return;
+    }
+    setMessages([]);
+    loadMessages(activeId, true);
+  }, [activeId, loadMessages]);
 
-    // Update last message in Inbox list
-    setInbox(
-      inbox.map((p) => {
-        if (p.id === activePartnerId) {
-          return { ...p, lastMessage: inputText, time: currentTime };
+  // WebSocket realtime: kết nối STOMP và lắng nghe tin nhắn đẩy từ BE.
+  useEffect(() => {
+    chatSocket.connect();
+    const offStatus = chatSocket.onStatus(setWsConnected);
+    const offMsg = chatSocket.onMessage((event: ChatMessageEvent) => {
+      // Tin của chính mình đã được xử lý optimistic qua REST -> bỏ qua để tránh trùng.
+      if (myUserId && event.senderId === myUserId) return;
+
+      // Nếu đang mở đúng thread -> chèn tin ngay (dedupe theo messageId).
+      if (activeIdRef.current === event.conversationId) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === event.messageId)) return prev;
+          const incoming: DisplayMessage = {
+            id: event.messageId,
+            conversationId: event.conversationId,
+            senderId: event.senderId,
+            senderName: event.senderName,
+            messageType: event.messageType,
+            content: event.content,
+            createdAt: event.createdAt,
+            isMine: false,
+          };
+          return [...prev, incoming];
+        });
+      }
+
+      // Cập nhật preview + đưa hội thoại lên đầu inbox. Nếu chưa có trong list -> reload.
+      setConversations((prev) => {
+        const exists = prev.some((c) => c.id === event.conversationId);
+        if (!exists) {
+          loadConversations();
+          return prev;
         }
-        return p;
-      })
-    );
-
-    setInputText('');
-
-    // Simulate Mentor Auto-Reply after 1.2 seconds
-    setTimeout(() => {
-      // Set status to Delivered & Read
-      setMessagesMap((prev) => {
-        const currentMsgs = prev[activePartnerId] || [];
-        const index = currentMsgs.findIndex((m) => m.id === userMsg.id);
-        if (index !== -1) {
-          currentMsgs[index] = { ...currentMsgs[index], status: 'READ' };
-        }
-        return { ...prev, [activePartnerId]: currentMsgs };
+        return [...prev]
+          .map((c) =>
+            c.id === event.conversationId
+              ? { ...c, lastMessageContent: event.content, lastMessageAt: event.createdAt }
+              : c,
+          )
+          .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''));
       });
+    });
+    return () => {
+      offStatus();
+      offMsg();
+    };
+  }, [myUserId, loadConversations]);
 
-      const replyMsg: ChatMessage = {
-        id: `msg_reply_${Date.now()}`,
-        sender: 'PARTNER',
-        text: `Chào bạn, mình đã nhận được tin nhắn: "${inputText}". Mình sẽ phản hồi chi tiết sớm nhé! 👍`,
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-      };
+  // Polling fallback (phòng khi WS rớt): tin nhắn thread đang mở 10s, inbox 25s.
+  useEffect(() => {
+    const msgTimer = setInterval(() => {
+      if (activeIdRef.current) loadMessages(activeIdRef.current);
+    }, 10000);
+    const inboxTimer = setInterval(() => loadConversations(), 25000);
+    return () => {
+      clearInterval(msgTimer);
+      clearInterval(inboxTimer);
+    };
+  }, [loadMessages, loadConversations]);
 
-      setMessagesMap((prev) => ({
-        ...prev,
-        [activePartnerId]: [...(prev[activePartnerId] || []), replyMsg]
-      }));
+  // Auto-scroll xuống cuối khi có tin mới / đổi thread.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, activeId]);
 
-      setInbox((prevInbox) =>
-        prevInbox.map((p) => {
-          if (p.id === activePartnerId) {
-            return { ...p, lastMessage: replyMsg.text, time: replyMsg.time };
-          }
-          return p;
-        })
+  // ---------- Send ----------
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const content = inputText.trim();
+    if (!content || !activeId || sending) return;
+
+    const tempId = `temp_${Date.now()}`;
+    const optimistic: DisplayMessage = {
+      id: tempId,
+      conversationId: activeId,
+      content,
+      messageType: 'TEXT',
+      createdAt: new Date().toISOString(),
+      isMine: true,
+      pending: true,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    setInputText('');
+    setSending(true);
+
+    try {
+      const saved = await chatApi.sendMessage(activeId, content);
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...saved } : m)));
+      // Cập nhật preview + thứ tự inbox ngay (không chờ poll).
+      setConversations((prev) =>
+        [...prev]
+          .map((c) =>
+            c.id === activeId
+              ? { ...c, lastMessageContent: content, lastMessageAt: saved.createdAt }
+              : c,
+          )
+          .sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '')),
       );
-    }, 1200);
+    } catch (err) {
+      console.error('Gửi tin nhắn thất bại:', err);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? { ...m, pending: false, failed: true } : m)),
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
-  const filteredInbox = inbox.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = conversations.filter((c) =>
+    (c.otherUserName || '').toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
     <div className="meetmind-card rounded-card overflow-hidden flex h-[78vh] border border-line bg-surface">
-      
-      {/* Left panel: Inbox chat list */}
+      {/* Left panel: Inbox */}
       <div className="w-full sm:w-80 md:w-96 border-r border-brand-border flex flex-col shrink-0 bg-surface-muted/50">
-        {/* Inbox header / Search */}
         <div className="p-4 border-b border-brand-border space-y-3 bg-surface">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-fg flex items-center gap-1.5">
-              <Sparkles className="w-5 h-5 text-fg-muted animate-pulse" /> Hộp thư trò chuyện
-            </h2>
-          </div>
-          
+          <h2 className="text-lg font-bold text-fg flex items-center gap-1.5">
+            <Sparkles className="w-5 h-5 text-fg-muted animate-pulse" /> Hộp thư trò chuyện
+          </h2>
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-brand-grey" />
             <input
@@ -199,167 +243,202 @@ export const Chat: React.FC = () => {
           </div>
         </div>
 
-        {/* Conversations List */}
         <div className="flex-1 overflow-y-auto divide-y divide-brand-border bg-surface">
-          {filteredInbox.length === 0 ? (
-            <div className="py-8 text-center text-body text-brand-text-muted font-bold">
-              Không tìm thấy cuộc hội thoại nào.
+          {loadingConvos ? (
+            <div className="py-10 flex flex-col items-center gap-2 text-fg-muted">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-meta font-semibold">Đang tải hội thoại...</span>
+            </div>
+          ) : error && conversations.length === 0 ? (
+            <div className="py-8 px-4 text-center text-body text-red-500 font-semibold">{error}</div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="py-10 px-5 text-center text-brand-text-muted space-y-2">
+              <MessagesSquare className="w-8 h-8 mx-auto text-fg-faint" />
+              <p className="text-body font-bold text-fg">
+                {searchQuery ? 'Không tìm thấy cuộc hội thoại.' : 'Chưa có cuộc trò chuyện nào.'}
+              </p>
+              {!searchQuery && (
+                <p className="text-meta font-medium leading-relaxed">
+                  Cuộc trò chuyện sẽ tự động xuất hiện sau khi một buổi đặt lịch được mentor chấp nhận.
+                </p>
+              )}
             </div>
           ) : (
-            filteredInbox.map((partner) => (
-              <button
-                key={partner.id}
-                onClick={() => setActivePartnerId(partner.id)}
-                className={`w-full p-4 flex gap-3 text-left transition-colors cursor-pointer ${
-                  activePartnerId === partner.id
-                    ? 'bg-brand-primary/10 border-l-4 border-brand-primary shadow-xs'
-                    : 'hover:bg-surface-muted'
-                }`}
-              >
-                {/* Avatar */}
-                <div className="relative shrink-0">
+            filteredConversations.map((c) => {
+              const isActive = activeId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveId(c.id)}
+                  className={`w-full p-4 flex gap-3 text-left transition-colors cursor-pointer ${
+                    isActive
+                      ? 'bg-brand-primary/10 border-l-4 border-brand-primary shadow-xs'
+                      : 'hover:bg-surface-muted'
+                  }`}
+                >
                   <img
-                    src={partner.avatarUrl}
-                    alt={partner.name}
-                    className="w-11 h-11 rounded-field object-cover border border-brand-border"
+                    src={avatarFor(c)}
+                    alt={c.otherUserName || 'Người dùng'}
+                    className="w-11 h-11 rounded-field object-cover border border-brand-border shrink-0"
                   />
-                  {partner.status === 'ONLINE' && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dot-glow-green" />
-                  )}
-                </div>
-
-                {/* Info summary */}
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-baseline justify-between gap-1">
-                    <span className="text-body font-bold text-brand-text truncate">{partner.name}</span>
-                    <span className="text-meta text-fg-faint font-semibold shrink-0">{partner.time}</span>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-baseline justify-between gap-1">
+                      <span className="text-body font-bold text-brand-text truncate">
+                        {c.otherUserName || 'Người dùng'}
+                      </span>
+                      <span className="text-meta text-fg-faint font-semibold shrink-0">
+                        {fmtTime(c.lastMessageAt)}
+                      </span>
+                    </div>
+                    <p className="text-meta truncate leading-tight font-medium text-brand-text-muted">
+                      {c.lastMessageContent || 'Bắt đầu cuộc trò chuyện...'}
+                    </p>
                   </div>
-                  <span className="text-meta text-fg-muted font-extrabold block truncate uppercase leading-none">{partner.role}</span>
-                  <p className={`text-meta truncate leading-tight font-medium ${
-                    partner.unread && activePartnerId !== partner.id
-                      ? 'text-brand-text font-extrabold'
-                      : 'text-brand-text-muted'
-                  }`}>
-                    {partner.lastMessage}
-                  </p>
-                </div>
-              </button>
-            ))
+                </button>
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* Right panel: Chat messages window */}
+      {/* Right panel: Messages */}
       <div className="flex-1 flex flex-col justify-between bg-surface text-left">
-        {/* Active conversation Header */}
-        <div className="p-4 border-b border-brand-border flex items-center justify-between bg-surface shrink-0">
-          <div className="flex items-center gap-3">
-            <img
-              src={activePartner.avatarUrl}
-              alt={activePartner.name}
-              className="w-10 h-10 rounded-field object-cover border border-brand-border"
-            />
-            <div>
-              <span className="text-body font-bold text-brand-text block">{activePartner.name}</span>
-              <div className="flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${activePartner.status === 'ONLINE' ? 'bg-green-500' : 'bg-brand-grey'}`} />
-                <span className="text-meta text-brand-text-muted font-bold uppercase leading-none">{activePartner.role}</span>
-              </div>
-            </div>
+        {!activeConversation ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 text-brand-text-muted gap-3">
+            <MessagesSquare className="w-12 h-12 text-fg-faint" />
+            <p className="text-body font-bold text-fg">Chọn một cuộc trò chuyện để bắt đầu</p>
+            <p className="text-meta font-medium max-w-xs leading-relaxed">
+              Mọi tin nhắn đều gắn với một buổi mentoring đã được xác nhận.
+            </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-field border border-brand-border bg-surface-muted hover:bg-surface-muted text-fg-muted transition-all cursor-pointer">
-              <Phone className="w-4 h-4" />
-            </button>
-            <button className="p-2 rounded-field border border-brand-border bg-surface-muted hover:bg-surface-muted text-fg-muted transition-all cursor-pointer">
-              <Video className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Messaging Timeline area */}
-        <div className="flex-1 p-5 overflow-y-auto bg-surface-muted/20 space-y-4">
-          
-          {/* Disclaimer details */}
-          <div className="max-w-md mx-auto p-3.5 bg-surface-muted border border-line text-fg-muted text-meta font-semibold rounded-card flex items-start gap-2 leading-relaxed">
-            <ShieldAlert className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" />
-            <span>Tin nhắn được mã hóa bảo mật. Mọi giao dịch đặt lịch và trao đổi học tập đều tuân thủ Quy tắc ứng xử FPTU.</span>
-          </div>
-
-          {activeMessages.map((msg) => {
-            const isMe = msg.sender === 'ME';
-            return (
-              <div
-                key={msg.id}
-                className={`flex gap-2.5 max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse text-right' : 'mr-auto text-left'}`}
-              >
-                {/* Partner avatar */}
-                {!isMe && (
-                  <img
-                    src={activePartner.avatarUrl}
-                    alt={activePartner.name}
-                    className="w-7 h-7 rounded-lg border border-brand-border object-cover mt-1 shrink-0"
-                  />
-                )}
-
-                {/* Message Bubble container */}
-                <div className="space-y-1">
-                  <div
-                    className={`p-3.5 rounded-card text-body font-semibold leading-relaxed ${
-                      isMe
-                        ? 'bg-brand-primary text-white rounded-br-none shadow-sm'
-                        : 'bg-surface-muted text-fg rounded-bl-none border border-line/50'
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                  
-                  {/* Status Indicator / Timestamp */}
-                  <div className={`text-meta text-fg-faint font-semibold flex items-center gap-1 justify-end`}>
-                    <span>{msg.time}</span>
-                    {isMe && (
-                      <span className="text-fg">
-                        {msg.status === 'READ' ? (
-                          <CheckCheck className="w-3 h-3" />
-                        ) : msg.status === 'DELIVERED' ? (
-                          <CheckCheck className="w-3 h-3 text-fg-faint" />
-                        ) : (
-                          <Check className="w-3 h-3 text-fg-faint" />
-                        )}
-                      </span>
-                    )}
-                  </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="p-4 border-b border-brand-border flex items-center justify-between bg-surface shrink-0">
+              <div className="flex items-center gap-3">
+                <img
+                  src={avatarFor(activeConversation)}
+                  alt={activeConversation.otherUserName || 'Người dùng'}
+                  className="w-10 h-10 rounded-field object-cover border border-brand-border"
+                />
+                <div>
+                  <span className="text-body font-bold text-brand-text block">
+                    {activeConversation.otherUserName || 'Người dùng'}
+                  </span>
+                  <span className="text-meta text-brand-text-muted font-bold uppercase leading-none">
+                    {activeConversation.sourceType === 'BOOKING' ? 'Buổi mentoring' : 'Trò chuyện'}
+                  </span>
                 </div>
               </div>
-            );
-          })}
-          
-          <div ref={messagesEndRef} />
-        </div>
+              <div className="flex items-center gap-1.5" title={wsConnected ? 'Đã kết nối realtime' : 'Đang kết nối lại...'}>
+                <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-amber-400 animate-pulse'}`} />
+                <span className="text-meta text-fg-muted font-semibold hidden sm:inline">
+                  {wsConnected ? 'Trực tuyến' : 'Đang kết nối'}
+                </span>
+              </div>
+            </div>
 
-        {/* Message Input composer area */}
-        <div className="p-4 border-t border-brand-border bg-surface shrink-0">
-          <form onSubmit={handleSendMessage} className="flex gap-2">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={`Nhắn tin cho ${activePartner.name}...`}
-              className="flex-1 bg-surface-muted border border-brand-border rounded-field py-3 px-4 text-body focus:outline-none focus:border-brand-secondary font-semibold"
-            />
-            <button
-              type="submit"
-              className="p-3 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-field cursor-pointer active:scale-95 shadow-xs transition-all flex items-center justify-center shrink-0"
-              title="Gửi tin nhắn"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
+            {/* Timeline */}
+            <div className="flex-1 p-5 overflow-y-auto bg-surface-muted/20 space-y-4">
+              <div className="max-w-md mx-auto p-3.5 bg-surface-muted border border-line text-fg-muted text-meta font-semibold rounded-card flex items-start gap-2 leading-relaxed">
+                <ShieldAlert className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" />
+                <span>
+                  Tin nhắn gắn với buổi đặt lịch đã xác nhận. Mọi trao đổi học tập đều tuân thủ Quy tắc ứng xử.
+                </span>
+              </div>
 
+              {loadingMsgs ? (
+                <div className="py-10 flex flex-col items-center gap-2 text-fg-muted">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-meta font-semibold">Đang tải tin nhắn...</span>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="py-10 text-center text-brand-text-muted text-meta font-semibold">
+                  Chưa có tin nhắn nào. Hãy gửi lời chào đầu tiên!
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isMe = msg.isMine;
+                  const isSystem = msg.messageType === 'SYSTEM';
+                  if (isSystem) {
+                    return (
+                      <div key={msg.id} className="text-center">
+                        <span className="inline-block px-3 py-1.5 bg-surface-muted border border-line text-fg-muted text-meta font-semibold rounded-full">
+                          {msg.content}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-2.5 max-w-[75%] ${
+                        isMe ? 'ml-auto flex-row-reverse text-right' : 'mr-auto text-left'
+                      }`}
+                    >
+                      {!isMe && (
+                        <img
+                          src={avatarFor(activeConversation)}
+                          alt={msg.senderName || ''}
+                          className="w-7 h-7 rounded-lg border border-brand-border object-cover mt-1 shrink-0"
+                        />
+                      )}
+                      <div className="space-y-1">
+                        <div
+                          className={`p-3.5 rounded-card text-body font-semibold leading-relaxed ${
+                            isMe
+                              ? 'bg-brand-primary text-white rounded-br-none shadow-sm'
+                              : 'bg-surface-muted text-fg rounded-bl-none border border-line/50'
+                          } ${msg.failed ? 'opacity-60 ring-1 ring-red-400' : ''}`}
+                        >
+                          {msg.content}
+                        </div>
+                        <div className="text-meta text-fg-faint font-semibold flex items-center gap-1 justify-end">
+                          <span>{fmtClock(msg.createdAt)}</span>
+                          {isMe && (
+                            <span className="text-fg">
+                              {msg.failed ? (
+                                <span className="text-red-500 font-bold">Gửi lỗi</span>
+                              ) : msg.pending ? (
+                                <Clock className="w-3 h-3 text-fg-faint" />
+                              ) : (
+                                <Check className="w-3 h-3 text-fg-faint" />
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Composer */}
+            <div className="p-4 border-t border-brand-border bg-surface shrink-0">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  maxLength={2000}
+                  placeholder={`Nhắn tin cho ${activeConversation.otherUserName || 'đối phương'}...`}
+                  className="flex-1 bg-surface-muted border border-brand-border rounded-field py-3 px-4 text-body focus:outline-none focus:border-brand-secondary font-semibold"
+                />
+                <button
+                  type="submit"
+                  disabled={sending || !inputText.trim()}
+                  className="p-3 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-field cursor-pointer active:scale-95 shadow-xs transition-all flex items-center justify-center shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Gửi tin nhắn"
+                >
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </button>
+              </form>
+            </div>
+          </>
+        )}
       </div>
-
     </div>
   );
 };

@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { ThemeSwitcher } from './ThemeSwitcher';
-import { Menu, Bell, MessageSquare, Search, User, LogOut, Settings } from 'lucide-react';
+import { Menu, MessageSquare, Search, User, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { NotificationBell } from './NotificationBell';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -62,10 +63,7 @@ export const Layout: React.FC = () => {
                 <MessageSquare className="w-5 h-5" />
               </Link>
 
-              <button title="Thông báo" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative cursor-pointer focus:outline-none">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-danger border-2 border-surface"></span>
-              </button>
+              <NotificationBell />
 
               {user && (
                 <div className="relative" ref={dropdownRef}>
