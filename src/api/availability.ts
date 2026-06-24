@@ -6,7 +6,7 @@ import type { AvailabilityRule, UpsertAvailabilityRulePayload } from './types';
 
 export const availabilityApi = {
   /** GET /api/mentor/availability-rules */
-  list: () => http.get<AvailabilityRule[]>('/api/mentor/availability-rules'),
+  list: () => http.get<AvailabilityRule[]>('/api/mentor/availability-rules', { params: { _t: Date.now() } }),
 
   /** POST /api/mentor/availability-rules */
   create: (payload: UpsertAvailabilityRulePayload) =>

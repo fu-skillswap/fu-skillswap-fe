@@ -204,7 +204,12 @@ export const CourseDetailPage: React.FC = () => {
       setShowEditModal(false);
       await loadData();
     } catch (err: any) {
-      triggerToast(err?.response?.data?.message || 'Lưu khóa học thất bại.', 'danger');
+      console.error('Lưu khóa học thất bại:', err);
+      const serverData = err?.response?.data;
+      const detailMsg = serverData 
+        ? (serverData.message || JSON.stringify(serverData)) 
+        : 'Lưu khóa học thất bại.';
+      triggerToast(detailMsg, 'danger');
       setLoading(false);
     }
   };
