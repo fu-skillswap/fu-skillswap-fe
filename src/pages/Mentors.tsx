@@ -3,7 +3,7 @@ import { Sparkles, Send, Calendar, Check, X, Star, Search, SlidersHorizontal, Lo
 import { mentorsApi } from '../api/mentors';
 import type {
   MentorCard, MentorRecommendation, MentorReview,
-  MentorAvailabilitySlot, MentorServiceItem, MentorDetail,
+  MentorAvailabilitySlot, ServiceSlotCandidate,
 } from '../api/types';
 import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
@@ -37,13 +37,16 @@ export const Mentors: React.FC = () => {
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [activeMentor, setActiveMentor] = useState<MentorVM | null>(null);
-  const [activeDetail, setActiveDetail] = useState<MentorDetail | null>(null);
   const [activeSlots, setActiveSlots] = useState<MentorAvailabilitySlot[]>([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [selectedSlotId, setSelectedSlotId] = useState('');
+  // Khung giờ chính xác (candidate) mentee chọn trong slot — key = "startTime|endTime".
+  const [candidates, setCandidates] = useState<ServiceSlotCandidate[]>([]);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [selectedCandidateKey, setSelectedCandidateKey] = useState('');
   const [goalTitle, setGoalTitle] = useState('');
   const [goalDescription, setGoalDescription] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -117,20 +120,15 @@ export const Mentors: React.FC = () => {
     setBookingError(null);
     setSelectedServiceId('');
     setSelectedSlotId('');
+    setCandidates([]);
+    setSelectedCandidateKey('');
     setGoalTitle('');
     setGoalDescription('');
-    setActiveDetail(null);
     setActiveSlots([]);
     setBookingLoading(true);
     try {
-      const [detail, slots] = await Promise.all([
-        mentorsApi.getDetail(mentor.mentorUserId),
-        mentorsApi.getAvailability(mentor.mentorUserId).catch(() => [] as MentorAvailabilitySlot[]),
-      ]);
-      setActiveDetail(detail);
+      const slots = await mentorsApi.getAvailabilitySlots(mentor.mentorUserId);
       setActiveSlots(slots);
-      const activeServices = (detail.services || []).filter((s) => s.active);
-      if (activeServices.length === 1) setSelectedServiceId(activeServices[0].serviceId);
       if (slots.length === 1) setSelectedSlotId(slots[0].slotId);
     } catch (err: any) {
       setBookingError(err?.response?.data?.message || 'Không tải được thông tin đặt lịch của mentor.');
@@ -139,22 +137,73 @@ export const Mentors: React.FC = () => {
     }
   };
 
+  // Slot đang chọn + danh sách service gắn vào slot đó (nguồn để chọn service khi đặt).
+  const selectedSlot = activeSlots.find((s) => s.slotId === selectedSlotId) || null;
+  const slotServices = selectedSlot?.services || [];
+
+  // Khi đổi slot: reset service + candidate (service phải thuộc slot mới).
+  const handleSelectSlot = (slotId: string) => {
+    setSelectedSlotId(slotId);
+    setSelectedServiceId('');
+    setCandidates([]);
+    setSelectedCandidateKey('');
+    setBookingError(null);
+    const slot = activeSlots.find((s) => s.slotId === slotId);
+    if (slot?.services && slot.services.length === 1) {
+      setSelectedServiceId(slot.services[0].serviceId);
+    }
+  };
+
+  // Khi slot + service đã chọn -> tải candidate segments (khung giờ đặt được).
+  useEffect(() => {
+    if (!activeMentor || !selectedSlotId || !selectedServiceId) {
+      setCandidates([]);
+      setSelectedCandidateKey('');
+      return;
+    }
+    let cancelled = false;
+    setCandidatesLoading(true);
+    setSelectedCandidateKey('');
+    mentorsApi
+      .getSlotCandidates(activeMentor.mentorUserId, selectedSlotId, selectedServiceId)
+      .then((res) => {
+        if (cancelled) return;
+        const list = res.candidateServiceSlots || [];
+        setCandidates(list);
+        const firstSelectable = list.find((c) => c.isSelectable);
+        if (firstSelectable) setSelectedCandidateKey(`${firstSelectable.startTime}|${firstSelectable.endTime}`);
+      })
+      .catch(() => {
+        if (!cancelled) setCandidates([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCandidatesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeMentor, selectedSlotId, selectedServiceId]);
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeMentor) return;
-    if (!selectedServiceId || !selectedSlotId) {
-      setBookingError('Vui lòng chọn dịch vụ và khung giờ.');
+    if (!selectedSlotId || !selectedServiceId) {
+      setBookingError('Vui lòng chọn khung giờ và dịch vụ.');
+      return;
+    }
+    const [selStart, selEnd] = selectedCandidateKey.split('|');
+    if (!selStart || !selEnd) {
+      setBookingError('Vui lòng chọn một khung giờ cụ thể.');
       return;
     }
     setBookingSubmitting(true);
     setBookingError(null);
     try {
       await bookingsApi.create({
-        mentorUserId: activeMentor.mentorUserId,
         availabilitySlotId: selectedSlotId,
         serviceId: selectedServiceId,
+        selectedStartTime: selStart,
+        selectedEndTime: selEnd,
         learningGoalTitle: goalTitle.trim() || 'Yêu cầu trao đổi kỹ năng',
-        learningGoalDescription: goalDescription.trim(),
+        learningGoalDescription: goalDescription.trim() || undefined,
       });
       setBookingSuccess(true);
       setTimeout(() => setShowBookingModal(false), 1800);
@@ -181,7 +230,6 @@ export const Mentors: React.FC = () => {
     }
   };
 
-  const activeServices: MentorServiceItem[] = (activeDetail?.services || []).filter((s) => s.active);
 
   return (
     <div className="space-y-8 text-left relative min-h-screen pb-16">
@@ -514,7 +562,7 @@ export const Mentors: React.FC = () => {
               <form onSubmit={handleBookingSubmit} className="space-y-4">
                 <div className="text-left">
                   <h3 className="text-brand-text font-bold text-lg font-serif">Đặt lịch với {activeMentor.displayName}</h3>
-                  <p className="text-brand-text-muted text-body font-medium mt-0.5">Chọn dịch vụ và khung giờ trống của mentor</p>
+                  <p className="text-brand-text-muted text-body font-medium mt-0.5">Chọn khung lịch → dịch vụ → giờ học cụ thể</p>
                 </div>
 
                 <div className="flex items-center gap-3 p-3 bg-brand-bg border border-brand-border rounded-card text-left">
@@ -537,49 +585,93 @@ export const Mentors: React.FC = () => {
                   </div>
                 )}
 
-                {/* Service select */}
+                {/* Bước 1: chọn slot (khung lịch trống của mentor) */}
                 <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Dịch vụ</label>
-                  {activeServices.length === 0 ? (
-                    <p className="text-meta text-red-600 font-semibold">Mentor chưa cấu hình dịch vụ nào.</p>
+                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">1. Khung lịch trống</label>
+                  {activeSlots.length === 0 ? (
+                    <p className="text-meta text-red-600 font-semibold">Mentor hiện chưa mở khung lịch trống nào.</p>
                   ) : (
                     <select
                       required
-                      value={selectedServiceId}
-                      onChange={(e) => setSelectedServiceId(e.target.value)}
+                      value={selectedSlotId}
+                      onChange={(e) => handleSelectSlot(e.target.value)}
                       className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
                     >
-                      <option value="">-- Chọn dịch vụ --</option>
-                      {activeServices.map((s) => (
-                        <option key={s.serviceId} value={s.serviceId}>
-                          {s.title} · {s.durationMinutes} phút{s.free ? ' · Miễn phí' : ''}
+                      <option value="">-- Chọn khung lịch --</option>
+                      {activeSlots.map((slot) => (
+                        <option key={slot.slotId} value={slot.slotId}>
+                          {fmtDateTime(slot.startTime)} - {fmtDateTime(slot.endTime)}
                         </option>
                       ))}
                     </select>
                   )}
                 </div>
 
-                {/* Slot select */}
-                <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Khung giờ trống</label>
-                  {activeSlots.length === 0 ? (
-                    <p className="text-meta text-red-600 font-semibold">Mentor hiện chưa mở khung giờ trống nào.</p>
-                  ) : (
-                    <select
-                      required
-                      value={selectedSlotId}
-                      onChange={(e) => setSelectedSlotId(e.target.value)}
-                      className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
-                    >
-                      <option value="">-- Chọn khung giờ --</option>
-                      {activeSlots.map((slot) => (
-                        <option key={slot.slotId} value={slot.slotId}>
-                          {fmtDateTime(slot.startTime)} - {fmtDateTime(slot.endTime)} ({slot.durationMinutes} phút)
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                {/* Bước 2: chọn dịch vụ gắn vào slot đó */}
+                {selectedSlotId && (
+                  <div>
+                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">2. Dịch vụ</label>
+                    {slotServices.length === 0 ? (
+                      <p className="text-meta text-red-600 font-semibold">Khung lịch này chưa gắn dịch vụ nào.</p>
+                    ) : (
+                      <select
+                        required
+                        value={selectedServiceId}
+                        onChange={(e) => { setSelectedServiceId(e.target.value); setBookingError(null); }}
+                        className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
+                      >
+                        <option value="">-- Chọn dịch vụ --</option>
+                        {slotServices.map((s) => (
+                          <option key={s.serviceId} value={s.serviceId}>
+                            {s.title} · {s.durationMinutes} phút{s.isFree ? ' · Miễn phí' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+
+                {/* Bước 3: chọn khung giờ cụ thể (candidate) */}
+                {selectedSlotId && selectedServiceId && (
+                  <div>
+                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">3. Giờ học cụ thể</label>
+                    {candidatesLoading ? (
+                      <div className="flex items-center gap-2 text-meta text-brand-text-muted font-semibold py-1">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Đang tải khung giờ...
+                      </div>
+                    ) : candidates.length === 0 ? (
+                      <p className="text-meta text-red-600 font-semibold">Không còn khung giờ đặt được cho dịch vụ này.</p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto">
+                        {candidates.map((c) => {
+                          const key = `${c.startTime}|${c.endTime}`;
+                          const selected = selectedCandidateKey === key;
+                          return (
+                            <button
+                              type="button"
+                              key={key}
+                              disabled={!c.isSelectable}
+                              onClick={() => setSelectedCandidateKey(key)}
+                              title={!c.isSelectable ? (c.reasonIfBlocked || 'Không đặt được') : undefined}
+                              className={`px-2.5 py-2 rounded-field text-meta font-bold border transition-all text-left ${
+                                selected
+                                  ? 'bg-brand-terracotta text-white border-brand-terracotta'
+                                  : c.isSelectable
+                                    ? 'bg-brand-bg/50 border-brand-border text-brand-text hover:border-brand-terracotta cursor-pointer'
+                                    : 'bg-brand-bg/30 border-brand-border text-brand-grey opacity-50 cursor-not-allowed'
+                              }`}
+                            >
+                              {fmtDateTime(c.startTime)}
+                              {c.isSelectable && c.remainingPendingQuota > 0 && (
+                                <span className="block text-[10px] font-semibold opacity-80">còn {c.remainingPendingQuota} chỗ</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Mục tiêu (tiêu đề ngắn)</label>
@@ -607,7 +699,7 @@ export const Mentors: React.FC = () => {
 
                 <button
                   type="submit"
-                  disabled={bookingSubmitting || activeServices.length === 0 || activeSlots.length === 0}
+                  disabled={bookingSubmitting || !selectedSlotId || !selectedServiceId || !selectedCandidateKey}
                   className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer hover:opacity-90 transition-all active:scale-[0.98] shadow-md shadow-brand-terracotta/20 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {bookingSubmitting ? (

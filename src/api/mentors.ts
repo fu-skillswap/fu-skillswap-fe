@@ -4,7 +4,7 @@
 import { http } from './http';
 import type {
   MentorCard, MentorDetail, MentorRecommendation, MentorReview,
-  MentorAvailabilitySlot, MentorSearchParams, Paged,
+  MentorAvailabilitySlot, MentorSearchParams, ServiceSlotCandidates, Paged,
 } from './types';
 
 export const mentorsApi = {
@@ -33,7 +33,26 @@ export const mentorsApi = {
   getDetail: (mentorUserId: string) =>
     http.get<MentorDetail>(`/api/mentors/${mentorUserId}`),
 
-  /** GET /api/mentors/{mentorUserId}/availability */
+  /**
+   * GET /api/mentors/{mentorUserId}/availability-slots — parent slots kèm services gắn vào.
+   * Đây là API mới dùng cho luồng đặt lịch (mỗi slot có danh sách service để mentee chọn).
+   */
+  getAvailabilitySlots: (mentorUserId: string, fromDate?: string, toDate?: string) =>
+    http.get<MentorAvailabilitySlot[]>(`/api/mentors/${mentorUserId}/availability-slots`, {
+      params: { fromDate: fromDate || undefined, toDate: toDate || undefined },
+    }),
+
+  /**
+   * GET /api/mentors/{mentorUserId}/availability-slots/{slotId}/candidates?serviceId=...
+   * Trả về các khung giờ chính xác (candidate) đặt được cho service trong slot.
+   */
+  getSlotCandidates: (mentorUserId: string, slotId: string, serviceId: string) =>
+    http.get<ServiceSlotCandidates>(
+      `/api/mentors/${mentorUserId}/availability-slots/${slotId}/candidates`,
+      { params: { serviceId } },
+    ),
+
+  /** GET /api/mentors/{mentorUserId}/availability — (cũ) danh sách slot đơn giản, giữ tương thích. */
   getAvailability: (mentorUserId: string) =>
     http.get<MentorAvailabilitySlot[]>(`/api/mentors/${mentorUserId}/availability`),
 

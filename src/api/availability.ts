@@ -1,22 +1,15 @@
 // =====================================================================
-// src/api/availability.ts — Mentor availability rules (4.7)
+// src/api/availability.ts — Mentor gán service vào slot có sẵn.
+// Mô hình mới: mentor KHÔNG tự tạo khung giờ; slot do hệ thống sinh sẵn,
+// mentor chỉ chọn service nào được mở trên từng slot.
+// BE: PUT /api/me/availability-slots/{slotId}/services
+// Danh sách slot lấy qua mentorsApi.getAvailabilitySlots(myUserId).
 // =====================================================================
 import { http } from './http';
-import type { AvailabilityRule, UpsertAvailabilityRulePayload } from './types';
+import type { ManagedAvailabilitySlot } from './types';
 
 export const availabilityApi = {
-  /** GET /api/mentor/availability-rules */
-  list: () => http.get<AvailabilityRule[]>('/api/mentor/availability-rules', { params: { _t: Date.now() } }),
-
-  /** POST /api/mentor/availability-rules */
-  create: (payload: UpsertAvailabilityRulePayload) =>
-    http.post<AvailabilityRule>('/api/mentor/availability-rules', payload),
-
-  /** PUT /api/mentor/availability-rules/{ruleId} */
-  update: (ruleId: string, payload: UpsertAvailabilityRulePayload) =>
-    http.put<AvailabilityRule>(`/api/mentor/availability-rules/${ruleId}`, payload),
-
-  /** DELETE /api/mentor/availability-rules/{ruleId} */
-  remove: (ruleId: string) =>
-    http.del<void>(`/api/mentor/availability-rules/${ruleId}`),
+  /** PUT /api/me/availability-slots/{slotId}/services — thay toàn bộ service gắn vào slot. */
+  replaceSlotServices: (slotId: string, serviceIds: string[]) =>
+    http.put<ManagedAvailabilitySlot>(`/api/me/availability-slots/${slotId}/services`, { serviceIds }),
 };

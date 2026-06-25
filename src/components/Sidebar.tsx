@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
     { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
     { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
-    { path: '/mentor/slots', label: 'Khung giờ rảnh', icon: <Calendar className="w-5 h-5" /> },
+    { path: '/mentor/slots', label: 'Lịch nhận mentoring', icon: <Calendar className="w-5 h-5" /> },
     { path: '/bookings', label: 'Lịch của tôi', icon: <ListTodo className="w-5 h-5" /> },
     { path: '/mentor/courses', label: 'Quản lý khóa học', icon: <BookOpen className="w-5 h-5" /> },
     { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
