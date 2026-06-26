@@ -6,13 +6,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, isAdminRole } from '@/context/AuthContext';
 import { getVerificationQueue, type AdminVerificationQueueItem } from '@/lib/api/adminMentorVerificationApi';
 
 export default function AdminMentorVerificationQueuePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.roles?.includes('ADMIN') ?? false;
+  const isAdmin = isAdminRole(user?.roles);
 
   const [loading, setLoading] = useState(true);
   const [queue, setQueue] = useState<AdminVerificationQueueItem[]>([]);

@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import { adminUsersApi } from '../../api/adminUsers';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isAdminRole } from '../../context/AuthContext';
 import type { AdminMentorListItem } from '../../api/types';
 
 const fmtDate = (iso?: string) => {
@@ -18,7 +18,7 @@ const fmtDate = (iso?: string) => {
 export const MentorList: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.roles?.includes('ADMIN') ?? false;
+  const isAdmin = isAdminRole(user?.roles);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
