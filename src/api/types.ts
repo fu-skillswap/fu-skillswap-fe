@@ -512,6 +512,9 @@ export type NotificationType =
   | 'BOOKING_REQUEST_CREATED' | 'BOOKING_ACCEPTED' | 'BOOKING_REJECTED'
   | 'BOOKING_CANCELLED_BY_MENTEE' | 'BOOKING_CANCELLED_BY_MENTOR' | 'BOOKING_AUTO_REJECTED'
   | 'MEETING_LINK_UPDATED' | 'SESSION_COMPLETED' | 'FEEDBACK_RECEIVED'
+  | 'BOOKING_RESCHEDULE_REQUESTED' | 'BOOKING_RESCHEDULE_ACCEPTED'
+  | 'BOOKING_RESCHEDULE_REJECTED' | 'BOOKING_RESCHEDULE_EXPIRED'
+  | 'FORUM_POST_COMMENTED' | 'FORUM_POST_HIDDEN' | 'FORUM_COMMENT_HIDDEN'
   | string;
 
 /** Khớp NotificationResponse của BE. */
@@ -714,4 +717,70 @@ export interface CreditWallet {
 export interface MentorWallet {
   availableScoin: number;
   recentTransactions: WalletTransaction[];
+}
+
+// =====================================================================
+// Forum (diễn đàn thảo luận) — module BE mới /api/forum
+// =====================================================================
+
+export type ForumPostStatus = 'PUBLISHED' | 'HIDDEN';
+export type ForumReactionType = 'LIKE';
+export type ForumReportTargetType = 'POST' | 'COMMENT';
+export type ForumReportReasonType = 'SPAM' | 'OFF_TOPIC' | 'HARASSMENT' | 'MISLEADING' | 'OTHER';
+
+/** Help topic gắn vào post forum — khớp ForumHelpTopicResponse. */
+export interface ForumHelpTopicLite {
+  id: string;
+  code?: string;
+  nameVi: string;
+  nameEn?: string;
+}
+
+/** Bài viết forum — khớp ForumPostResponse. */
+export interface ForumPost {
+  postId: string;
+  authorUserId: string;
+  authorFullName: string;
+  authorAvatarUrl?: string;
+  helpTopic?: ForumHelpTopicLite;
+  title: string;
+  content: string;
+  status: ForumPostStatus;
+  commentCount: number;
+  reactionCount: number;
+  reportCount?: number;
+  lastActivityAt?: string;
+  reactedByCurrentUser: boolean;
+  myReactionType?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Comment forum — khớp ForumCommentResponse. */
+export interface ForumComment {
+  commentId: string;
+  postId: string;
+  authorUserId: string;
+  authorFullName: string;
+  authorAvatarUrl?: string;
+  content: string;
+  status: ForumPostStatus;
+  reportCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Payload tạo/cập nhật post — khớp ForumPostUpsertRequest. */
+export interface ForumPostPayload {
+  title: string;
+  content: string;
+  helpTopicId: string;
+}
+
+/** Payload tạo report — khớp ForumReportCreateRequest. */
+export interface ForumReportPayload {
+  targetType: ForumReportTargetType;
+  targetId: string;
+  reasonType: ForumReportReasonType;
+  description?: string;
 }
