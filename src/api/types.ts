@@ -245,8 +245,8 @@ export interface MentorServiceItem {
   description?: string;
   durationMinutes: number;
   free: boolean;
-  priceAmount?: number;
-  currency?: string;
+  /** Giá dịch vụ theo SCoin (BE mới). 0 nghĩa là miễn phí. */
+  priceScoin?: number;
   active: boolean;
   helpTopics?: MentorTag[];
 }
@@ -300,8 +300,8 @@ export interface AvailabilitySlotServiceBasic {
   title: string;
   durationMinutes: number;
   isFree: boolean;
-  priceAmount?: number;
-  currency?: string;
+  /** Giá dịch vụ theo SCoin (BE mới). 0 nghĩa là miễn phí. */
+  priceScoin?: number;
 }
 
 /**
@@ -379,7 +379,9 @@ export interface Booking {
   serviceDescriptionSnapshot?: string;
   serviceExpectedOutcomeSnapshot?: string;
   serviceDurationSnapshot?: number;
-  serviceCurrencySnapshot?: string;
+  serviceIsFreeSnapshot?: boolean;
+  /** Snapshot giá dịch vụ theo SCoin (BE mới). */
+  servicePriceScoinSnapshot?: number;
   learningGoalTitle?: string;
   learningGoalDescription?: string;
   mentorResponseNote?: string;
@@ -549,7 +551,7 @@ export interface Conversation {
 }
 
 /**
- * Payload realtime đẩy qua WebSocket (/user/queue/messages) — khớp ChatMessageEvent của BE.
+ * Payload realtime trong envelope CHAT_MESSAGE_CREATED của raw WebSocket — khớp ChatMessageEvent của BE.
  * Lưu ý: KHÔNG có `isMine`; FE tự suy ra bằng cách so senderId với user hiện tại.
  */
 export interface ChatMessageEvent {
@@ -573,4 +575,143 @@ export interface ChatMessage {
   createdAt?: string;
   /** True nếu tin nhắn do user hiện tại gửi. */
   isMine: boolean;
+}
+
+// =====================================================================
+// Payment / Wallet / Payout (module payment BE mới — PayOS, SCoin)
+// =====================================================================
+
+/** Trạng thái payment order — khớp PaymentOrderStatus của BE. */
+export type PaymentOrderStatus =
+  | 'PENDING'
+  | 'PARTIALLY_COVERED_BY_CREDIT'
+  | 'AWAITING_PROVIDER_PAYMENT'
+  | 'PAID'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'EXPIRED';
+
+export type PaymentProvider = 'PAYOS';
+
+/** Kết quả checkout / trạng thái payment order — khớp PaymentCheckoutResponse của BE. */
+export interface PaymentCheckout {
+  paymentOrderId: string;
+  orderCode: string;
+  bookingId: string;
+  attemptNo?: number;
+  /** Giá gốc dịch vụ (SCoin). */
+  basePriceScoin?: number;
+  couponDiscountScoin?: number;
+  campaignCreditAppliedScoin?: number;
+  userCreditAppliedScoin?: number;
+  /** Số SCoin còn phải trả qua cổng thanh toán. */
+  remainingPayableScoin?: number;
+  /** Số tiền VND tương ứng còn phải trả qua PayOS. */
+  remainingPayableVnd?: number;
+  status: PaymentOrderStatus;
+  paymentProvider?: PaymentProvider;
+  providerOrderCode?: string;
+  providerPaymentLinkId?: string;
+  providerStatus?: string;
+  /** URL PayOS để redirect người dùng sang thanh toán. */
+  checkoutUrl?: string;
+  paymentLink?: string;
+  expiresAt?: string;
+}
+
+/** Trạng thái payout request — khớp PayoutRequestStatus của BE. */
+export type PayoutRequestStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PAID' | 'CANCELLED';
+
+/** Payout profile (tài khoản nhận tiền) của mentor — khớp MentorPayoutProfileResponse. */
+export interface MentorPayoutProfile {
+  payoutProfileId: string;
+  mentorUserId?: string;
+  accountHolderName: string;
+  bankCode?: string;
+  bankName: string;
+  accountNumberMasked?: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Payload tạo/cập nhật payout profile — khớp MentorPayoutProfileUpsertRequest. */
+export interface MentorPayoutProfilePayload {
+  accountHolderName: string;
+  bankCode?: string;
+  bankName: string;
+  accountNumber: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+}
+
+/** Payout request của mentor — khớp PayoutRequestResponse. */
+export interface PayoutRequest {
+  payoutRequestId: string;
+  mentorUserId?: string;
+  settlementAccountId?: string;
+  payoutProfileId?: string;
+  amountScoin: number;
+  status: PayoutRequestStatus;
+  bankAccountNameSnapshot?: string;
+  bankNameSnapshot?: string;
+  bankAccountNumberMaskedSnapshot?: string;
+  adminUserId?: string;
+  adminNote?: string;
+  requestedAt?: string;
+  reviewedAt?: string;
+  approvedAt?: string;
+  paidAt?: string;
+  rejectedAt?: string;
+}
+
+/** Payload tạo payout request — khớp PayoutRequestCreateRequest. */
+export interface PayoutRequestPayload {
+  amountScoin: number;
+  payoutProfileId?: string;
+  note?: string;
+}
+
+// =====================================================================
+// Wallet (ví Scoin mentee + settlement earnings mentor) — endpoint BE mới
+// =====================================================================
+
+/** Loại bút toán sổ cái — khớp LedgerEntryType của BE. */
+export type LedgerEntryType =
+  | 'ISSUE' | 'RESERVE' | 'CONSUME' | 'RELEASE' | 'REFUND'
+  | 'ADJUSTMENT' | 'HOLD' | 'PAID_OUT' | 'COMMISSION' | 'VOID';
+
+/** Nguồn phát sinh giao dịch — khớp LedgerSourceType của BE. */
+export type LedgerSourceType =
+  | 'PAYMENT_ORDER' | 'BOOKING' | 'CAMPAIGN' | 'COUPON' | 'MANUAL' | 'PAYOUT_REQUEST' | 'REFUND';
+
+/** Một giao dịch ví — khớp WalletTransactionResponse. */
+export interface WalletTransaction {
+  id: string;
+  entryType: LedgerEntryType;
+  originType?: CreditOriginType;
+  sourceType?: LedgerSourceType;
+  sourceId?: string;
+  amountScoin: number;
+  /** Ảnh hưởng số dư, có dấu: > 0 cộng vào ví, < 0 trừ ra. */
+  balanceEffectScoin: number;
+  memo?: string;
+  createdAt?: string;
+}
+
+/** Nguồn gốc credit của mentee — khớp CreditOriginType của BE. */
+export type CreditOriginType =
+  | 'CAMPAIGN_BONUS' | 'COUPON_BONUS' | 'REFUND' | 'MANUAL' | 'PAYMENT_RESERVATION';
+
+/** Ví Scoin của mentee — khớp CreditWalletResponse (GET /api/me/credit-wallet). */
+export interface CreditWallet {
+  availableScoin: number;
+  recentTransactions: WalletTransaction[];
+}
+
+/** Ví settlement earnings của mentor — khớp MentorWalletResponse (GET /api/me/mentor-wallet). */
+export interface MentorWallet {
+  availableScoin: number;
+  recentTransactions: WalletTransaction[];
 }

@@ -1,10 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Bookmark, Calendar, Clock, Video, Check, X, Star, MessageSquare, Smile, Loader2, AlertCircle,
+  Bookmark, Calendar, Clock, Video, Check, X, Star, MessageSquare, Smile, Loader2, AlertCircle, Coins,
 } from 'lucide-react';
 import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
+import { PaymentModal } from '../components/PaymentModal';
 import type { Booking, BookingStatus, MeetingPlatform } from '../api/types';
+
+/** Service có thu phí (cần thanh toán) khi không free và giá SCoin > 0. */
+const isPaidBooking = (b: Booking) =>
+  b.serviceIsFreeSnapshot === false && (b.servicePriceScoinSnapshot ?? 0) > 0;
 
 /* ---------------------------------------------------------------------------
  * "Lịch của tôi" hợp nhất 2 luồng: lịch mình DẠY (role=MENTOR) và lịch mình
@@ -98,6 +103,9 @@ export const MyBookings: React.FC = () => {
   const [satisfactionNote, setSatisfactionNote] = useState('');
   const [publicComment, setPublicComment] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+
+  // Booking mentee đang mở modal thanh toán PayOS.
+  const [payBooking, setPayBooking] = useState<Booking | null>(null);
 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const flashSuccess = (msg: string, duration = 3000) => {
@@ -527,6 +535,14 @@ export const MyBookings: React.FC = () => {
 
                         {b.status === 'ACCEPTED' && (
                           <div className="flex flex-wrap gap-2 justify-end">
+                            {isPaidBooking(b) && (
+                              <button
+                                onClick={() => setPayBooking(b)}
+                                className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95"
+                              >
+                                <Coins className="w-3.5 h-3.5" /> Thanh toán {(b.servicePriceScoinSnapshot ?? 0).toLocaleString('vi-VN')} SCoin
+                              </button>
+                            )}
                             {b.meetingLink ? (
                               <a
                                 href={b.meetingLink}
@@ -599,6 +615,17 @@ export const MyBookings: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Payment Modal (mentee thanh toán booking qua PayOS) */}
+      {payBooking && (
+        <PaymentModal
+          bookingId={payBooking.bookingId}
+          serviceTitle={payBooking.serviceTitle}
+          basePriceScoin={payBooking.servicePriceScoinSnapshot}
+          onClose={() => setPayBooking(null)}
+          onPaid={() => { setPayBooking(null); flashSuccess('Thanh toán thành công!'); load(); }}
+        />
       )}
 
       {/* Meet Link Modal (chấp nhận dạy) */}

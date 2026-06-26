@@ -80,7 +80,7 @@ export const CourseManagement: React.FC = () => {
   const [description, setDescription] = useState('');
   const [outcomesText, setOutcomesText] = useState(''); // newline separated
   const [isFree, setIsFree] = useState(true);
-  const [priceAmount, setPriceAmount] = useState<number>(0);
+  const [priceScoin, setPriceScoin] = useState<number>(0);
 
   // Validation & Notifications
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -153,7 +153,7 @@ export const CourseManagement: React.FC = () => {
     if (!subjectCode.trim()) newErrors.subjectCode = 'Vui lòng nhập mã môn học.';
     if (!topicId) newErrors.topicId = 'Vui lòng chọn chủ đề.';
     if (!description.trim()) newErrors.description = 'Vui lòng nhập mô tả khóa học.';
-    if (!isFree && priceAmount <= 0) newErrors.priceAmount = 'Vui lòng nhập số Point lớn hơn 0.';
+    if (!isFree && priceScoin <= 0) newErrors.priceScoin = 'Vui lòng nhập số Point lớn hơn 0.';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -169,7 +169,7 @@ export const CourseManagement: React.FC = () => {
     setDescription('');
     setOutcomesText('');
     setIsFree(true);
-    setPriceAmount(0);
+    setPriceScoin(0);
     setErrors({});
     setShowModal(true);
   };
@@ -188,7 +188,7 @@ export const CourseManagement: React.FC = () => {
     setDescription(cleanDesc);
     setOutcomesText(outcomes.join('\n'));
     setIsFree(course.free !== undefined ? course.free : (course as any).isFree);
-    setPriceAmount(course.priceAmount || 0);
+    setPriceScoin(course.priceScoin || 0);
     setErrors({});
     setShowModal(true);
   };
@@ -210,7 +210,7 @@ export const CourseManagement: React.FC = () => {
       description: fullDescription,
       durationMinutes: sessionDuration,
       isFree: isFree,
-      priceAmount: isFree ? 0 : priceAmount,
+      priceScoin: isFree ? 0 : priceScoin,
       helpTopicIds: [topicId],
     };
 
@@ -471,7 +471,7 @@ export const CourseManagement: React.FC = () => {
                       ) : (
                         <>
                           <Coins className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-amber-600 font-bold">{course.priceAmount} Point</span>
+                          <span className="text-amber-600 font-bold">{course.priceScoin} Point</span>
                         </>
                       )}
                     </span>
@@ -634,7 +634,7 @@ export const CourseManagement: React.FC = () => {
                     onChange={(e) => {
                       const val = e.target.value === 'free';
                       setIsFree(val);
-                      if (val) setPriceAmount(0);
+                      if (val) setPriceScoin(0);
                     }}
                     className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
                   >
@@ -652,14 +652,14 @@ export const CourseManagement: React.FC = () => {
                     type="number"
                     min={1}
                     required
-                    value={priceAmount}
-                    onChange={(e) => { setPriceAmount(Number(e.target.value)); if(errors.priceAmount) setErrors({...errors, priceAmount: ''}); }}
+                    value={priceScoin}
+                    onChange={(e) => { setPriceScoin(Number(e.target.value)); if(errors.priceScoin) setErrors({...errors, priceScoin: ''}); }}
                     className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                      errors.priceAmount ? 'border-danger/60 focus:border-danger' : 'border-line'
+                      errors.priceScoin ? 'border-danger/60 focus:border-danger' : 'border-line'
                     }`}
                     placeholder="Nhập số Point (VD: 10)"
                   />
-                  {errors.priceAmount && <p className="text-meta text-danger font-semibold mt-1">{errors.priceAmount}</p>}
+                  {errors.priceScoin && <p className="text-meta text-danger font-semibold mt-1">{errors.priceScoin}</p>}
                 </div>
               )}
 

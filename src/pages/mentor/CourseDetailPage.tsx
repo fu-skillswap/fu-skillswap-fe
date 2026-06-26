@@ -69,7 +69,7 @@ export const CourseDetailPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [outcomesText, setOutcomesText] = useState('');
   const [isFree, setIsFree] = useState(true);
-  const [priceAmount, setPriceAmount] = useState<number>(0);
+  const [priceScoin, setPriceScoin] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Confirm delete state
@@ -159,7 +159,7 @@ export const CourseDetailPage: React.FC = () => {
     setDescription(cleanDesc);
     setOutcomesText(outcomes.join('\n'));
     setIsFree(course.free);
-    setPriceAmount(course.priceAmount || 0);
+    setPriceScoin(course.priceScoin || 0);
     setErrors({});
     setShowEditModal(true);
   };
@@ -170,7 +170,7 @@ export const CourseDetailPage: React.FC = () => {
     if (!subjectCode.trim()) newErrors.subjectCode = 'Vui lòng nhập mã môn học.';
     if (!topicId) newErrors.topicId = 'Vui lòng chọn chủ đề.';
     if (!description.trim()) newErrors.description = 'Vui lòng nhập mô tả khóa học.';
-    if (!isFree && priceAmount <= 0) newErrors.priceAmount = 'Vui lòng nhập số Point lớn hơn 0.';
+    if (!isFree && priceScoin <= 0) newErrors.priceScoin = 'Vui lòng nhập số Point lớn hơn 0.';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -193,7 +193,7 @@ export const CourseDetailPage: React.FC = () => {
       description: fullDescription,
       durationMinutes: sessionDuration,
       isFree: isFree,
-      priceAmount: isFree ? 0 : priceAmount,
+      priceScoin: isFree ? 0 : priceScoin,
       helpTopicIds: [topicId],
     };
 
@@ -361,7 +361,7 @@ export const CourseDetailPage: React.FC = () => {
                     </span>
                   ) : (
                     <span className="bg-[#FFF7ED] text-[#D97706] border border-[#FED7AA] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
-                      <Coins className="w-3.5 h-3.5 text-[#D97706]" /> {course.priceAmount} Point
+                      <Coins className="w-3.5 h-3.5 text-[#D97706]" /> {course.priceScoin} Point
                     </span>
                   )}
                 </span>
@@ -529,7 +529,7 @@ export const CourseDetailPage: React.FC = () => {
                     onChange={(e) => {
                       const val = e.target.value === 'free';
                       setIsFree(val);
-                      if (val) setPriceAmount(0);
+                      if (val) setPriceScoin(0);
                     }}
                     className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
                   >
@@ -546,13 +546,13 @@ export const CourseDetailPage: React.FC = () => {
                     type="number"
                     min={1}
                     required
-                    value={priceAmount}
-                    onChange={(e) => { setPriceAmount(Number(e.target.value)); if(errors.priceAmount) setErrors({...errors, priceAmount: ''}); }}
+                    value={priceScoin}
+                    onChange={(e) => { setPriceScoin(Number(e.target.value)); if(errors.priceScoin) setErrors({...errors, priceScoin: ''}); }}
                     className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                      errors.priceAmount ? 'border-danger/60 focus:border-danger' : 'border-line'
+                      errors.priceScoin ? 'border-danger/60 focus:border-danger' : 'border-line'
                     }`}
                   />
-                  {errors.priceAmount && <p className="text-meta text-danger font-semibold mt-1">{errors.priceAmount}</p>}
+                  {errors.priceScoin && <p className="text-meta text-danger font-semibold mt-1">{errors.priceScoin}</p>}
                 </div>
               )}
 

@@ -23,6 +23,10 @@ import AdminMentorVerificationDetailPage from './pages/admin/mentor-verification
 import { AvailabilitySlots } from './pages/mentor/AvailabilitySlots';
 import { CourseManagement } from './pages/mentor/CourseManagement';
 import { CourseDetailPage } from './pages/mentor/CourseDetailPage';
+import { MentorPayout } from './pages/mentor/MentorPayout';
+
+// Payment landing (PayOS redirect)
+import { PaymentReturn } from './pages/PaymentReturn';
 
 // Lịch của tôi (hợp nhất mentor + mentee)
 import { MyBookings } from './pages/MyBookings';
@@ -68,6 +72,11 @@ function App() {
             <Route path="/mentor/slots" element={<AvailabilitySlots />} />
             <Route path="/mentor/courses" element={<CourseManagement />} />
             <Route path="/mentor/courses/:serviceId" element={<CourseDetailPage />} />
+            <Route path="/mentor/payout" element={<MentorPayout />} />
+
+            {/* Payment landing sau khi PayOS redirect về */}
+            <Route path="/payment/return" element={<PaymentReturn />} />
+            <Route path="/payment/cancel" element={<PaymentReturn />} />
             {/* Hồ sơ + xác thực mentor đã gộp vào tab "Hồ sơ Mentor" trong /profile */}
             <Route path="/mentor/profile-setup" element={<Navigate to="/profile" replace />} />
             <Route path="/mentor/verification" element={<Navigate to="/profile" replace />} />

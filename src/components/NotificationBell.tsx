@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCheck, Loader2, BellOff } from 'lucide-react';
 import { notificationsApi } from '../api/notifications';
+import { chatSocket } from '../lib/chatSocket';
 import type { NotificationItem } from '../api/types';
 
 /** Thời gian tương đối ngắn gọn cho item thông báo. */
@@ -59,12 +60,22 @@ export const NotificationBell: React.FC = () => {
     }
   }, []);
 
-  // Badge: tải lần đầu + poll mỗi 30s.
+  // Badge: tải lần đầu + poll mỗi 30s (fallback nếu socket rớt).
   useEffect(() => {
     loadUnread();
     const t = setInterval(loadUnread, 30000);
     return () => clearInterval(t);
   }, [loadUnread]);
+
+  // Realtime: BE đẩy NEW_NOTIFICATION qua WebSocket -> cập nhật badge + danh sách ngay.
+  useEffect(() => {
+    chatSocket.connect();
+    const off = chatSocket.onNotification((n) => {
+      setUnread((c) => c + 1);
+      setItems((prev) => [n, ...prev.filter((it) => it.notificationId !== n.notificationId)]);
+    });
+    return off;
+  }, []);
 
   // Đóng khi click ra ngoài.
   useEffect(() => {
