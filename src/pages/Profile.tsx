@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useImageUpload } from '../hooks/useImageUpload';
 import { MentorPanel } from './mentor/MentorPanel';
+import { CreditWalletBadge } from '../components/CreditWalletBadge';
 
 // ---------- building blocks (view mode) ----------
 const MetaItem: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
@@ -373,6 +374,9 @@ export const Profile: React.FC = () => {
               <p className="text-body font-bold text-brand-text">{studentCode || 'Chưa cập nhật'}</p>
             </div>
           </div>
+
+          {/* Số dư ví SCoin (chỉ hiện với mentee) */}
+          <CreditWalletBadge variant="card" />
         </div>
 
         {/* Form Editors */}
