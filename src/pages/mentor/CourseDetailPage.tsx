@@ -158,7 +158,7 @@ export const CourseDetailPage: React.FC = () => {
     setSessionDuration(course.durationMinutes);
     setDescription(course.description || '');
     setOutcomesText(course.expectedOutcome || '');
-    setIsFree(course.free);
+    setIsFree(course.free !== undefined ? course.free : (course as any).isFree !== undefined ? (course as any).isFree : true);
     setPriceScoin(course.priceScoin || 0);
     setErrors({});
     setShowEditModal(true);
@@ -216,8 +216,9 @@ export const CourseDetailPage: React.FC = () => {
       triggerToast('Đã xóa khóa học thành công!', 'success');
       setShowDeleteConfirm(false);
       setTimeout(() => navigate('/mentor/courses'), 1500);
-    } catch (err) {
-      triggerToast('Xóa khóa học thất bại.', 'danger');
+    } catch (err: any) {
+      const detailMsg = getErrorMessage(err) || 'Xóa khóa học thất bại.';
+      triggerToast(detailMsg, 'danger');
       setLoading(false);
     }
   };
@@ -349,7 +350,7 @@ export const CourseDetailPage: React.FC = () => {
               <div className="flex justify-between items-center py-2.5 border-b border-line-soft">
                 <span className="text-[11px] font-bold tracking-wider text-gray-500 uppercase">Chi phí</span>
                 <span>
-                  {course.free ? (
+                  {(course.free !== undefined ? course.free : (course as any).isFree) ? (
                     <span className="bg-green-50 text-green-700 border border-green-200/50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-green-600" /> Miễn phí (Dạy chéo)
                     </span>
