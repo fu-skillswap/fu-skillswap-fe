@@ -298,20 +298,30 @@ export const AvailabilitySlots: React.FC = () => {
                             </div>
                             
                             {open && (
-                              <div className="mt-1.5 space-y-1">
+                              <div className="mt-2 space-y-1.5">
                                 {services
                                   .filter(sv => sel.includes(sv.serviceId))
-                                  .slice(0, 2)
-                                  .map(sv => (
-                                    <div key={sv.serviceId} className="text-[9px] font-extrabold text-primary bg-primary-soft/60 px-1 rounded truncate inline-block max-w-full mr-1 leading-snug">
-                                      {getSubjectCode(sv.title) || sv.title}
-                                    </div>
-                                  ))}
-                                {sel.length > 2 && (
-                                  <div className="text-[8px] text-fg-muted font-bold block italic">
-                                    + {sel.length - 2} môn khác
-                                  </div>
-                                )}
+                                  .map(sv => {
+                                    const code = getSubjectCode(sv.title);
+                                    const displayTitle = code 
+                                      ? sv.title.replace(/^\[.*?\]\s*/, '')
+                                      : sv.title;
+                                      
+                                    return (
+                                      <div 
+                                        key={sv.serviceId} 
+                                        className="w-full text-[9px] font-extrabold text-primary bg-primary-soft/80 border border-primary/20 px-2 py-1 rounded truncate block shadow-xs leading-normal"
+                                        title={sv.title}
+                                      >
+                                        {code && (
+                                          <span className="bg-primary text-white text-[8px] font-black px-1.5 py-0.5 rounded mr-1 inline-block uppercase">
+                                            {code}
+                                          </span>
+                                        )}
+                                        {displayTitle}
+                                      </div>
+                                    );
+                                  })}
                               </div>
                             )}
                           </div>
