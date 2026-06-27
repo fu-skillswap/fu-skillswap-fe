@@ -12,7 +12,7 @@ import { getVerificationQueue, type AdminVerificationQueueItem } from '@/lib/api
 export default function AdminMentorVerificationQueuePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.roles?.includes('ADMIN') ?? false;
+  const isAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('SYSTEM_ADMIN') || false;
 
   const [loading, setLoading] = useState(true);
   const [queue, setQueue] = useState<AdminVerificationQueueItem[]>([]);

@@ -18,7 +18,7 @@ const fmtDate = (iso?: string) => {
 export const MentorList: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isAdmin = user?.roles?.includes('ADMIN') ?? false;
+  const isAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('SYSTEM_ADMIN') || false;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

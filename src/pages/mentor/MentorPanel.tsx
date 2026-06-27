@@ -19,10 +19,6 @@ const PHONE_RE = /^(0)(3|5|7|8|9)[0-9]{8}$/;
 // ---------------------------------------------------------------------------
 // Cấu hình hiển thị
 // ---------------------------------------------------------------------------
-const DOC_TYPES: Record<DocumentType, string> = {
-  FPTU_AFFILIATION_PROOF: 'Minh chứng liên kết FPTU',
-  EXPERTISE_PROOF: 'Minh chứng chuyên môn',
-};
 
 const STATUS_META: Record<VerificationStatus, { label: string; cls: string; icon: React.ReactNode }> = {
   DRAFT: { label: 'Bản nháp', cls: 'bg-surface-muted text-fg-muted border-line', icon: <FileText className="w-3.5 h-3.5" /> },
@@ -180,6 +176,15 @@ const WizardSteps: React.FC<{ step: 1 | 2 | 3 }> = ({ step }) => {
   );
 };
 
+// Trích xuất thông báo lỗi từ API và ánh xạ thông báo lỗi gây hiểu nhầm
+const getErrorMessage = (err: any, fallback: string): string => {
+  const msg = err.response?.data?.message || err.message;
+  if (msg === 'Tài khoản của bạn đã bị khóa') {
+    return 'Hồ sơ đang trong quá trình phê duyệt';
+  }
+  return msg || fallback;
+};
+
 // ---------------------------------------------------------------------------
 export const MentorPanel: React.FC = () => {
   const [checked, setChecked] = useState(false);
@@ -207,7 +212,7 @@ export const MentorPanel: React.FC = () => {
   const clearPErr = (k: string) => setProfileErrors((prev) => (prev[k] ? { ...prev, [k]: '' } : prev));
 
   // Document upload controls
-  const [docType, setDocType] = useState<DocumentType>('FPTU_AFFILIATION_PROOF');
+  const [uploadingType, setUploadingType] = useState<DocumentType | null>(null);
   const [submitNote, setSubmitNote] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -292,7 +297,7 @@ export const MentorPanel: React.FC = () => {
         }
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Không tải được hồ sơ mentor.');
+      setError(getErrorMessage(err, 'Không tải được hồ sơ mentor.'));
     } finally {
       setChecked(true);
       setLoading(false);
@@ -381,7 +386,7 @@ export const MentorPanel: React.FC = () => {
       setReq(r);
       flash('Đã tạo hồ sơ — hãy hoàn thiện thông tin bên dưới.');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Không thể đăng ký làm mentor lúc này.');
+      setError(getErrorMessage(err, 'Không thể đăng ký làm mentor lúc này.'));
     } finally {
       setBusy(false);
     }
@@ -397,7 +402,7 @@ export const MentorPanel: React.FC = () => {
       flash('Đã tạo hồ sơ xác thực mới.');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Tạo hồ sơ mới thất bại.');
+      setError(getErrorMessage(err, 'Tạo hồ sơ mới thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -417,7 +422,7 @@ export const MentorPanel: React.FC = () => {
         setReq(r);
       } catch { /* giữ req hiện tại nếu fetch lỗi */ }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Lưu bản nháp thất bại.');
+      setError(getErrorMessage(err, 'Lưu bản nháp thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -433,10 +438,22 @@ export const MentorPanel: React.FC = () => {
       const r = await mentorVerificationApi.submit({ submitNote, termsAccepted: true });
       setReq(r);
       clearDraft();
+      // Dispatch sự kiện hiển thị Toast thông báo nổi
+      window.dispatchEvent(new CustomEvent('push-toast', {
+        detail: {
+          title: 'Nộp hồ sơ thành công',
+          message: '🎉 Hồ sơ của bạn đã được nộp thành công và đang chờ admin duyệt.',
+          type: 'BOOKING_ACCEPTED'
+        }
+      }));
+
+      // Yêu cầu quả chuông tải lại danh sách thông báo và số đếm chưa đọc từ API
+      window.dispatchEvent(new Event('refresh-notifications'));
+
       flash('🎉 Đã nộp hồ sơ thành công! Hồ sơ đang chờ admin duyệt.', 6000);
       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Nộp hồ sơ thất bại.');
+      setError(getErrorMessage(err, 'Nộp hồ sơ thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -454,7 +471,7 @@ export const MentorPanel: React.FC = () => {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleUpload = async (file?: File) => {
+  const handleUpload = async (type: DocumentType, file?: File) => {
     if (!req || !file) return;
     setUploadError(null);
 
@@ -470,8 +487,9 @@ export const MentorPanel: React.FC = () => {
     }
 
     setUploading(true);
+    setUploadingType(type);
     try {
-      const doc = await mentorVerificationApi.uploadDocument({ documentType: docType, file });
+      const doc = await mentorVerificationApi.uploadDocument({ documentType: type, file });
       // cập nhật lạc quan + làm mới ngầm (giữ nguyên vị trí cuộn, không remount panel)
       setReq((prev) => (prev ? { ...prev, documents: [...prev.documents, doc] } : prev));
       flash('Đã tải lên minh chứng.');
@@ -483,6 +501,7 @@ export const MentorPanel: React.FC = () => {
       );
     } finally {
       setUploading(false);
+      setUploadingType(null);
     }
   };
 
@@ -512,7 +531,7 @@ export const MentorPanel: React.FC = () => {
       clearDraft();
       flash('Đã rút hồ sơ.');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Rút hồ sơ thất bại.');
+      setError(getErrorMessage(err, 'Rút hồ sơ thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -527,7 +546,7 @@ export const MentorPanel: React.FC = () => {
       flash('Đã lưu thay đổi hồ sơ mentor.');
       setEditingApproved(false);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Lưu thay đổi thất bại.');
+      setError(getErrorMessage(err, 'Lưu thay đổi thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -585,7 +604,7 @@ export const MentorPanel: React.FC = () => {
   };
 
   const resolvedHelpTopics = helpTopicIds.map((id) => helpTopicsCatalog.find((t) => t.id === id)).filter((t): t is HelpTopic => !!t);
-  const supportingTags = supportingSubjects.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
+  const supportingTags = supportingSubjects.split(/[\n,;\r]+/).map((s) => s.trim()).filter(Boolean);
   // Số tối đa hiển thị = min(giới hạn BE, số chủ đề thực có) để không hiện "/20" khi catalog ít hơn.
   const helpMax = Math.min(HELP_TOPICS_MAX, helpTopicsCatalog.length || HELP_TOPICS_MAX);
 
@@ -611,8 +630,8 @@ export const MentorPanel: React.FC = () => {
           </div>
           <div>
             <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Môn học hỗ trợ ({supportingSubjects.length}/{SUPPORTING_MAX}, không bắt buộc)</label>
-            <textarea rows={2} maxLength={SUPPORTING_MAX} value={supportingSubjects} onChange={(e) => { setSupportingSubjects(e.target.value); clearPErr('supportingSubjects'); }}
-              placeholder="Ví dụ: PRJ301, SWP391, EXE101..."
+            <textarea rows={3} maxLength={SUPPORTING_MAX} value={supportingSubjects} onChange={(e) => { setSupportingSubjects(e.target.value); clearPErr('supportingSubjects'); }}
+              placeholder={"Nhập mỗi môn một dòng (Xuống dòng để phân tách).\nVí dụ:\nPRJ301\nSWP391\nEXE101"}
               className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
             <ErrorBubble msg={profileErrors.supportingSubjects} />
           </div>
@@ -893,8 +912,8 @@ export const MentorPanel: React.FC = () => {
               <DocumentsCard
                 docs={docs}
                 canUpload={!!allowedActions?.canUploadDocuments}
-                docType={docType} setDocType={setDocType}
                 uploading={uploading}
+                uploadingType={uploadingType}
                 uploadError={uploadError}
                 onUpload={handleUpload} onDelete={handleDelete}
               />
@@ -971,84 +990,199 @@ const DocumentsCard: React.FC<{
   docs: VerificationRequest['documents'];
   canUpload: boolean;
   uploading?: boolean;
+  uploadingType?: DocumentType | null;
   uploadError?: string | null;
-  docType?: DocumentType; setDocType?: (v: DocumentType) => void;
-  onUpload?: (file?: File) => void; onDelete?: (id: string) => void;
-}> = ({ docs, canUpload, uploading, uploadError, docType, setDocType, onUpload, onDelete }) => (
-  <div className="meetmind-card p-6 rounded-card space-y-4">
-    <div className="flex items-center justify-between border-b border-line-soft pb-2.5">
-      <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Paperclip className="w-5 h-5 text-primary" /> Minh chứng</h3>
-      <span className="text-meta font-bold text-fg-muted">{docs.length} tệp</span>
-    </div>
+  onUpload?: (type: DocumentType, file?: File) => void;
+  onDelete?: (id: string) => void;
+}> = ({ docs, canUpload, uploading, uploadingType, uploadError, onUpload, onDelete }) => {
+  const cardConfigs: {
+    type: DocumentType;
+    title: string;
+    desc: string;
+    required: boolean;
+  }[] = [
+    {
+      type: 'FPTU_AFFILIATION_PROOF',
+      title: 'Minh chứng liên kết FPTU',
+      desc: 'Thẻ sinh viên, bảng điểm hoặc email FPTU — bắt buộc.',
+      required: true,
+    },
+    {
+      type: 'EXPERTISE_PROOF',
+      title: 'Minh chứng chuyên môn',
+      desc: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — giúp duyệt nhanh hơn.',
+      required: false,
+    },
+  ];
 
-    {/* Khu vực tải lên đặt LÊN TRÊN; danh sách/empty hiển thị bên dưới */}
-    {canUpload && setDocType && onUpload && (
-      <div className="space-y-3">
-        <div>
-          <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Loại minh chứng</label>
-          <select value={docType} onChange={(e) => setDocType(e.target.value as DocumentType)} disabled={uploading} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold disabled:opacity-60">
-            {Object.entries(DOC_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-        </div>
-        <label className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-field py-8 transition-all group ${uploading ? 'border-primary/40 text-primary cursor-wait' : 'border-line text-fg-muted hover:text-primary hover:border-primary/40 cursor-pointer'}`}>
-          {uploading ? (
-            <>
-              <span className="w-11 h-11 rounded-card bg-primary-soft text-primary flex items-center justify-center"><UploadCloud className="w-5 h-5 animate-pulse" /></span>
-              <span className="text-body font-bold text-fg">Đang tải lên minh chứng...</span>
-              <span className="w-40 h-1.5 rounded-full bg-surface-muted overflow-hidden mt-1">
-                <span className="block h-full w-2/3 bg-primary rounded-full animate-pulse" />
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="w-11 h-11 rounded-card bg-primary-soft text-primary flex items-center justify-center group-hover:scale-105 transition-transform"><UploadCloud className="w-5 h-5" /></span>
-              <span className="text-body font-bold text-fg">Kéo thả tệp vào đây, hoặc <span className="text-primary">chọn từ máy</span></span>
-              <span className="text-meta text-fg-faint font-medium">JPG, PNG hoặc PDF · tối đa 5MB</span>
-            </>
-          )}
-          <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; onUpload(f); }} />
-        </label>
-
-        {/* Lỗi tải lên — box callout nổi ngay dưới nút tải (kiểu ô vuông đỏ dấu !, đuôi chỉ lên) */}
-        <ErrorBubble msg={uploadError} />
+  return (
+    <div className="meetmind-card p-6 rounded-card space-y-5">
+      <div className="flex items-center justify-between border-b border-line-soft pb-2.5">
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2">
+          <Paperclip className="w-5 h-5 text-primary" /> Minh chứng xác thực
+        </h3>
+        <span className="text-meta font-bold text-fg-muted">{docs.length} tệp đã tải lên</span>
       </div>
-    )}
 
-    {/* Chỉ mở rộng hiển thị danh sách khi ĐÃ có minh chứng (bỏ ô "chưa có minh chứng nào") */}
-    {docs.length > 0 && (
-      <div className="space-y-2.5">
-        {docs.map((d) => {
-        const isImg = d.contentType?.startsWith('image');
-        const sizeKb = d.sizeBytes ? Math.max(1, Math.round(d.sizeBytes / 1024)) : undefined;
-        return (
-          <div key={d.id} className="flex items-center gap-3.5 bg-surface border border-line rounded-field p-3 transition-all hover:border-primary/30">
-            {isImg && d.fileUrl ? (
-              <a href={d.fileUrl} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-field overflow-hidden shrink-0 border border-line bg-surface-muted">
-                <img src={d.fileUrl} alt={d.originalFilename} className="w-full h-full object-cover" />
-              </a>
-            ) : (
-              <div className={`w-12 h-12 rounded-field flex items-center justify-center shrink-0 ${isImg ? 'bg-accent/12 text-accent' : 'bg-danger/10 text-danger'}`}>
-                {isImg ? <ImageIcon className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {cardConfigs.map(({ type, title, desc, required }) => {
+          const typeDocs = docs.filter((d) => d.documentType === type);
+          const hasDoc = typeDocs.length > 0;
+          const isUploadingThis = uploading && uploadingType === type;
+
+          return (
+            <div
+              key={type}
+              className={`border rounded-card p-5 flex flex-col justify-between transition-all duration-300 ${
+                hasDoc
+                  ? 'border-success/30 bg-success/5 shadow-sm'
+                  : required
+                  ? 'border-amber-500/30 bg-amber-500/5'
+                  : 'border-line bg-surface'
+              }`}
+            >
+              {/* Header của thẻ minh chứng */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  {/* Ô check hiển thị trạng thái đã nộp */}
+                  <div
+                    className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                      hasDoc
+                        ? 'bg-success border-success text-white'
+                        : required
+                        ? 'border-amber-500/50 bg-amber-500/10 text-amber-600'
+                        : 'border-line bg-surface-muted text-fg-faint'
+                    }`}
+                  >
+                    {hasDoc && <Check className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <h4 className="text-body font-bold text-fg leading-snug">{title}</h4>
+                    <span
+                      className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded mt-1.5 inline-block ${
+                        hasDoc
+                          ? 'bg-success/15 text-success'
+                          : required
+                          ? 'bg-amber-500/15 text-amber-700'
+                          : 'bg-surface-muted text-fg-muted border border-line-soft'
+                      }`}
+                    >
+                      {hasDoc ? 'Đã tải lên' : required ? 'Bắt buộc' : 'Tùy chọn'}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                {d.fileUrl
-                  ? <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-body font-bold text-fg truncate hover:text-primary hover:underline">{d.originalFilename}</a>
-                  : <p className="text-body font-bold text-fg truncate">{d.originalFilename}</p>}
-              </div>
-              <p className="text-meta text-fg-muted font-medium mt-0.5">{DOC_TYPES[d.documentType]}{sizeKb ? ` · ${sizeKb} KB` : ''}</p>
+
+              {/* Mô tả chi tiết về loại minh chứng */}
+              <p className="text-meta text-fg-muted font-medium mt-3.5 leading-relaxed min-h-[40px]">
+                {desc}
+              </p>
+
+              {/* Danh sách tệp đã tải lên thuộc loại này */}
+              {typeDocs.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-line-soft space-y-2">
+                  {typeDocs.map((d) => {
+                    const isImg = d.contentType?.startsWith('image');
+                    const sizeKb = d.sizeBytes ? Math.max(1, Math.round(d.sizeBytes / 1024)) : undefined;
+                    return (
+                      <div
+                        key={d.id}
+                        className="flex items-center gap-2.5 bg-surface border border-line rounded-field p-2 transition-all hover:border-primary/30"
+                      >
+                        {isImg && d.fileUrl ? (
+                          <a
+                            href={d.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-10 h-10 rounded-field overflow-hidden shrink-0 border border-line bg-surface-muted"
+                          >
+                            <img src={d.fileUrl} alt={d.originalFilename} className="w-full h-full object-cover" />
+                          </a>
+                        ) : (
+                          <div
+                            className={`w-10 h-10 rounded-field flex items-center justify-center shrink-0 ${
+                              isImg ? 'bg-accent/12 text-accent' : 'bg-danger/10 text-danger'
+                            }`}
+                          >
+                            {isImg ? <ImageIcon className="w-4.5 h-4.5" /> : <FileText className="w-4.5 h-4.5" />}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <a
+                            href={d.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-meta font-bold text-fg truncate block hover:text-primary hover:underline"
+                          >
+                            {d.originalFilename}
+                          </a>
+                          <p className="text-[10px] text-fg-muted font-medium">
+                            {sizeKb ? `${sizeKb} KB` : ''}
+                          </p>
+                        </div>
+                        {canUpload && onDelete && (
+                          <button
+                            onClick={() => onDelete(d.id)}
+                            className="p-1.5 rounded-field text-fg-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-all shrink-0"
+                            title="Xóa"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Nút/Khu vực tải lên riêng cho loại này */}
+              {canUpload && onUpload && (
+                <div className="mt-4">
+                  <label
+                    className={`w-full flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-field py-4 transition-all group ${
+                      isUploadingThis
+                        ? 'border-primary/40 text-primary cursor-wait bg-primary-soft'
+                        : 'border-line text-fg-muted hover:text-primary hover:border-primary/40 hover:bg-primary-soft/10 cursor-pointer'
+                    }`}
+                  >
+                    {isUploadingThis ? (
+                      <>
+                        <UploadCloud className="w-5 h-5 animate-pulse text-primary" />
+                        <span className="text-meta font-bold text-fg">Đang tải lên...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-5 h-5 text-fg-faint group-hover:text-primary group-hover:scale-105 transition-transform" />
+                        <span className="text-meta font-bold text-fg">
+                          Kéo thả hoặc <span className="text-primary">chọn tệp</span>
+                        </span>
+                        <span className="text-[10px] text-fg-faint font-medium">Tối đa 5MB</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.pdf"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = '';
+                        if (f) onUpload(type, f);
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
             </div>
-            {canUpload && onDelete && (
-              <button onClick={() => onDelete(d.id)} className="p-2 rounded-field text-fg-muted hover:text-danger hover:bg-danger/10 cursor-pointer transition-all" title="Xoá"><Trash2 className="w-4 h-4" /></button>
-            )}
-          </div>
-        );
+          );
         })}
       </div>
-    )}
-  </div>
-);
+
+      {/* Lỗi tải lên — hiển thị ở dưới cùng của DocumentsCard */}
+      {uploadError && <ErrorBubble msg={uploadError} />}
+    </div>
+  );
+};
 
 const TimelinePanel: React.FC<{ req: VerificationRequest }> = ({ req }) => (
   <div className="meetmind-card p-6 rounded-card lg:sticky lg:top-6">

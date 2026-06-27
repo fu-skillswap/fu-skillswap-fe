@@ -1,0 +1,454 @@
+<!DOCTYPE html><html class="light" lang="vi" style="width: 1280px; height: 884px; overflow: hidden; position: relative;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Hàng đợi duyệt Mentor - SkillSwap Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-border": "#E2E8F0",
+                      "text-main": "#0F172A",
+                      "inverse-primary": "#b4c5ff",
+                      "on-tertiary-fixed-variant": "#7d2d00",
+                      "on-tertiary-container": "#ffede6",
+                      "on-tertiary": "#ffffff",
+                      "surface-bright": "#f8f9ff",
+                      "status-rejected": "#EF4444",
+                      "tertiary": "#943700",
+                      "on-primary-fixed": "#00174b",
+                      "outline-variant": "#c3c6d7",
+                      "primary-fixed": "#dbe1ff",
+                      "tertiary-fixed-dim": "#ffb596",
+                      "error-container": "#ffdad6",
+                      "on-background": "#0b1c30",
+                      "status-revision": "#F97316",
+                      "on-secondary-fixed-variant": "#004c6e",
+                      "background": "#f8f9ff",
+                      "surface-container-highest": "#d3e4fe",
+                      "primary": "#004ac6",
+                      "on-surface-variant": "#434655",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-error": "#ffffff",
+                      "surface-tint": "#0053db",
+                      "surface-dim": "#cbdbf5",
+                      "tertiary-container": "#bc4800",
+                      "surface-container-high": "#dce9ff",
+                      "on-secondary-fixed": "#001e2f",
+                      "surface-container-lowest": "#ffffff",
+                      "outline": "#737686",
+                      "surface-background": "#F8FAFC",
+                      "secondary-fixed": "#c9e6ff",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#213145",
+                      "surface-variant": "#d3e4fe",
+                      "secondary-container": "#39b8fd",
+                      "text-muted": "#475569",
+                      "inverse-on-surface": "#eaf1ff",
+                      "error": "#ba1a1a",
+                      "on-primary": "#ffffff",
+                      "status-approved": "#22C55E",
+                      "tertiary-fixed": "#ffdbcd",
+                      "on-surface": "#0b1c30",
+                      "status-pending": "#EAB308",
+                      "on-primary-container": "#eeefff",
+                      "surface-container-low": "#eff4ff",
+                      "on-tertiary-fixed": "#360f00",
+                      "on-error-container": "#93000a",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface": "#f8f9ff",
+                      "secondary": "#006591",
+                      "primary-container": "#2563eb",
+                      "secondary-fixed-dim": "#89ceff",
+                      "surface-container": "#e5eeff",
+                      "on-secondary-container": "#004666"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-sm": "0.5rem",
+                      "stack-md": "1rem",
+                      "container-padding": "2rem",
+                      "gutter": "1.5rem",
+                      "sidebar-width": "260px",
+                      "stack-lg": "1.5rem"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "code": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "30px",
+                              {
+                                      "lineHeight": "38px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+      </style>
+</head>
+<body class="bg-surface-background text-text-main font-body-md text-body-md antialiased min-h-screen" data-mode="connect">
+<!-- TopNavBar -->
+<nav class="bg-surface border-b border-surface-border flat no shadows fixed top-0 right-0 w-[calc(100%-260px)] h-16 flex justify-between items-center px-gutter z-20">
+<div class="flex items-center gap-4">
+<!-- Search bar on left -->
+<div class="relative w-64 hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">search</span>
+<input class="w-full bg-surface-container-lowest border border-surface-border rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-body-md text-body-md placeholder:text-text-muted" placeholder="Search..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-6">
+<ul class="flex items-center gap-4 hidden md:flex font-label-md text-label-md">
+<li class=""></li>
+<li class=""><a class="text-primary font-bold border-b-2 border-primary pb-1 Active: opacity-80" href="#">Verification</a></li>
+</ul>
+<div class="flex items-center gap-3">
+<button class="text-text-muted hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-text-muted hover:text-primary transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-surface-border">
+<img alt="Admin User Avatar" class="w-full h-full object-cover" data-alt="A highly detailed close-up portrait of a professional corporate administrator with a neat, modern appearance, set against a pristine, brightly lit white studio background. The lighting is soft and even, typical of high-end corporate headshots. The aesthetic matches a clean, modern SaaS light-mode design. The colors are strictly neutral, with soft cool undertones emphasizing clarity and professionalism." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjNKs-9aItZy8RFlxVefCmDqKzBaS5XNxM0A2E9QL7npKoeUG4TjRwN5fBgrBfBVtzffWirq6sg_0Li1RKGOdGe6wYFT8SLoNTvjMHABPF3hnEQpxtRO1W9FBHdLO_2dOzLryy841wuJhH2kFNMFfUx-bfpCxzZD1kNpmCzS9ZFe3h2kp9HxrcwYp5xYuTpvwWeYk_2PNA3gq0i-8VAJmCiRTzVWPUoJ0LDKSPEq0qI48QksO7n4PKrJTXaVd4y6UQ54o78YF_A0M">
+</div>
+</div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="bg-surface text-primary border-r border-surface-border flat no shadows fixed left-0 top-0 h-screen w-[260px] flex flex-col py-stack-lg px-stack-md z-30 font-body-md text-body-md">
+<div class="flex items-center gap-3 mb-8 px-2">
+<img alt="SkillSwap Admin Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNNZnM-JVLZ5H-LMKr7SLlHCrzoWcGs-vJRwIbslyPDUAFN7wSsk49VUo-2xXIETRXvkB2buhVrOK7A992WeNoaOeX1R1t-qGdAHRy9pnZ8bWiQgv-0butmBIGzFfYN82cCk5pHA4KKx4Uaixn5q63s_CsuE3fTuLV82xyGPnm9lwiBNTm5MTwfPHufRvjpzniU7YHb--ZjlE5_zggPXGeTNOd8iU6MNa4b4eiUVfT1T7VgAP4WTc0Z84TZCQ3lPvbWrR4Hg2bdl0">
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">SkillSwap</h1>
+<p class="text-xs text-text-muted">Admin Control Panel</p>
+</div>
+</div>
+<nav class="flex-1">
+<ul class="flex flex-col gap-2">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 bg-primary text-on-primary font-bold rounded-lg Active: scale-95 transition-transform hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user" data-weight="fill" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="">Duyệt&nbsp; Mentor</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 text-text-muted hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+<span class="">Quản lý Mentor</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 text-text-muted hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="">User Management</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 text-text-muted hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[260px] mt-16 p-container-padding">
+<!-- Header Section -->
+<div class="mb-stack-lg">
+<h2 class="font-headline-lg text-headline-lg text-text-main mb-2">Hàng đợi duyệt Mentor</h2>
+<p class="font-body-md text-body-md text-text-muted">Quản lý và xét duyệt các yêu cầu trở thành Mentor trên hệ thống.</p>
+</div>
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-stack-lg">
+<div class="bg-surface-container-lowest border border-surface-border rounded-xl p-stack-md flex flex-col gap-2">
+<span class="font-label-md text-label-md text-text-muted uppercase tracking-wider">Tổng yêu cầu</span>
+<span class="font-headline-lg text-headline-lg text-text-main">124</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-border rounded-xl p-stack-md flex flex-col gap-2 border-l-4 border-l-status-pending">
+<span class="font-label-md text-label-md text-text-muted uppercase tracking-wider">Chờ duyệt</span>
+<span class="font-headline-lg text-headline-lg text-text-main">45</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-border rounded-xl p-stack-md flex flex-col gap-2 border-l-4 border-l-status-revision">
+<span class="font-label-md text-label-md text-text-muted uppercase tracking-wider">Cần chỉnh sửa</span>
+<span class="font-headline-lg text-headline-lg text-text-main">12</span>
+</div>
+</div>
+<!-- Filter Bar -->
+<div class="bg-surface-container-lowest border border-surface-border rounded-xl p-stack-md mb-stack-lg flex flex-col lg:flex-row gap-4 items-center"><div class="relative flex-1 w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">search</span>
+<input class="w-full bg-surface-background border border-surface-border rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-body-md text-body-md text-text-main placeholder:text-text-muted" placeholder="Tìm kiếm tên, email hoặc ID..." type="text">
+</div>
+<div class="w-px h-8 bg-surface-border hidden lg:block"></div>
+<div class="flex flex-wrap lg:flex-nowrap gap-4 w-full lg:w-auto items-center">
+<div class="relative w-full lg:w-48">
+<select class="w-full bg-surface-background border border-surface-border rounded-lg py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-body-md text-body-md text-text-main appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23475569%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_10px_center] bg-[length:16px] hover:bg-surface-container transition-colors cursor-pointer">
+<option>Tất cả trạng thái</option>
+<option>Chờ duyệt</option>
+<option>Cần chỉnh sửa</option>
+<option>Đã duyệt</option>
+<option>Từ chối</option>
+</select>
+</div>
+<div class="flex items-center gap-2 bg-surface-background border border-surface-border rounded-lg px-3 py-1">
+<span class="text-xs text-text-muted font-semibold uppercase tracking-wider">Từ</span>
+<input class="bg-transparent border-none p-1 focus:ring-0 font-body-md text-body-md text-text-main w-32" type="date">
+<div class="w-px h-4 bg-surface-border"></div>
+<span class="text-xs text-text-muted font-semibold uppercase tracking-wider">Đến</span>
+<input class="bg-transparent border-none p-1 focus:ring-0 font-body-md text-body-md text-text-main w-32" type="date">
+</div>
+</div></div>
+<!-- Verification Queue Table -->
+<div class="bg-surface-container-lowest border border-surface-border rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-background border-b border-surface-border font-label-md text-label-md text-text-muted uppercase">
+<tr>
+<th class="px-6 py-4 font-semibold">Người đăng ký</th>
+<th class="px-6 py-4 font-semibold">Trạng thái</th>
+<th class="px-6 py-4 font-semibold">Ngày gửi</th>
+<th class="px-6 py-4 font-semibold">Người phụ trách</th>
+<th class="px-6 py-4 font-semibold text-right">Hành động</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md divide-y divide-surface-border">
+<!-- Row 1 (Pending) -->
+<tr class="hover:bg-surface-background transition-colors">
+<td class="px-6 py-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-surface-border shrink-0">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A highly detailed close-up portrait of an aspiring professional mentor, wearing modern smart-casual attire. The background is a clean, bright, white minimalist office space. The lighting is crisp and even, suitable for a professional corporate profile. The overall aesthetic is strictly light-mode, modern, and clinical, avoiding heavy shadows or dark tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkZxGFLrKUh6oSL2a5X6nAojew0lHboG-eCNzx2Na9RTwAD_oe70M0tJUkKR06A4PpQOdi4tAoQZny4zgMzooOtAfJ6IQMlRyFtdcfA4Kfp0UreHr1V_rM6nGdG4ys-JTrDnjaJorWTEOOGBATFhGDdQqUFgWqepCOwb2y5bjsJ-SAJ9alPeLP4be91o7_tR2RYDsD6EUfUq_4rpluCHOyAGL1fZeH3Kq1O946vFtR76auq7WY9J7e_GoSOMGtlITbPn7ETtE1skA">
+</div>
+<div>
+<div class="font-semibold text-text-main">Nguyễn Văn A</div>
+<div class="text-xs text-text-muted">nguyenvana@example.com</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-status-pending/10 text-status-pending border border-status-pending/20">
+<span class="w-1.5 h-1.5 rounded-full bg-status-pending"></span>
+                                    Chờ duyệt
+                                </span>
+</td>
+<td class="px-6 py-3 text-text-main">24/10/2023</td>
+<td class="px-6 py-3 text-text-muted italic">Chưa có</td>
+<td class="px-6 py-3 text-right">
+<button class="px-4 py-1.5 bg-surface-container-lowest border border-surface-border text-text-main rounded-lg hover:bg-surface-background font-label-md text-label-md transition-colors">Xem chi tiết</button>
+</td>
+</tr>
+<!-- Row 2 (Needs Revision) -->
+<tr class="hover:bg-surface-background transition-colors">
+<td class="px-6 py-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-surface-border shrink-0">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A high-quality close-up professional portrait of a tech industry expert. They are positioned against a pristine, solid light grey background. The lighting is flat and bright, mimicking a high-end corporate identity photo. The color palette is neutral with soft whites and greys, fitting a clean SaaS platform design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAidVpLkudH67sRPSM24UwEH4dRd1k3L1-rDejCCqoESG9YcKGTF0qe2NNsyy8oGF7ZJDtU7Uu_KPGBPBP0IpTry1gl3HmsOWPL3Ygsy3lMlm-O8z50VO2IMmHVUz7IyKgZpbDMiYXSDibhgJpzu3jj3ID5DaGI_HuLHDOAMKr_Bymdoz1kMCOwmRdPkRxBvuHfGVexTQ0ZENQiSCL_NF866PgjjBK6ZdzxCiqUjbWvSJKE8T2oTYFT1RQsfwNQmbtcreoynuWFfu8">
+</div>
+<div>
+<div class="font-semibold text-text-main">Trần Thị B</div>
+<div class="text-xs text-text-muted">tranthib@example.com</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-status-revision/10 text-status-revision border border-status-revision/20">
+<span class="w-1.5 h-1.5 rounded-full bg-status-revision"></span>
+                                    Cần chỉnh sửa
+                                </span>
+</td>
+<td class="px-6 py-3 text-text-main">23/10/2023</td>
+<td class="px-6 py-3 text-text-main">Lê Văn C</td>
+<td class="px-6 py-3 text-right">
+<button class="px-4 py-1.5 bg-surface-container-lowest border border-surface-border text-text-main rounded-lg hover:bg-surface-background font-label-md text-label-md transition-colors">Xem chi tiết</button>
+</td>
+</tr>
+<!-- Row 3 (Occupied/Locked - visual only based on guidelines) -->
+<tr class="hover:bg-surface-background transition-colors opacity-50 bg-surface-background">
+<td class="px-6 py-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-surface-border shrink-0 grayscale">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A clean, minimalist portrait of a professional individual in a corporate setting. The background is pure white. The lighting is bright and sterile, emphasizing clarity. The image is designed to sit cleanly within a high-contrast, modern administrative interface, focusing entirely on the subject without distracting elements." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDRvBVqXy0cYe-qi2JW3a35WCxbx_KDQSoefVyyLizDb1vTPUbBE7O4s7g_y4Wtl-Osgi5qlzE_xFFDOcNN1sfzyaFkoeW-HAbVCzWNhjDhK42jZUcdmSpWKHWP0Q0EfKycYt3KFF8RYgEXMA99naxW3zLTl66oH6oq0-An1hwaPSR3y2vjocSjaRI80GHxhI5LF6eYdPUF8nJoWTDzB1vQCjyXaSZvpf_HWjR5yGH6iWJ9-_nVd8xyweFmbYJa_OtaY_t9ZjJ-jU">
+</div>
+<div class="flex items-center gap-2">
+<div>
+<div class="font-semibold text-text-main">Phạm Minh Đ</div>
+<div class="text-xs text-text-muted">phamminhd@example.com</div>
+</div>
+<span class="material-symbols-outlined text-[16px] text-text-muted" title="Đang được review bởi admin khác">lock</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-status-pending/10 text-status-pending border border-status-pending/20">
+<span class="w-1.5 h-1.5 rounded-full bg-status-pending"></span>
+                                    Chờ duyệt
+                                </span>
+</td>
+<td class="px-6 py-3 text-text-main">23/10/2023</td>
+<td class="px-6 py-3 text-text-main">Admin #2</td>
+<td class="px-6 py-3 text-right">
+<button class="px-4 py-1.5 bg-surface-container-lowest border border-surface-border text-text-muted rounded-lg cursor-not-allowed font-label-md text-label-md" disabled="">Xem chi tiết</button>
+</td>
+</tr>
+<!-- Row 4 (Approved) -->
+<tr class="hover:bg-surface-background transition-colors">
+<td class="px-6 py-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-surface-border shrink-0">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A perfectly lit corporate headshot of a mature professional, shot against a solid, pale slate-grey wall. The aesthetic is strictly minimalist and authoritative. The lighting avoids harsh shadows, creating a pristine, light-mode suitable image. The person is dressed in structured, dark navy business attire to contrast with the bright background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZekAkcAqU50c6PiUtwx3apUtRlhbfaNohl4B0hpmVZufVdsYvcecceVlVTAYfm_ylTXsSLRjjU4KZ2evIumqmMec_5rdk1OTyz8hvU0murQh2bsym50oWeBRTNVFdftpapWna1YjB6cTDfBmpqOAFRxDvAwZ39q8ViEQny6egnB-GBC2_1RizjD3xrehRcAr73ZQWBUWZLv-MBtQFsHMMTQMZ15rzyizYEdn9as53_33jHLNht1paxtXYaEpF7wlHZnpaxSQdYZU">
+</div>
+<div>
+<div class="font-semibold text-text-main">Lý Thái E</div>
+<div class="text-xs text-text-muted">lythaie@example.com</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-status-approved/10 text-status-approved border border-status-approved/20">
+<span class="w-1.5 h-1.5 rounded-full bg-status-approved"></span>
+                                    Đã duyệt
+                                </span>
+</td>
+<td class="px-6 py-3 text-text-main">22/10/2023</td>
+<td class="px-6 py-3 text-text-main">Lê Văn C</td>
+<td class="px-6 py-3 text-right">
+<button class="px-4 py-1.5 bg-surface-container-lowest border border-surface-border text-text-main rounded-lg hover:bg-surface-background font-label-md text-label-md transition-colors">Xem chi tiết</button>
+</td>
+</tr>
+<!-- Row 5 (Rejected) -->
+<tr class="hover:bg-surface-background transition-colors">
+<td class="px-6 py-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-surface-border shrink-0">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A professional headshot profile picture of a young professional, set against a completely untextured, pure white backdrop. The lighting is high-key and studio quality, ensuring the face is evenly illuminated. The composition is simple, modern, and aligned with a highly structured, minimalist administrative web dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_L0lLWjYOe0joZuMQVvmrL4eQprnOCFMjP_a0D6JBhAseT8XqzMvYqIwYHQNR8JAPsbTusTso23Rb6y_DC_aPQT8N7yAY8CFV8KQpfWh-HvviqoppsERvcJwqQR5OowFV40v6UOkplMKq075Y0tDYIX1Eq-SuOAF1_yx4dI-sIQ-vjCms_xXky-smtE9EyOTIHwFKzsQWIjMEcn8PxwsNjfet8dm4-7z6LexleVH20t4-sibk55hP9LolO5lQpDJfx1W8xz38hpY">
+</div>
+<div>
+<div class="font-semibold text-text-main">Hoàng Hải F</div>
+<div class="text-xs text-text-muted">hoanghaif@example.com</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-status-rejected/10 text-status-rejected border border-status-rejected/20">
+<span class="w-1.5 h-1.5 rounded-full bg-status-rejected"></span>
+                                    Từ chối
+                                </span>
+</td>
+<td class="px-6 py-3 text-text-main">21/10/2023</td>
+<td class="px-6 py-3 text-text-main">Nguyễn Admin</td>
+<td class="px-6 py-3 text-right">
+<button class="px-4 py-1.5 bg-surface-container-lowest border border-surface-border text-text-main rounded-lg hover:bg-surface-background font-label-md text-label-md transition-colors">Xem chi tiết</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-surface-background border-t border-surface-border px-6 py-4 flex items-center justify-between">
+<span class="font-body-md text-body-md text-text-muted">Hiển thị 1-5 trên 124 kết quả</span>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 border border-surface-border bg-surface-container-lowest text-text-muted rounded-lg hover:bg-surface-background hover:text-text-main transition-colors font-body-md text-body-md flex items-center gap-1 disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                        Trang trước
+                    </button>
+<div class="flex items-center gap-1 px-2 font-body-md text-body-md text-text-main">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-on-primary font-semibold">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-background text-text-muted hover:text-text-main transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-background text-text-muted hover:text-text-main transition-colors">3</button>
+<span class="text-text-muted">...</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-background text-text-muted hover:text-text-main transition-colors">25</button>
+</div>
+<button class="px-3 py-1.5 border border-surface-border bg-surface-container-lowest text-text-main rounded-lg hover:bg-surface-background transition-colors font-body-md text-body-md flex items-center gap-1">
+                        Trang sau
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+
+
+<div id="snapdom-sandbox" data-snapdom-sandbox="true" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px; width: 0px; height: 0px; overflow: hidden;"></div></body></html>

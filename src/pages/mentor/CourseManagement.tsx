@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  BookOpen, Plus, Search, Filter, Pencil, Trash2, 
+  BookOpen, Plus, Search, Pencil, Trash2, 
   X, CheckCircle2, AlertTriangle, 
-  Clock, BookOpenCheck, ToggleLeft, ToggleRight,
-  Coins, Sparkles
+  BookOpenCheck, ToggleLeft, ToggleRight,
+  Calendar, Loader2
 } from 'lucide-react';
 import { helpTopicApi } from '../../api/mentorProfile';
 import { mentorServicesApi } from '../../api/mentorServices';
-import type { HelpTopic, MentorServiceItem } from '../../api/types';
+import { availabilityApi } from '../../api/availability';
+import type { 
+  HelpTopic, MentorServiceItem, AvailabilityRule, AvailabilityRuleType, AvailabilityRepeatType, UpsertAvailabilityRulePayload 
+} from '../../api/types';
 
 // Fallback topics if helpTopicApi fails to load
 const DEFAULT_TOPICS: HelpTopic[] = [
@@ -55,6 +58,107 @@ const deserializeDescriptionAndOutcomes = (fullDesc: string = '') => {
     outcomes: []
   };
 };
+const WEEKDAYS: { value: string; label: string }[] = [
+  { value: 'MONDAY', label: 'T2' },
+  { value: 'TUESDAY', label: 'T3' },
+  { value: 'WEDNESDAY', label: 'T4' },
+  { value: 'THURSDAY', label: 'T5' },
+  { value: 'FRIDAY', label: 'T6' },
+  { value: 'SATURDAY', label: 'T7' },
+  { value: 'SUNDAY', label: 'CN' },
+];
+
+const DAY_LABEL: Record<string, string> = Object.fromEntries(WEEKDAYS.map((d) => [d.value, d.label]));
+
+const REPEAT_LABEL: Record<AvailabilityRepeatType, string> = {
+  NONE: 'Một ngày cụ thể',
+  DAILY: 'Hằng ngày',
+  WEEKLY: 'Theo thứ trong tuần',
+};
+
+const getErrorMessage = (err: any): string => {
+  const data = err?.response?.data;
+  if (!data) return '';
+  if (typeof data === 'string') return data;
+  if (data.message) return data.message;
+  if (data.error) return data.error;
+  if (data.errors) {
+    if (Array.isArray(data.errors)) {
+      return data.errors.map((e: any) => e.message || e.defaultMessage || JSON.stringify(e)).join(', ');
+    }
+    if (typeof data.errors === 'object') {
+      return Object.entries(data.errors).map(([key, val]) => `${key}: ${val}`).join(', ');
+    }
+  }
+  return JSON.stringify(data);
+};
+
+const friendlyError = (msg: string): string => {
+  if (!msg) return 'Có lỗi xảy ra khi lưu lịch rảnh.';
+  const lower = msg.toLowerCase();
+  
+  if (lower.includes('overlap') || lower.includes('conflict') || lower.includes('chồng lấn') || lower.includes('trùng')) {
+    return 'Khung giờ này đã bị trùng lặp hoặc chồng chéo với một quy tắc lịch rảnh khác của bạn. Vui lòng chọn thời gian khác hoặc kiểm tra lại các quy tắc đã tạo.';
+  }
+  
+  if (lower.includes('serviceid') || lower.includes('service_id')) {
+    return 'Vui lòng chọn khóa học áp dụng cho quy tắc lịch rảnh này (đây là thông tin bắt buộc để học viên có thể đặt lịch đúng lớp).';
+  }
+  if (lower.includes('ruletype') || lower.includes('rule_type')) {
+    return 'Vui lòng chọn loại quy tắc (Mở lịch rảnh để học viên đặt, hoặc Chặn lịch để đánh dấu bận/nghỉ).';
+  }
+  if (lower.includes('repeattype') || lower.includes('repeat_type')) {
+    return 'Vui lòng chọn kiểu lặp lại lịch (Lặp theo thứ hàng tuần, Hằng ngày, hoặc Một ngày cụ thể).';
+  }
+  if (lower.includes('starttime') || lower.includes('start_time')) {
+    return 'Vui lòng nhập giờ bắt đầu hợp lệ cho khung giờ rảnh.';
+  }
+  if (lower.includes('endtime') || lower.includes('end_time')) {
+    return 'Vui lòng nhập giờ kết thúc hợp lệ cho khung giờ rảnh.';
+  }
+  if (lower.includes('effectivefrom') || lower.includes('effective_from')) {
+    return 'Vui lòng chọn ngày bắt đầu áp dụng quy tắc lịch rảnh này.';
+  }
+  if (lower.includes('effectiveto') || lower.includes('effective_to')) {
+    return 'Vui lòng chọn ngày kết thúc áp dụng quy tắc lịch rảnh này.';
+  }
+  if (lower.includes('daysofweek') || lower.includes('days_of_week') || lower.includes('days of week')) {
+    return 'Vui lòng chọn ít nhất một thứ trong tuần (T2 - CN) để áp dụng quy tắc lặp lại.';
+  }
+  if (lower.includes('unauthorized') || lower.includes('jwt') || lower.includes('token') || lower.includes('hết hạn')) {
+    return 'Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại.';
+  }
+  if (lower.includes('service not found') || lower.includes('khóa học không tồn tại')) {
+    return 'Khóa học được chọn không tồn tại hoặc đã bị xóa. Vui lòng tải lại trang và chọn khóa học khác.';
+  }
+  if (lower.includes('rule not found') || lower.includes('không tìm thấy quy tắc')) {
+    return 'Quy tắc lịch rảnh này không tồn tại hoặc đã bị xóa trước đó. Vui lòng làm mới trang.';
+  }
+  return msg;
+};
+
+const getWeekDays = (offsetWeeks: number = 0) => {
+  const current = new Date();
+  const day = current.getDay();
+  const distance = (day === 0 ? -6 : 1) - day;
+  const monday = new Date(current);
+  monday.setDate(current.getDate() + distance + (offsetWeeks * 7));
+  
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return days;
+};
+
+const formatDateISO = (d: Date) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 export const CourseManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -64,8 +168,8 @@ export const CourseManagement: React.FC = () => {
   
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTopic, setSelectedTopic] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('active');
+  const selectedTopic: string = 'all';
+  const selectedStatus: string = 'active';
 
   // Modal / Form state
   const [showModal, setShowModal] = useState(false);
@@ -95,19 +199,48 @@ export const CourseManagement: React.FC = () => {
   // Confirmation Delete Modal
   const [courseToDelete, setCourseToDelete] = useState<MentorServiceItem | null>(null);
 
-  const fetchServices = async () => {
+  // Availability Slots states
+  const [rules, setRules] = useState<AvailabilityRule[]>([]);
+  const [slotBusy, setSlotBusy] = useState(false);
+  const [weekOffset, setWeekOffset] = useState<number>(0); // 0 = this week, 1 = next week
+
+  // Slot creation/editing form states
+  const [showSlotModal, setShowSlotModal] = useState(false);
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
+  const [ruleType, setRuleType] = useState<AvailabilityRuleType>('OPEN');
+  const [slotServiceId, setSlotServiceId] = useState('');
+  const [repeatType, setRepeatType] = useState<AvailabilityRepeatType>('WEEKLY');
+  const [daysOfWeek, setDaysOfWeek] = useState<string[]>([]);
+  const [effectiveFrom, setEffectiveFrom] = useState('');
+  const [effectiveTo, setEffectiveTo] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [slotNote, setSlotNote] = useState('');
+
+  // Confirmation Delete Modal for Slots
+  const [slotToDelete, setSlotToDelete] = useState<AvailabilityRule | null>(null);
+
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await mentorServicesApi.list();
-      setCourses(data || []);
+      const [srvList, slotList] = await Promise.all([
+        mentorServicesApi.list(),
+        availabilityApi.list()
+      ]);
+      setCourses(srvList || []);
+      setRules(slotList || []);
+      
+      const activeServices = (srvList ?? []).filter(s => s.active);
+      if (activeServices.length > 0) {
+        setSlotServiceId(prev => prev || activeServices[0].serviceId);
+      }
     } catch (err: any) {
-      console.error('Lấy danh sách dịch vụ thất bại:', err);
-      showAlert('danger', 'Không thể đồng bộ danh sách khóa học với máy chủ.');
-      setCourses([]);
+      console.error('Không tải được dữ liệu:', err);
+      showAlert('danger', 'Không thể đồng bộ danh sách khóa học và lịch rảnh từ máy chủ.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Load topics from API
@@ -122,8 +255,8 @@ export const CourseManagement: React.FC = () => {
       }
     };
     loadTopics();
-    fetchServices();
-  }, []);
+    loadData();
+  }, [loadData]);
 
   useEffect(() => {
     if (toastVisible) {
@@ -224,7 +357,7 @@ export const CourseManagement: React.FC = () => {
         showAlert('success', 'Tạo khóa học mới trên máy chủ thành công!');
       }
       setShowModal(false);
-      await fetchServices();
+      await loadData();
     } catch (err: any) {
       console.error('Lưu khóa học thất bại:', err);
       const serverData = err?.response?.data;
@@ -242,7 +375,7 @@ export const CourseManagement: React.FC = () => {
       const nextState = !course.active;
       await mentorServicesApi.toggleActive(course.serviceId, nextState);
       showAlert('success', `Đã ${nextState ? 'kích hoạt' : 'tạm dừng'} hiển thị khóa học: ${parseTitle(course.title).cleanTitle}`);
-      await fetchServices();
+      await loadData();
     } catch (err: any) {
       console.error(err);
       showAlert('danger', 'Thay đổi trạng thái thất bại.');
@@ -259,7 +392,7 @@ export const CourseManagement: React.FC = () => {
       showAlert('success', `Đã xóa khóa học "${parseTitle(courseToDelete.title).cleanTitle}" thành công.`);
       setCourseToDelete(null);
       setCourses(prev => prev.filter(c => c.serviceId !== deletedId));
-      await fetchServices();
+      await loadData();
     } catch (err: any) {
       console.error(err);
       showAlert('danger', 'Không thể xóa khóa học này.');
@@ -288,25 +421,211 @@ export const CourseManagement: React.FC = () => {
     return matchesSearch && matchesTopic && matchesStatus;
   });
 
+  const formatDateDisplay = (d: Date) => {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}`;
+  };
+
+  const getServiceDisplayTitle = (ruleServiceId?: string) => {
+    if (!ruleServiceId) return '';
+    const s = courses.find((x) => x.serviceId === ruleServiceId);
+    if (!s) return `Khóa học (#${ruleServiceId.slice(0, 6)})`;
+    const match = s.title.match(/^\[(.*?)\]\s*(.*)$/);
+    return match ? `${match[1]} - ${match[2]}` : s.title;
+  };
+
+  const getRulesForDate = (date: Date) => {
+    const dateStr = formatDateISO(date);
+    const dayOfWeekIndex = date.getDay();
+    const weekdaysMap: Record<number, string> = {
+      1: 'MONDAY',
+      2: 'TUESDAY',
+      3: 'WEDNESDAY',
+      4: 'THURSDAY',
+      5: 'FRIDAY',
+      6: 'SATURDAY',
+      0: 'SUNDAY'
+    };
+    const dayName = weekdaysMap[dayOfWeekIndex];
+    
+    return rules.filter(r => {
+      if (r.effectiveFrom && dateStr < r.effectiveFrom) return false;
+      if (r.effectiveTo && dateStr > r.effectiveTo) return false;
+      
+      if (r.repeatType === 'NONE') {
+        return r.effectiveFrom === dateStr;
+      }
+      if (r.repeatType === 'DAILY') {
+        return true;
+      }
+      if (r.repeatType === 'WEEKLY') {
+        return r.daysOfWeek?.includes(dayName);
+      }
+      return false;
+    }).sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  };
+
+  const handleStartEditSlot = (r: AvailabilityRule) => {
+    setEditingSlotId(r.ruleId);
+    setRuleType(r.ruleType);
+    setRepeatType(r.repeatType);
+    setDaysOfWeek(r.daysOfWeek ?? []);
+    setEffectiveFrom(r.effectiveFrom ?? '');
+    setEffectiveTo(r.effectiveTo ?? '');
+    setStartTime(r.startTime ? r.startTime.slice(0, 5) : '');
+    setEndTime(r.endTime ? r.endTime.slice(0, 5) : '');
+    setSlotNote(r.note ?? '');
+    setSlotServiceId(r.serviceId || (courses.length > 0 ? courses[0].serviceId : ''));
+    setShowSlotModal(true);
+  };
+
+  const handleOpenSlotCreateModal = () => {
+    setEditingSlotId(null);
+    setRuleType('OPEN');
+    setRepeatType('WEEKLY');
+    setDaysOfWeek([]);
+    setEffectiveFrom(formatDateISO(new Date()));
+    setEffectiveTo(formatDateISO(new Date()));
+    setStartTime('08:00');
+    setEndTime('10:00');
+    setSlotNote('');
+    setSlotServiceId(courses.length > 0 ? courses[0].serviceId : '');
+    setShowSlotModal(true);
+  };
+
+  const handleCancelSlotEdit = () => {
+    setShowSlotModal(false);
+    setEditingSlotId(null);
+    setRuleType('OPEN');
+    setRepeatType('WEEKLY');
+    setDaysOfWeek([]);
+    setEffectiveFrom('');
+    setEffectiveTo('');
+    setStartTime('');
+    setEndTime('');
+    setSlotNote('');
+  };
+
+  const handleSaveSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (startTime >= endTime) {
+      triggerToast('Giờ bắt đầu phải trước giờ kết thúc.', 'danger');
+      return;
+    }
+    if (!slotServiceId) {
+      triggerToast('Vui lòng chọn khóa học áp dụng.', 'danger');
+      return;
+    }
+    if (repeatType === 'WEEKLY' && daysOfWeek.length === 0) {
+      triggerToast('Vui lòng chọn ít nhất một thứ trong tuần.', 'danger');
+      return;
+    }
+    if (repeatType === 'NONE' && !effectiveFrom) {
+      triggerToast('Vui lòng chọn ngày áp dụng.', 'danger');
+      return;
+    }
+    
+    if (effectiveFrom && effectiveTo && repeatType !== 'NONE') {
+      const from = new Date(effectiveFrom);
+      const to = new Date(effectiveTo);
+      const diffTime = Math.abs(to.getTime() - from.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays > 14) {
+        triggerToast('Thời gian áp dụng khung giờ rảnh tối đa là 2 tuần (14 ngày).', 'danger');
+        return;
+      }
+    }
+
+    const payload: UpsertAvailabilityRulePayload = {
+      ruleType,
+      serviceId: slotServiceId,
+      repeatType,
+      daysOfWeek: repeatType === 'WEEKLY' ? daysOfWeek : undefined,
+      effectiveFrom: effectiveFrom || undefined,
+      effectiveTo: repeatType === 'NONE' ? (effectiveFrom || undefined) : (effectiveTo || undefined),
+      startTime,
+      endTime,
+      note: slotNote || undefined,
+    };
+
+    setSlotBusy(true);
+    try {
+      if (editingSlotId) {
+        await availabilityApi.update(editingSlotId, payload);
+        triggerToast('Cập nhật khung giờ rảnh thành công!', 'success');
+      } else {
+        await availabilityApi.create(payload);
+        triggerToast('Thêm khung giờ rảnh thành công!', 'success');
+      }
+      handleCancelSlotEdit();
+      await loadData();
+    } catch (err: any) {
+      const serverMsg = getErrorMessage(err) || (editingSlotId ? 'Cập nhật khung giờ thất bại.' : 'Thêm khung giờ thất bại.');
+      triggerToast(friendlyError(serverMsg), 'danger');
+    } finally {
+      setSlotBusy(false);
+    }
+  };
+
+  const handleDeleteSlot = async (ruleId: string) => {
+    setSlotBusy(true);
+    try {
+      await availabilityApi.remove(ruleId);
+      triggerToast('Đã xoá quy tắc lịch rảnh.', 'success');
+      if (editingSlotId === ruleId) {
+        handleCancelSlotEdit();
+      }
+      await loadData();
+    } catch (err: any) {
+      const serverMsg = getErrorMessage(err) || 'Xoá khung giờ thất bại.';
+      triggerToast(friendlyError(serverMsg), 'danger');
+    } finally {
+      setSlotBusy(false);
+    }
+  };
+
+  const toggleDay = (value: string) => {
+    setDaysOfWeek((prev) => (prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value]));
+  };
+
+  const describeRule = (r: AvailabilityRule) => {
+    if (r.repeatType === 'WEEKLY' && r.daysOfWeek?.length) {
+      return r.daysOfWeek.map((d) => DAY_LABEL[d] || d).join(', ');
+    }
+    if (r.repeatType === 'NONE') return r.effectiveFrom || 'Ngày cụ thể';
+    return REPEAT_LABEL[r.repeatType];
+  };
+
   return (
     <div className="space-y-6 text-left animate-fadeIn">
       {/* Header section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-extrabold text-fg tracking-tight flex items-center gap-2">
-            <BookOpen className="w-8 h-8 text-primary" /> Quản lý khóa học
+            <BookOpen className="w-8 h-8 text-primary" /> Lịch biểu & Quản lý khóa học
           </h1>
           <p className="text-fg-muted text-body font-medium">
-            Tự thiết kế các lớp học chuyên môn của bạn, cấu hình chủ đề và quản lý danh sách các lớp đang cung cấp cho sinh viên.
+            Quản lý các khóa học và sắp xếp lịch rảnh khả dụng của bạn trực quan theo dạng tuần (tối đa trong vòng 2 tuần).
           </p>
         </div>
         
-        <button
-          onClick={handleOpenCreateModal}
-          className="inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer shadow-md shadow-primary/20 transition-all active:scale-95 shrink-0"
-        >
-          <Plus className="w-5 h-5" /> Tạo khóa học mới
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer shadow-md shadow-primary/20 transition-all active:scale-95 shrink-0"
+          >
+            <Plus className="w-5 h-5" /> Tạo khóa học mới
+          </button>
+          
+          <button
+            onClick={handleOpenSlotCreateModal}
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-body font-bold py-2.5 px-5 rounded-field cursor-pointer shadow-md shadow-primary/20 transition-all active:scale-95 shrink-0"
+          >
+            <Calendar className="w-5 h-5" /> Thêm khung giờ rảnh
+          </button>
+        </div>
       </div>
 
       {/* Toast Notification */}
@@ -340,205 +659,216 @@ export const CourseManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <div className="meetmind-card p-4 rounded-card flex flex-col md:flex-row gap-4 items-center justify-between">
-        {/* Search */}
-        <div className="relative w-full md:flex-1 md:max-w-2xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-fg-faint" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo tiêu đề, mã môn học..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-surface-muted border border-line rounded-field py-2.5 pl-10 pr-4 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
-          />
-        </div>
+      {/* Split Layout Container */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        
+        {/* LEFT SIDEBAR: Courses Management List */}
+        <div className="w-full lg:w-80 shrink-0 space-y-4">
+          <div className="meetmind-card p-4 rounded-card space-y-4">
+            <h3 className="text-base font-bold font-serif text-fg flex items-center gap-1.5 border-b border-line-soft pb-2">
+              <BookOpenCheck className="w-5 h-5 text-primary" /> Khóa học của tôi
+            </h3>
+            
+            {/* Simple Compact Search Box */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-faint" />
+              <input
+                type="text"
+                placeholder="Tìm khóa học..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-surface-muted border border-line rounded-field py-2 pl-9 pr-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-medium"
+              />
+            </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 w-full md:w-auto justify-end">
-          {/* Topic filter */}
-          <div className="inline-flex items-center gap-1.5 bg-surface-muted border border-line px-3 py-1.5 rounded-field">
-            <Filter className="w-3.5 h-3.5 text-fg-muted" />
-            <select
-              value={selectedTopic}
-              onChange={(e) => setSelectedTopic(e.target.value)}
-              className="bg-transparent border-none text-meta font-bold text-fg-muted focus:outline-none cursor-pointer pr-1"
-            >
-              <option value="all">Tất cả chủ đề</option>
-              {topics.map(t => (
-                <option key={t.id} value={t.id}>{t.nameVi}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status filter */}
-          <div className="inline-flex items-center gap-1.5 bg-surface-muted border border-line px-3 py-1.5 rounded-field">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-transparent border-none text-meta font-bold text-fg-muted focus:outline-none cursor-pointer pr-1"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Đang hiển thị</option>
-              <option value="inactive">Đang tạm ẩn</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Loading state indicator */}
-      {loading ? (
-        <div className="py-16 flex justify-center flex-col items-center gap-3">
-          <div className="w-9 h-9 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-meta text-fg-muted font-bold">Đang đồng bộ dữ liệu...</span>
-        </div>
-      ) : filteredCourses.length === 0 ? (
-        <div className="meetmind-card py-20 text-center rounded-card space-y-4 flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full bg-primary-soft text-primary flex items-center justify-center">
-            <BookOpenCheck className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-title font-bold text-fg">Không tìm thấy khóa học nào</h3>
-            <p className="text-meta text-fg-muted font-medium max-w-sm">
-              {courses.length === 0 
-                ? 'Bạn chưa tạo khóa học nào. Hãy bắt đầu bằng cách nhấn vào nút "Tạo khóa học mới".' 
-                : 'Thử thay đổi bộ lọc tìm kiếm hoặc từ khóa của bạn.'}
-            </p>
-          </div>
-          {courses.length === 0 && (
-            <button
-              onClick={handleOpenCreateModal}
-              className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2 px-4 rounded-field cursor-pointer transition-all"
-            >
-              Tạo khóa học ngay
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map(course => {
-            const { subjectCode, cleanTitle } = parseTitle(course.title);
-            const { description: cleanDesc, outcomes } = deserializeDescriptionAndOutcomes(course.description);
-            const topicName = course.helpTopics && course.helpTopics.length > 0 ? course.helpTopics[0].nameVi : 'Chủ đề khác';
-
-            return (
-              <div
-                key={course.serviceId}
-                className={`meetmind-card rounded-card overflow-hidden flex flex-col justify-between transition-all duration-300 border-t-4 ${
-                  course.active 
-                    ? 'border-t-primary shadow-card meetmind-card-hover' 
-                    : 'border-t-fg-faint opacity-75 shadow-sm'
-                }`}
-              >
-                {/* Card Header & Content */}
-                <div 
-                  className="p-6 space-y-4 text-left cursor-pointer hover:bg-surface-muted/20 transition-all duration-200" 
-                  onClick={() => navigate(`/mentor/courses/${course.serviceId}`)}
-                >
-                  {/* Subject Code & Topic Badge */}
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-meta font-extrabold text-primary bg-primary-soft px-2.5 py-1 rounded-pill uppercase tracking-wide">
-                      {subjectCode}
-                    </span>
-                    <span className="text-meta font-semibold text-fg-muted bg-surface-muted px-2.5 py-1 rounded-pill max-w-[150px] truncate" title={topicName}>
-                      {topicName}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="text-title font-bold text-fg line-clamp-2 min-h-[2.5rem]" title={cleanTitle}>
-                    {cleanTitle}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-meta text-fg-muted font-medium line-clamp-3 leading-relaxed">
-                    {cleanDesc}
-                  </p>
-
-                  {/* Teaching specifications */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-line-soft text-meta text-fg-muted font-semibold">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-fg-faint" />
-                      {course.durationMinutes} phút/buổi
-                    </span>
-
-                    <span className="flex items-center gap-1 text-primary">
-                      {(course.free !== undefined ? course.free : (course as any).isFree) ? (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5 text-success" />
-                          <span className="text-success font-bold">Miễn phí (Dạy chéo)</span>
-                        </>
-                      ) : (
-                        <>
-                          <Coins className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-amber-600 font-bold">{course.priceAmount} Point</span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* Learning Outcomes preview */}
-                  {outcomes.length > 0 && (
-                    <div className="space-y-1.5 pt-1">
-                      <p className="text-meta font-bold text-fg">Kết quả đạt được:</p>
-                      <ul className="space-y-1 list-none pl-0">
-                        {outcomes.slice(0, 2).map((outcome, idx) => (
-                          <li key={idx} className="text-meta text-fg-muted font-medium flex items-start gap-1.5">
-                            <span className="text-success mt-0.5 shrink-0">✓</span>
-                            <span className="truncate">{outcome}</span>
-                          </li>
-                        ))}
-                        {outcomes.length > 2 && (
-                          <li className="text-meta text-fg-faint font-semibold italic pl-4">
-                            + {outcomes.length - 2} kết quả khác...
-                          </li>
-                        )}
-                      </ul>
+            {/* Courses list */}
+            {loading ? (
+              <div className="py-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : filteredCourses.length === 0 ? (
+              <div className="py-8 text-center text-meta text-fg-muted font-semibold">
+                Không tìm thấy khóa học nào.
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                {filteredCourses.map(course => {
+                  const { subjectCode, cleanTitle } = parseTitle(course.title);
+                  return (
+                    <div key={course.serviceId} className={`p-3 rounded-lg border transition-all ${course.active ? 'bg-surface border-line shadow-sm' : 'bg-surface-muted/50 border-line-soft opacity-70'}`}>
+                      <div className="flex justify-between items-start gap-1">
+                        <span className="text-[10px] font-extrabold text-primary bg-primary-soft px-1.5 py-0.5 rounded uppercase">
+                          {subjectCode}
+                        </span>
+                        <button
+                          onClick={() => handleToggleStatus(course)}
+                          className="text-fg-muted hover:text-primary transition-all cursor-pointer font-bold"
+                          title={course.active ? "Tạm ẩn" : "Hiển thị"}
+                        >
+                          {course.active ? <ToggleRight className="w-6 h-6 text-primary" /> : <ToggleLeft className="w-6 h-6 text-fg-faint" />}
+                        </button>
+                      </div>
+                      
+                      <h4
+                        onClick={() => navigate(`/mentor/courses/${course.serviceId}`)}
+                        className="text-meta font-bold text-fg line-clamp-1 mt-1.5 hover:text-primary cursor-pointer hover:underline"
+                        title={cleanTitle}
+                      >
+                        {cleanTitle}
+                      </h4>
+                      
+                      <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-line-soft">
+                        <span className="text-[10px] font-semibold text-fg-muted">
+                          {course.durationMinutes} phút · {course.priceAmount || 0} P
+                        </span>
+                        
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenEditModal(course)}
+                            className="p-1 text-fg-muted hover:text-primary hover:bg-primary-soft/40 rounded transition-all cursor-pointer"
+                            title="Sửa"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setCourseToDelete(course)}
+                            className="p-1 text-fg-muted hover:text-danger hover:bg-danger/10 rounded transition-all cursor-pointer"
+                            title="Xóa"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
 
-                {/* Card Footer Actions */}
-                <div className="px-6 py-4 bg-surface-muted/40 border-t border-line-soft flex items-center justify-between">
-                  {/* Active Toggle Switch */}
-                  <button
-                    onClick={() => handleToggleStatus(course)}
-                    className="flex items-center gap-2 group cursor-pointer"
-                    title={course.active ? "Nhấp để tạm ẩn khỏi danh sách" : "Nhấp để hiển thị công khai"}
-                  >
-                    {course.active ? (
-                      <ToggleRight className="w-8 h-8 text-primary transition-all group-hover:scale-105" />
-                    ) : (
-                      <ToggleLeft className="w-8 h-8 text-fg-faint transition-all group-hover:scale-105" />
-                    )}
-                    <span className={`text-meta font-bold ${course.active ? 'text-fg' : 'text-fg-faint'}`}>
-                      {course.active ? 'Đang hiển thị' : 'Đang tạm ẩn'}
-                    </span>
-                  </button>
-
-                  {/* Edit & Delete Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleOpenEditModal(course)}
-                      className="p-2 text-fg-muted hover:text-primary hover:bg-primary-soft/40 border border-line rounded-lg bg-surface transition-all cursor-pointer"
-                      title="Chỉnh sửa khóa học"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setCourseToDelete(course)}
-                      className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 border border-line rounded-lg bg-surface transition-all cursor-pointer"
-                      title="Xóa khóa học"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+        {/* RIGHT COLUMN: Weekly Calendar View (Google Calendar Style) */}
+        <div className="flex-1 w-full space-y-4">
+          <div className="meetmind-card p-6 rounded-card space-y-4">
+            
+            {/* Week navigation control block */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-line-soft pb-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-6 h-6 text-primary shrink-0" />
+                <div className="text-left">
+                  <h3 className="text-base font-bold text-fg">Lịch rảnh khả dụng của tôi</h3>
+                  <p className="text-meta text-fg-muted font-semibold">
+                    {(() => {
+                      const weekDays = getWeekDays(weekOffset);
+                      return `Từ thứ 2 (${formatDateDisplay(weekDays[0])}) đến Chủ nhật (${formatDateDisplay(weekDays[6])})`;
+                    })()}
+                  </p>
                 </div>
               </div>
-            );
-          })}
+              
+              <div className="flex bg-surface-muted p-1 rounded-field gap-1 shrink-0">
+                <button
+                  onClick={() => setWeekOffset(0)}
+                  className={`px-4 py-1.5 rounded-[10px] text-meta font-bold transition-all cursor-pointer ${weekOffset === 0 ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                >
+                  Tuần này
+                </button>
+                <button
+                  onClick={() => setWeekOffset(1)}
+                  className={`px-4 py-1.5 rounded-[10px] text-meta font-bold transition-all cursor-pointer ${weekOffset === 1 ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                >
+                  Tuần sau
+                </button>
+              </div>
+            </div>
+
+            {/* Loading / Empty / Grid layout rendering */}
+            {loading ? (
+              <div className="py-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-3 pt-2">
+                {getWeekDays(weekOffset).map((dayDate, idx) => {
+                  const dayName = WEEKDAYS[idx].label;
+                  const dateStr = formatDateISO(dayDate);
+                  const isToday = formatDateISO(new Date()) === dateStr;
+                  const dayRules = getRulesForDate(dayDate);
+                  
+                  return (
+                    <div key={idx} className={`rounded-xl border p-3 flex flex-col text-left min-h-[300px] transition-all ${isToday ? 'bg-primary-soft/10 border-primary/30' : 'bg-surface/30 border-line-soft'}`}>
+                      {/* Day Header */}
+                      <div className="text-center pb-2 border-b border-line-soft mb-2 shrink-0">
+                        <span className={`text-[11px] font-extrabold block tracking-wide uppercase ${isToday ? 'text-primary' : 'text-fg-faint'}`}>
+                          {dayName}
+                        </span>
+                        <span className={`text-title font-extrabold inline-flex items-center justify-center w-7 h-7 rounded-full mt-1 ${isToday ? 'bg-primary text-white shadow-sm' : 'text-fg'}`}>
+                          {dayDate.getDate()}
+                        </span>
+                      </div>
+                      
+                      {/* Day Slots List */}
+                      <div className="flex-1 space-y-2 overflow-y-auto scrollbar-none pr-0.5">
+                        {dayRules.length === 0 ? (
+                          <div className="h-full flex items-center justify-center py-8">
+                            <span className="text-[10px] text-fg-faint italic font-semibold text-center leading-tight">
+                              Không có lịch
+                            </span>
+                          </div>
+                        ) : (
+                          dayRules.map(rule => {
+                            const isSlotOpen = rule.ruleType === 'OPEN';
+                            return (
+                              <div
+                                key={rule.ruleId}
+                                className={`p-2.5 rounded-lg border text-left shadow-xs group/item relative transition-all ${isSlotOpen ? 'bg-green-50/70 border-green-200/60 hover:bg-green-100/70' : 'bg-red-50/70 border-red-200/60 hover:bg-red-100/70'}`}
+                              >
+                                <div className="text-[10px] font-bold text-fg flex items-center justify-between">
+                                  <span>{rule.startTime?.slice(0, 5)} - {rule.endTime?.slice(0, 5)}</span>
+                                  
+                                  <span className={`text-[8px] font-extrabold px-1 rounded uppercase ${isSlotOpen ? 'bg-green-200/60 text-green-800' : 'bg-red-200/60 text-red-800'}`}>
+                                    {isSlotOpen ? 'Mở' : 'Chặn'}
+                                  </span>
+                                </div>
+                                
+                                {rule.serviceId && (
+                                  <p className="text-[11px] font-extrabold text-fg line-clamp-2 mt-1 leading-snug">
+                                    {getServiceDisplayTitle(rule.serviceId)}
+                                  </p>
+                                )}
+                                
+                                {rule.note && (
+                                  <p className="text-[9px] text-fg-muted italic font-medium mt-1 leading-tight break-words">
+                                    "{rule.note}"
+                                  </p>
+                                )}
+                                
+                                <div className="absolute right-1 bottom-1 opacity-0 group-hover/item:opacity-100 transition-opacity flex bg-white/90 border border-line-soft rounded shadow-xs p-0.5">
+                                  <button
+                                    onClick={() => handleStartEditSlot(rule)}
+                                    className="p-0.5 text-fg-muted hover:text-primary transition-all cursor-pointer"
+                                    title="Sửa lịch"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => setSlotToDelete(rule)}
+                                    className="p-0.5 text-fg-muted hover:text-danger transition-all cursor-pointer"
+                                    title="Xóa lịch"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+
+      </div>
 
       {/* Add / Edit Course Modal */}
       {showModal && (
@@ -676,7 +1006,7 @@ export const CourseManagement: React.FC = () => {
                   }`}
                   placeholder="Mô tả nội dung đào tạo chính, điều kiện tiên quyết và mục tiêu của lớp học này..."
                 />
-                {errors.description && <p className="text-meta text-danger font-semibold mt-1">{errors.description}</p>}
+                  {errors.description && <p className="text-meta text-danger font-semibold mt-1">{errors.description}</p>}
               </div>
 
               {/* Learning Outcomes */}
@@ -738,6 +1068,236 @@ export const CourseManagement: React.FC = () => {
                 </button>
                 <button
                   onClick={handleDeleteCourse}
+                  className="bg-danger text-white hover:bg-danger/90 text-body font-bold py-2 px-4.5 rounded-field cursor-pointer transition-all"
+                >
+                  Xác nhận Xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit Availability Slot Modal */}
+      {showSlotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 shadow-xl relative overflow-y-auto max-h-[90vh] text-left">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center border-b border-line-soft pb-3.5">
+              <h3 className="text-lg font-extrabold text-fg flex items-center gap-2">
+                <Calendar className="w-5.5 h-5.5 text-primary" />
+                {editingSlotId ? 'Cấu hình khung giờ rảnh' : 'Thêm khung giờ rảnh mới'}
+              </h3>
+              <button
+                onClick={handleCancelSlotEdit}
+                className="p-1.5 rounded-full hover:bg-surface-muted text-fg-muted hover:text-fg cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body Form */}
+            <form onSubmit={handleSaveSlot} className="space-y-4 pt-4">
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Loại quy tắc</label>
+                <select
+                  value={ruleType}
+                  onChange={(e) => setRuleType(e.target.value as AvailabilityRuleType)}
+                  className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                >
+                  <option value="OPEN">Mở lịch rảnh (nhận đặt)</option>
+                  <option value="CLOSED">Chặn lịch (không nhận đặt)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Khóa học áp dụng</label>
+                {courses.length === 0 ? (
+                  <div className="text-meta text-danger font-semibold p-2.5 bg-danger/10 rounded-field border border-danger/20">
+                    Bạn không có khóa học nào đang hoạt động. Vui lòng tạo khóa học trước.
+                  </div>
+                ) : (
+                  <select
+                    value={slotServiceId}
+                    onChange={(e) => setSlotServiceId(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                  >
+                    {courses.map((s) => {
+                      const match = s.title.match(/^\[(.*?)\]\s*(.*)$/);
+                      const displayTitle = match ? `${match[1]} - ${match[2]}` : s.title;
+                      return (
+                        <option key={s.serviceId} value={s.serviceId}>
+                          {displayTitle}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Lặp lại</label>
+                <select
+                  value={repeatType}
+                  onChange={(e) => setRepeatType(e.target.value as AvailabilityRepeatType)}
+                  className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                >
+                  <option value="WEEKLY">Theo thứ trong tuần</option>
+                  <option value="DAILY">Hằng ngày</option>
+                  <option value="NONE">Một ngày cụ thể</option>
+                </select>
+              </div>
+
+              {repeatType === 'WEEKLY' && (
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Các thứ áp dụng</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {WEEKDAYS.map((d) => {
+                      const on = daysOfWeek.includes(d.value);
+                      return (
+                        <button
+                          key={d.value}
+                          type="button"
+                          onClick={() => toggleDay(d.value)}
+                          className={`text-meta font-bold py-1.5 px-3 rounded-lg border transition-all cursor-pointer ${on ? 'bg-primary-soft text-primary border-primary/30' : 'bg-surface border-line text-fg-muted hover:bg-surface-muted'}`}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {repeatType === 'NONE' && (
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Ngày áp dụng</label>
+                  <input
+                    type="date"
+                    required
+                    value={effectiveFrom}
+                    onChange={(e) => setEffectiveFrom(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                  />
+                </div>
+              )}
+
+              {(repeatType === 'WEEKLY' || repeatType === 'DAILY') && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Từ ngày</label>
+                    <input
+                      type="date"
+                      value={effectiveFrom}
+                      onChange={(e) => setEffectiveFrom(e.target.value)}
+                      className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Đến ngày <span className="text-[10px] text-primary lowercase normal-case">(Tối đa 2 tuần)</span></label>
+                    <input
+                      type="date"
+                      value={effectiveTo}
+                      onChange={(e) => setEffectiveTo(e.target.value)}
+                      className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Giờ bắt đầu</label>
+                  <input
+                    type="time"
+                    required
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Giờ kết thúc</label>
+                  <input
+                    type="time"
+                    required
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Ghi chú (tuỳ chọn)</label>
+                <input
+                  type="text"
+                  value={slotNote}
+                  onChange={(e) => setSlotNote(e.target.value)}
+                  placeholder="Ví dụ: Hỗ trợ làm đồ án tốt nghiệp"
+                  className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4 border-t border-line-soft">
+                <button
+                  type="button"
+                  onClick={handleCancelSlotEdit}
+                  disabled={slotBusy}
+                  className="bg-surface border border-line hover:bg-surface-muted text-fg text-body font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={slotBusy || courses.length === 0}
+                  className="bg-primary hover:bg-primary-hover text-white text-body font-bold py-2.5 px-5 rounded-field cursor-pointer shadow-md shadow-primary/10 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {slotBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : editingSlotId ? 'Cập nhật' : 'Thêm lịch rảnh'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal for Slots */}
+      {slotToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-danger">
+                <AlertTriangle className="w-6.5 h-6.5" />
+                <h3 className="text-lg font-extrabold text-brand-text">Xác nhận xóa khung giờ</h3>
+              </div>
+              
+              <div className="text-body text-brand-text-muted font-medium leading-relaxed space-y-2">
+                <p>Bạn có chắc chắn muốn xóa khung giờ rảnh này không?</p>
+                <div className="p-3 bg-surface-muted rounded-lg text-xs font-semibold">
+                  <p className="text-fg font-bold">
+                    Khung giờ: {slotToDelete.startTime?.slice(0, 5)} - {slotToDelete.endTime?.slice(0, 5)}
+                  </p>
+                  <p>
+                    Lặp lại: {REPEAT_LABEL[slotToDelete.repeatType]} · {describeRule(slotToDelete)}
+                  </p>
+                  {slotToDelete.note && <p>Ghi chú: {slotToDelete.note}</p>}
+                </div>
+                <p className="text-danger font-bold text-xs mt-1">Hành động này không thể hoàn tác.</p>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  onClick={() => setSlotToDelete(null)}
+                  className="bg-surface border border-line hover:bg-surface-muted text-fg text-body font-bold py-2 px-4.5 rounded-field cursor-pointer transition-all"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={() => {
+                    const id = slotToDelete.ruleId;
+                    setSlotToDelete(null);
+                    handleDeleteSlot(id);
+                  }}
                   className="bg-danger text-white hover:bg-danger/90 text-body font-bold py-2 px-4.5 rounded-field cursor-pointer transition-all"
                 >
                   Xác nhận Xóa
