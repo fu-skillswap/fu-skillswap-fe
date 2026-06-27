@@ -23,7 +23,6 @@ import AdminMentorVerificationDetailPage from './pages/admin/mentor-verification
 import { CourseManagement } from './pages/mentor/CourseManagement';
 import { CourseDetailPage } from './pages/mentor/CourseDetailPage';
 import { MentorPayout } from './pages/mentor/MentorPayout';
-import { AvailabilitySlots } from './pages/mentor/AvailabilitySlots';
 
 // Payment landing (PayOS redirect)
 import { PaymentReturn } from './pages/PaymentReturn';
@@ -69,7 +68,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
 
             {/* Mentor Workspaces */}
-            <Route path="/mentor/slots" element={<AvailabilitySlots />} />
+            <Route path="/mentor/slots" element={<Navigate to="/mentor/courses" replace />} />
             <Route path="/mentor/courses" element={<CourseManagement />} />
             <Route path="/mentor/courses/:serviceId" element={<CourseDetailPage />} />
             <Route path="/mentor/payout" element={<MentorPayout />} />

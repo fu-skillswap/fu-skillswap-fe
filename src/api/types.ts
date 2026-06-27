@@ -785,3 +785,30 @@ export interface ForumReportPayload {
   reasonType: ForumReportReasonType;
   description?: string;
 }
+
+export interface AvailabilityRule {
+  ruleId: string;
+  ruleType: 'OPEN' | 'BUSY';
+  repeatType: 'WEEKLY' | 'NONE';
+  daysOfWeek: string[];
+  effectiveFrom: string; // YYYY-MM-DD
+  effectiveTo: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  timezone?: string;
+  active?: boolean;
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AvailabilityRulePayload {
+  ruleType: 'OPEN' | 'BUSY';
+  repeatType: 'WEEKLY' | 'NONE';
+  daysOfWeek: string[];
+  effectiveFrom: string; // YYYY-MM-DD
+  effectiveTo: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  note?: string;
+}
