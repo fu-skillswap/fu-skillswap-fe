@@ -20,4 +20,8 @@ export const availabilityApi = {
   /** DELETE /api/me/availability-rules/{ruleId} — xóa luật rảnh */
   deleteRule: (ruleId: string) =>
     http.del<void>(`/api/me/availability-rules/${ruleId}`),
+
+  /** PUT /api/me/availability-rules/{ruleId} — cập nhật luật rảnh */
+  updateRule: (ruleId: string, payload: AvailabilityRulePayload) =>
+    http.put<AvailabilityRule>(`/api/me/availability-rules/${ruleId}`, payload),
 };

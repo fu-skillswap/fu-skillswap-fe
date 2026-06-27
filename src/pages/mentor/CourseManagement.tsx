@@ -139,6 +139,14 @@ export const CourseManagement: React.FC = () => {
   const [courseToDelete, setCourseToDelete] = useState<MentorServiceItem | null>(null);
   const [ruleToDelete, setRuleToDelete] = useState<AvailabilityRule | null>(null);
 
+  // Edit Rule states
+  const [ruleToEdit, setRuleToEdit] = useState<AvailabilityRule | null>(null);
+  const [editRuleDays, setEditRuleDays] = useState<string[]>([]);
+  const [editRuleStartTime, setEditRuleStartTime] = useState('08:00');
+  const [editRuleEndTime, setEditRuleEndTime] = useState('09:00');
+  const [editRuleNote, setEditRuleNote] = useState('');
+  const [editRuleErrors, setEditRuleErrors] = useState<Record<string, string>>({});
+
   const triggerToast = (message: string, type: 'success' | 'danger') => {
     setToast({ message, type });
     setToastVisible(true);
@@ -382,6 +390,66 @@ export const CourseManagement: React.FC = () => {
       setRuleToDelete(null);
       setSavingRuleId(null);
     }
+  };
+
+  const handleOpenEditRuleModal = (rule: AvailabilityRule) => {
+    setRuleToEdit(rule);
+    setEditRuleDays(rule.daysOfWeek || []);
+    setEditRuleStartTime(rule.startTime || '08:00');
+    setEditRuleEndTime(rule.endTime || '09:00');
+    setEditRuleNote(rule.note || '');
+    setEditRuleErrors({});
+  };
+
+  const validateEditRuleForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (editRuleDays.length === 0) newErrors.days = 'Vui lòng chọn ít nhất một thứ trong tuần.';
+    
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!editRuleStartTime || !timeRegex.test(editRuleStartTime)) newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
+    if (!editRuleEndTime || !timeRegex.test(editRuleEndTime)) newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
+    if (editRuleStartTime && editRuleEndTime && editRuleStartTime >= editRuleEndTime) {
+      newErrors.endTime = 'Giờ kết thúc phải lớn hơn giờ bắt đầu';
+    }
+
+    setEditRuleErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveEditRule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ruleToEdit || !validateEditRuleForm()) return;
+
+    setLoadingRules(true);
+    try {
+      const payload = {
+        ruleType: ruleToEdit.ruleType,
+        repeatType: ruleToEdit.repeatType,
+        daysOfWeek: editRuleDays,
+        effectiveFrom: ruleToEdit.effectiveFrom,
+        effectiveTo: ruleToEdit.effectiveTo,
+        startTime: editRuleStartTime,
+        endTime: editRuleEndTime,
+        note: editRuleNote.trim(),
+      };
+      
+      const updated = await availabilityApi.updateRule(ruleToEdit.ruleId, payload);
+      triggerToast('Đã cập nhật lịch rảnh thành công.', 'success');
+      setRules(prev => prev.map(r => r.ruleId === ruleToEdit.ruleId ? { ...r, ...updated } : r));
+      setRuleToEdit(null);
+    } catch (err: any) {
+      console.error(err);
+      const detailMsg = getErrorMessage(err) || 'Cập nhật lịch rảnh thất bại.';
+      triggerToast(detailMsg, 'danger');
+    } finally {
+      setLoadingRules(false);
+    }
+  };
+
+  const toggleEditDaySelection = (dayValue: string) => {
+    setEditRuleDays(prev => 
+      prev.includes(dayValue) ? prev.filter(d => d !== dayValue) : [...prev, dayValue]
+    );
   };
 
   const toggleDaySelection = (dayValue: string) => {
@@ -650,13 +718,22 @@ export const CourseManagement: React.FC = () => {
                                   {isSaving ? (
                                     <Loader2 className="w-3 h-3 animate-spin text-primary" />
                                   ) : (
-                                    <button
-                                      onClick={() => setRuleToDelete(rule)}
-                                      className="text-fg-faint hover:text-danger cursor-pointer opacity-0 group-hover/rule:opacity-100 transition-opacity"
-                                      title="Xóa giờ rảnh"
-                                    >
-                                      <Trash className="w-3 h-3" />
-                                    </button>
+                                    <div className="flex items-center gap-1.5 opacity-0 group-hover/rule:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={() => handleOpenEditRuleModal(rule)}
+                                        className="text-fg-faint hover:text-primary cursor-pointer"
+                                        title="Chỉnh sửa giờ rảnh"
+                                      >
+                                        <Pencil className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => setRuleToDelete(rule)}
+                                        className="text-fg-faint hover:text-danger cursor-pointer"
+                                        title="Xóa giờ rảnh"
+                                      >
+                                        <Trash className="w-3 h-3" />
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                                 
@@ -982,6 +1059,111 @@ export const CourseManagement: React.FC = () => {
                 Xóa lịch
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Rule Modal */}
+      {ruleToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto animate-fadeIn">
+          <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
+            <div className="flex justify-between items-center border-b border-line-soft pb-3">
+              <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-primary" /> Chỉnh sửa lịch rảnh khả dụng
+              </h3>
+              <button
+                onClick={() => setRuleToEdit(null)}
+                className="p-1 rounded-full hover:bg-surface-muted text-fg-muted hover:text-fg cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditRule} className="py-4 space-y-4">
+              {/* Days checkbox group */}
+              <div>
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">Thứ trong tuần</label>
+                <div className="flex flex-wrap gap-2">
+                  {WEEKDAYS.map(day => {
+                    const checked = editRuleDays.includes(day.value);
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => toggleEditDaySelection(day.value)}
+                        className={`px-4 py-2 text-meta font-bold border rounded-field transition-all cursor-pointer ${
+                          checked 
+                            ? 'bg-primary text-white border-primary shadow-xs' 
+                            : 'bg-surface text-fg border-line hover:bg-surface-muted/40'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {editRuleErrors.days && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.days}</p>}
+              </div>
+
+              {/* Time selection group */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (HH:mm) <span className="text-danger">*</span></label>
+                  <input
+                    type="time"
+                    required
+                    value={editRuleStartTime}
+                    onChange={(e) => { setEditRuleStartTime(e.target.value); if(editRuleErrors.startTime) setEditRuleErrors({...editRuleErrors, startTime: ''}); }}
+                    className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                      editRuleErrors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                    }`}
+                  />
+                  {editRuleErrors.startTime && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.startTime}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (HH:mm) <span className="text-danger">*</span></label>
+                  <input
+                    type="time"
+                    required
+                    value={editRuleEndTime}
+                    onChange={(e) => { setEditRuleEndTime(e.target.value); if(editRuleErrors.endTime) setEditRuleErrors({...editRuleErrors, endTime: ''}); }}
+                    className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                      editRuleErrors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                    }`}
+                  />
+                  {editRuleErrors.endTime && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.endTime}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
+                <input
+                  type="text"
+                  placeholder="VD: Rảnh buổi tối sau giờ làm"
+                  value={editRuleNote}
+                  onChange={(e) => setEditRuleNote(e.target.value)}
+                  className="w-full bg-surface border border-line rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
+                />
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-line-soft">
+                <button
+                  type="button"
+                  onClick={() => setRuleToEdit(null)}
+                  className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98]"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
+                >
+                  Lưu thay đổi
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
