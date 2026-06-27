@@ -1,10 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Bookmark, Calendar, Clock, Video, Check, X, Star, MessageSquare, Smile, Loader2, AlertCircle,
+  Bookmark, Calendar, Clock, Video, Check, X, Star, MessageSquare, Smile, Loader2, AlertCircle, Coins,
 } from 'lucide-react';
 import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
+import { PaymentModal } from '../components/PaymentModal';
 import type { Booking, BookingStatus, MeetingPlatform } from '../api/types';
+
+/** Service có thu phí (cần thanh toán) khi không free và giá SCoin > 0. */
+const isPaidBooking = (b: Booking) =>
+  b.serviceIsFreeSnapshot === false && (b.servicePriceScoinSnapshot ?? 0) > 0;
 
 /* ---------------------------------------------------------------------------
  * "Lịch của tôi" hợp nhất 2 luồng: lịch mình DẠY (role=MENTOR) và lịch mình
@@ -30,7 +35,11 @@ const statusBadge = (status: BookingStatus) => {
   switch (status) {
     case 'PENDING': return 'bg-amber-50 text-amber-700 border-amber-200';
     case 'ACCEPTED': return 'bg-green-50 text-green-700 border-green-200';
-    case 'COMPLETED': return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'AWAITING_MENTOR_COMPLETION':
+    case 'AWAITING_MENTEE_CONFIRMATION': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    case 'COMPLETED':
+    case 'AUTO_CLOSED': return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'UNDER_REVIEW': return 'bg-purple-50 text-purple-700 border-purple-200';
     default: return 'bg-red-50 text-red-700 border-red-200';
   }
 };
@@ -39,7 +48,12 @@ const statusLabel = (status: BookingStatus, completedLabel = 'Hoàn thành') => 
   switch (status) {
     case 'PENDING': return 'Chờ duyệt';
     case 'ACCEPTED': return 'Đã nhận';
+    case 'AWAITING_MENTOR_COMPLETION': return 'Chờ mentor xác nhận';
+    case 'AWAITING_MENTEE_CONFIRMATION': return 'Chờ mentee xác nhận';
     case 'COMPLETED': return completedLabel;
+    case 'AUTO_CLOSED': return 'Tự đóng';
+    case 'UNDER_REVIEW': return 'Đang xem xét';
+    case 'EXPIRED': return 'Hết hạn';
     case 'REJECTED': return 'Từ chối';
     case 'CANCELLED_BY_MENTEE':
     case 'CANCELLED_BY_MENTOR': return 'Đã huỷ';
@@ -49,13 +63,13 @@ const statusLabel = (status: BookingStatus, completedLabel = 'Hoàn thành') => 
 };
 
 const dateOf = (b: Booking) =>
-  b.requestedStartTime ? new Date(b.requestedStartTime).toLocaleDateString('vi-VN') : '—';
+  b.selectedStartTime ? new Date(b.selectedStartTime).toLocaleDateString('vi-VN') : '—';
 
 const timeOf = (b: Booking) => {
-  if (!b.requestedStartTime) return '—';
-  const s = new Date(b.requestedStartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  const e = b.requestedEndTime
-    ? new Date(b.requestedEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  if (!b.selectedStartTime) return '—';
+  const s = new Date(b.selectedStartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const e = b.selectedEndTime
+    ? new Date(b.selectedEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
     : '';
   return e ? `${s} - ${e}` : s;
 };
@@ -80,12 +94,18 @@ export const MyBookings: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('');
 
   const [activeMenteeBooking, setActiveMenteeBooking] = useState<Booking | null>(null);
+  const [issueBooking, setIssueBooking] = useState<Booking | null>(null);
+  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [issueDescription, setIssueDescription] = useState('');
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [rating, setRating] = useState(5);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [satisfactionNote, setSatisfactionNote] = useState('');
   const [publicComment, setPublicComment] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+
+  // Booking mentee đang mở modal thanh toán PayOS.
+  const [payBooking, setPayBooking] = useState<Booking | null>(null);
 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const flashSuccess = (msg: string, duration = 3000) => {
@@ -167,11 +187,12 @@ export const MyBookings: React.FC = () => {
     }
   };
 
+  // Mentor báo đã dạy xong (chỉ hợp lệ khi AWAITING_MENTOR_COMPLETION) -> chờ mentee xác nhận.
   const handleMarkComplete = async (bookingId: string) => {
     setBusy(true);
     try {
-      await bookingsApi.complete(bookingId);
-      flashSuccess('Đã đánh dấu buổi học hoàn thành.');
+      await bookingsApi.mentorComplete(bookingId);
+      flashSuccess('Đã báo hoàn thành. Đang chờ mentee xác nhận.');
       await load();
     } catch (err: any) {
       flashSuccess(err?.response?.data?.message || 'Đánh dấu hoàn thành thất bại.');
@@ -213,22 +234,56 @@ export const MyBookings: React.FC = () => {
     }
   };
 
-  const handleCompleteAsMentee = async (bookingId: string) => {
+  // Mentee xác nhận buổi đã diễn ra ổn (AWAITING_MENTEE_CONFIRMATION -> COMPLETED).
+  const handleConfirmAsMentee = async (bookingId: string) => {
     setBusy(true);
     try {
-      await bookingsApi.complete(bookingId);
-      flashSuccess('Đã kết thúc buổi học! Bạn có thể gửi phản hồi để giúp Mentor hoàn thiện hơn.', 4000);
+      await bookingsApi.confirm(bookingId);
+      flashSuccess('Đã xác nhận hoàn thành! Bạn có thể gửi đánh giá cho Mentor.', 4000);
       await load();
     } catch (err: any) {
-      flashSuccess(err?.response?.data?.message || 'Kết thúc buổi học thất bại.');
+      flashSuccess(err?.response?.data?.message || 'Xác nhận thất bại.');
     } finally {
       setBusy(false);
     }
   };
 
-  const confirmedList = mentorBookings.filter((b) => b.status === 'ACCEPTED');
+  /* ---- Báo sự cố sau buổi học ---- */
+  const handleSubmitIssue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!issueBooking || !issueDescription.trim()) return;
+    setBusy(true);
+    try {
+      await bookingsApi.submitIssue(issueBooking.bookingId, {
+        issueType: 'NO_SHOW_OR_QUALITY_OR_OTHER',
+        description: issueDescription.trim(),
+        wantsAdminReview: true,
+      });
+      setShowIssueModal(false);
+      flashSuccess('Đã gửi báo cáo sự cố. Admin sẽ xem xét.');
+      await load();
+    } catch (err: any) {
+      setShowIssueModal(false);
+      flashSuccess(err?.response?.data?.message || 'Gửi báo cáo thất bại.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleOpenIssue = (booking: Booking) => {
+    setIssueBooking(booking);
+    setIssueDescription('');
+    setShowIssueModal(true);
+  };
+
   const pendingList = mentorBookings.filter((b) => b.status === 'PENDING');
-  const completedList = mentorBookings.filter((b) => b.status === 'COMPLETED');
+  // "Đã xác nhận" gồm cả các trạng thái đang diễn ra / chờ hoàn tất.
+  const confirmedList = mentorBookings.filter((b) =>
+    ['ACCEPTED', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
+  );
+  const completedList = mentorBookings.filter((b) =>
+    ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW'].includes(b.status),
+  );
 
   const tabs: { key: TabKey; label: string; count: number }[] = [
     { key: 'pending', label: 'Cần xác nhận', count: pendingList.length },
@@ -369,16 +424,37 @@ export const MyBookings: React.FC = () => {
                       )}
 
                       {b.status === 'ACCEPTED' && (
-                        <button
-                          disabled={busy}
-                          onClick={() => handleMarkComplete(b.bookingId)}
-                          className="bg-brand-blue hover:bg-brand-blue-hover text-white text-body font-bold py-2 px-4 rounded-field cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-                        >
-                          Đánh dấu hoàn thành
-                        </button>
+                        <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3 py-1.5 rounded-field text-center">
+                          Chờ tới giờ học
+                        </span>
                       )}
 
-                      {b.status === 'COMPLETED' && (
+                      {b.status === 'AWAITING_MENTOR_COMPLETION' && (
+                        <div className="flex md:flex-col gap-2 items-end">
+                          <button
+                            disabled={busy}
+                            onClick={() => handleMarkComplete(b.bookingId)}
+                            className="bg-brand-blue hover:bg-brand-blue-hover text-white text-body font-bold py-2 px-4 rounded-field cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            Đánh dấu hoàn thành
+                          </button>
+                          <button
+                            disabled={busy}
+                            onClick={() => handleOpenIssue(b)}
+                            className="text-meta font-bold text-red-600 hover:underline cursor-pointer"
+                          >
+                            Báo sự cố
+                          </button>
+                        </div>
+                      )}
+
+                      {b.status === 'AWAITING_MENTEE_CONFIRMATION' && (
+                        <span className="text-meta text-indigo-600 font-bold bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-field text-center">
+                          Chờ mentee xác nhận
+                        </span>
+                      )}
+
+                      {(b.status === 'COMPLETED' || b.status === 'AUTO_CLOSED') && (
                         <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3 py-1.5 rounded-field">
                           Buổi học đã hoàn tất
                         </span>
@@ -459,7 +535,15 @@ export const MyBookings: React.FC = () => {
 
                         {b.status === 'ACCEPTED' && (
                           <div className="flex flex-wrap gap-2 justify-end">
-                            {b.meetingLink && (
+                            {isPaidBooking(b) && (
+                              <button
+                                onClick={() => setPayBooking(b)}
+                                className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95"
+                              >
+                                <Coins className="w-3.5 h-3.5" /> Thanh toán {(b.servicePriceScoinSnapshot ?? 0).toLocaleString('vi-VN')} SCoin
+                              </button>
+                            )}
+                            {b.meetingLink ? (
                               <a
                                 href={b.meetingLink}
                                 target="_blank"
@@ -468,18 +552,40 @@ export const MyBookings: React.FC = () => {
                               >
                                 <Video className="w-3.5 h-3.5" /> Vào lớp học
                               </a>
+                            ) : (
+                              <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3 py-1.5 rounded-field">
+                                Chờ mentor gửi link
+                              </span>
                             )}
+                          </div>
+                        )}
+
+                        {b.status === 'AWAITING_MENTOR_COMPLETION' && (
+                          <span className="text-meta text-indigo-600 font-bold bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-field text-center">
+                            Chờ mentor xác nhận hoàn thành
+                          </span>
+                        )}
+
+                        {b.status === 'AWAITING_MENTEE_CONFIRMATION' && (
+                          <div className="flex md:flex-col gap-2 items-end">
                             <button
                               disabled={busy}
-                              onClick={() => handleCompleteAsMentee(b.bookingId)}
-                              className="flex items-center gap-1 bg-surface hover:bg-brand-bg border border-brand-border text-brand-text text-body font-bold py-2.5 px-3.5 rounded-field cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                              onClick={() => handleConfirmAsMentee(b.bookingId)}
+                              className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md transition-all active:scale-95 disabled:opacity-50"
                             >
-                              Kết thúc buổi học
+                              <Check className="w-3.5 h-3.5" /> Xác nhận hoàn thành
+                            </button>
+                            <button
+                              disabled={busy}
+                              onClick={() => handleOpenIssue(b)}
+                              className="text-meta font-bold text-red-600 hover:underline cursor-pointer"
+                            >
+                              Báo sự cố
                             </button>
                           </div>
                         )}
 
-                        {b.status === 'COMPLETED' && (
+                        {(b.status === 'COMPLETED' || b.status === 'AUTO_CLOSED') && (
                           <div className="space-y-1.5 text-right">
                             {reviewed ? (
                               <span className="text-meta text-green-700 font-bold bg-green-50 border border-green-200 px-3 py-1.5 rounded-field block">
@@ -509,6 +615,17 @@ export const MyBookings: React.FC = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Payment Modal (mentee thanh toán booking qua PayOS) */}
+      {payBooking && (
+        <PaymentModal
+          bookingId={payBooking.bookingId}
+          serviceTitle={payBooking.serviceTitle}
+          basePriceScoin={payBooking.servicePriceScoinSnapshot}
+          onClose={() => setPayBooking(null)}
+          onPaid={() => { setPayBooking(null); flashSuccess('Thanh toán thành công!'); load(); }}
+        />
       )}
 
       {/* Meet Link Modal (chấp nhận dạy) */}
@@ -607,6 +724,45 @@ export const MyBookings: React.FC = () => {
                 className="w-full bg-red-600 hover:bg-red-700 text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 Xác nhận Từ chối
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Issue Modal (báo sự cố sau buổi học) */}
+      {showIssueModal && issueBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface border border-brand-border rounded-card p-6 relative">
+            <button
+              onClick={() => setShowIssueModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-brand-bg hover:bg-brand-bg/85 border border-brand-border text-brand-text-muted hover:text-brand-text cursor-pointer transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <form onSubmit={handleSubmitIssue} className="space-y-4">
+              <div className="text-left">
+                <h3 className="text-lg font-bold font-serif text-brand-text">Báo sự cố buổi học</h3>
+                <p className="text-brand-text-muted text-body font-medium mt-0.5">
+                  Mô tả vấn đề (mentor vắng mặt, chất lượng, lý do khác). Admin sẽ xem xét.
+                </p>
+              </div>
+              <textarea
+                required
+                rows={4}
+                value={issueDescription}
+                onChange={(e) => setIssueDescription(e.target.value)}
+                maxLength={2000}
+                placeholder="Mô tả chi tiết sự cố bạn gặp phải..."
+                className="w-full bg-brand-bg border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none font-medium"
+              />
+              <button
+                type="submit"
+                disabled={busy || !issueDescription.trim()}
+                className="w-full flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
+                Gửi báo cáo
               </button>
             </form>
           </div>

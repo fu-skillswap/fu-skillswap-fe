@@ -5,6 +5,7 @@ import { ThemeSwitcher } from './ThemeSwitcher';
 import { Menu, MessageSquare, Search, User, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from './NotificationBell';
+import { CreditWalletBadge } from './CreditWalletBadge';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -83,6 +84,7 @@ export const Layout: React.FC = () => {
                           {user.roles?.[0] || 'MENTEE'}
                         </span>
                       </div>
+                      <CreditWalletBadge variant="row" />
                       <Link to="/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-primary transition-all">
                         <User className="w-4.5 h-4.5" /><span>Hồ sơ cá nhân</span>
                       </Link>

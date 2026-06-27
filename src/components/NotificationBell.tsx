@@ -26,8 +26,12 @@ const timeAgo = (iso?: string) => {
 /** Suy ra đường dẫn deep-link từ loại thông báo / entity liên quan. */
 const linkFor = (n: NotificationItem): string | null => {
   if (n.relatedEntityType === 'BOOKING') return '/bookings';
+  // Forum: mở thẳng bài viết liên quan nếu có postId.
+  if (n.relatedEntityType === 'FORUM_POST' && n.relatedEntityId) return `/forum?post=${n.relatedEntityId}`;
+  if (n.type?.startsWith('FORUM')) return '/forum';
   if (n.type?.startsWith('MENTOR_VERIFICATION')) return '/profile';
   if (n.type === 'FEEDBACK_RECEIVED' || n.type === 'SESSION_COMPLETED') return '/bookings';
+  // Bao gồm cả BOOKING_RESCHEDULE_* (type bắt đầu bằng BOOKING).
   if (n.type?.startsWith('BOOKING')) return '/bookings';
   return null;
 };

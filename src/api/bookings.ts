@@ -4,7 +4,7 @@
 import { http } from './http';
 import type {
   Booking, CreateBookingPayload, SubmitFeedbackPayload, MyBookingsParams,
-  MeetingPlatform, Paged,
+  SubmitBookingIssuePayload, BookingIssueResult, MeetingPlatform, Paged,
 } from './types';
 
 export const bookingsApi = {
@@ -33,9 +33,20 @@ export const bookingsApi = {
   cancel: (bookingId: string, cancelReason?: string) =>
     http.post<Booking>(`/api/me/bookings/${bookingId}/cancel`, { cancelReason }),
 
-  /** POST /api/me/bookings/{bookingId}/complete — đánh dấu hoàn tất */
+  /** POST /api/me/bookings/{bookingId}/complete — đánh dấu buổi đã hoàn tất */
   complete: (bookingId: string, completionNote?: string) =>
     http.post<Booking>(`/api/me/bookings/${bookingId}/complete`, { completionNote }),
+
+  /**
+   * POST /api/me/bookings/{bookingId}/confirm — mentee xác nhận buổi đã diễn ra ổn
+   * (AWAITING_MENTEE_CONFIRMATION -> COMPLETED).
+   */
+  confirm: (bookingId: string, confirmationNote?: string) =>
+    http.post<Booking>(`/api/me/bookings/${bookingId}/confirm`, { confirmationNote }),
+
+  /** POST /api/me/bookings/{bookingId}/issue — mentee báo sự cố sau buổi học (-> UNDER_REVIEW). */
+  submitIssue: (bookingId: string, payload: SubmitBookingIssuePayload) =>
+    http.post<BookingIssueResult>(`/api/me/bookings/${bookingId}/issue`, payload),
 
   /** POST /api/bookings/{bookingId}/feedback — mentee gửi đánh giá sau buổi học */
   submitFeedback: (bookingId: string, payload: SubmitFeedbackPayload) =>
@@ -53,6 +64,13 @@ export const bookingsApi = {
   /** POST /api/mentor/bookings/{bookingId}/cancel — mentor huỷ buổi đã nhận */
   mentorCancel: (bookingId: string, cancelReason?: string) =>
     http.post<Booking>(`/api/mentor/bookings/${bookingId}/cancel`, { cancelReason }),
+
+  /**
+   * POST /api/mentor/bookings/{bookingId}/complete — mentor báo đã dạy xong
+   * (-> AWAITING_MENTEE_CONFIRMATION).
+   */
+  mentorComplete: (bookingId: string, completionNote?: string) =>
+    http.post<Booking>(`/api/mentor/bookings/${bookingId}/complete`, { completionNote }),
 
   /** PATCH /api/mentor/bookings/{bookingId}/meeting-link — gắn link/địa điểm họp */
   saveMeetingLink: (

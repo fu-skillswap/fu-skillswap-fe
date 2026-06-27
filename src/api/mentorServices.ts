@@ -9,7 +9,8 @@ export interface MentorServicePayload {
   description: string;
   durationMinutes: number;
   isFree: boolean;
-  priceAmount: number;
+  /** Giá theo SCoin (BE mới). BE yêu cầu @NotNull; gửi 0 khi miễn phí. */
+  priceScoin: number;
   helpTopicIds: string[];
   active?: boolean;
 }

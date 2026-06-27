@@ -245,8 +245,8 @@ export interface MentorServiceItem {
   description?: string;
   durationMinutes: number;
   free: boolean;
-  priceAmount?: number;
-  currency?: string;
+  /** Giá dịch vụ theo SCoin (BE mới). 0 nghĩa là miễn phí. */
+  priceScoin?: number;
   active: boolean;
   helpTopics?: MentorTag[];
 }
@@ -294,15 +294,49 @@ export interface MentorReview {
   createdAt?: string;
 }
 
-/** Slot trống của mentor — khớp MentorAvailabilitySlotResponse. */
+/** Service cơ bản gắn vào 1 slot — khớp AvailabilitySlotServiceBasicResponse. */
+export interface AvailabilitySlotServiceBasic {
+  serviceId: string;
+  title: string;
+  durationMinutes: number;
+  isFree: boolean;
+  /** Giá dịch vụ theo SCoin (BE mới). 0 nghĩa là miễn phí. */
+  priceScoin?: number;
+}
+
+/**
+ * Parent availability slot hiển thị cho mentee — khớp MentorAvailabilitySlotResponse (BE mới).
+ * Khả năng đặt thực sự được quyết định ở candidate segment (xem getSlotCandidates).
+ */
 export interface MentorAvailabilitySlot {
   slotId: string;
   startTime: string;
   endTime: string;
-  timezone: string;
+  timezone?: string;
   durationMinutes: number;
   teachingMode: TeachingMode;
-  recurring: boolean;
+  pendingRequestCount?: number;
+  maxPendingRequests?: number;
+  remainingRequestSlots?: number;
+  services?: AvailabilitySlotServiceBasic[];
+}
+
+/** 1 candidate segment cụ thể trong slot — khớp ServiceSlotCandidateItemResponse. */
+export interface ServiceSlotCandidate {
+  startTime: string;
+  endTime: string;
+  pendingCount: number;
+  remainingPendingQuota: number;
+  isSelectable: boolean;
+  reasonIfBlocked?: string;
+}
+
+/** Khớp ServiceSlotCandidatesResponse — danh sách khung giờ đặt được cho 1 service trong 1 slot. */
+export interface ServiceSlotCandidates {
+  slotId: string;
+  serviceId: string;
+  serviceDurationMinutes?: number;
+  candidateServiceSlots: ServiceSlotCandidate[];
 }
 
 export interface MentorSearchParams {
@@ -317,16 +351,21 @@ export interface MentorSearchParams {
   teachingMode?: TeachingMode;
 }
 
-// ---------- Bookings (4.9 / 4.10) ----------
+// ---------- Bookings (luồng mới: candidates + lifecycle 2 phía) ----------
 export type BookingStatus =
-  | 'PENDING' | 'ACCEPTED' | 'REJECTED'
+  | 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED'
   | 'CANCELLED_BY_MENTEE' | 'CANCELLED_BY_MENTOR'
-  | 'COMPLETED' | 'NO_SHOW';
+  | 'AWAITING_MENTOR_COMPLETION' | 'AWAITING_MENTEE_CONFIRMATION'
+  | 'COMPLETED' | 'AUTO_CLOSED' | 'UNDER_REVIEW' | 'NO_SHOW';
 
-/** Khớp BookingResponse của BE. */
+/** Loại sự cố mentee/mentor báo sau buổi học — khớp BookingIssueType. */
+export type BookingIssueType = 'NO_SHOW_OR_QUALITY_OR_OTHER';
+
+/** Khớp BookingResponse của BE (luồng mới). */
 export interface Booking {
   bookingId: string;
   sessionId?: string;
+  sessionStatus?: BookingStatus;
   status: BookingStatus;
   mentorUserId: string;
   mentorDisplayName: string;
@@ -334,9 +373,15 @@ export interface Booking {
   menteeUserId: string;
   menteeDisplayName: string;
   menteeAvatarUrl?: string;
-  slotId?: string;
+  availabilitySlotId?: string;
   serviceId?: string;
   serviceTitle?: string;
+  serviceDescriptionSnapshot?: string;
+  serviceExpectedOutcomeSnapshot?: string;
+  serviceDurationSnapshot?: number;
+  serviceIsFreeSnapshot?: boolean;
+  /** Snapshot giá dịch vụ theo SCoin (BE mới). */
+  servicePriceScoinSnapshot?: number;
   learningGoalTitle?: string;
   learningGoalDescription?: string;
   mentorResponseNote?: string;
@@ -345,26 +390,33 @@ export interface Booking {
   meetingPlatform?: MeetingPlatform;
   meetingLink?: string;
   location?: string;
-  requestedStartTime?: string;
-  requestedEndTime?: string;
+  // Khung giờ mentee đã chọn (thay cho requestedStartTime/EndTime cũ).
+  selectedStartTime?: string;
+  selectedEndTime?: string;
   actualStartTime?: string;
   actualEndTime?: string;
   acceptedAt?: string;
   rejectedAt?: string;
   cancelledAt?: string;
   completedAt?: string;
+  finalizedAt?: string;
+  autoClosedAt?: string;
+  issueSubmittedAt?: string;
+  issueDescription?: string;
   mentorNote?: string;
   menteeNote?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
+/** POST /api/bookings — payload mới: bỏ mentorUserId, thêm khung giờ đã chọn. */
 export interface CreateBookingPayload {
-  mentorUserId: string;
   availabilitySlotId: string;
   serviceId: string;
+  selectedStartTime: string;
+  selectedEndTime: string;
   learningGoalTitle: string;
-  learningGoalDescription: string;
+  learningGoalDescription?: string;
 }
 
 export interface SubmitFeedbackPayload {
@@ -373,6 +425,20 @@ export interface SubmitFeedbackPayload {
   comment?: string;
   wouldRecommend?: boolean;
   isPublic?: boolean;
+}
+
+/** POST /api/me/bookings/{id}/issue — mentee báo sự cố sau buổi học. */
+export interface SubmitBookingIssuePayload {
+  issueType: BookingIssueType;
+  description: string;
+  wantsAdminReview: boolean;
+}
+
+/** Khớp BookingIssueResponse. */
+export interface BookingIssueResult {
+  bookingId: string;
+  status: BookingStatus;
+  issueSubmittedAt?: string;
 }
 
 export interface MyBookingsParams {
@@ -384,37 +450,16 @@ export interface MyBookingsParams {
   direction?: 'ASC' | 'DESC';
 }
 
-// ---------- Mentor availability rules (4.7) ----------
-export type AvailabilityRuleType = 'OPEN' | 'CLOSED';
-export type AvailabilityRepeatType = 'NONE' | 'DAILY' | 'WEEKLY';
-
-export interface AvailabilityRule {
-  ruleId: string;
-  ruleType: AvailabilityRuleType;
-  repeatType: AvailabilityRepeatType;
-  daysOfWeek?: string[];
-  effectiveFrom?: string;
-  effectiveTo?: string;
+// ---------- Mentor availability (slot-service model) ----------
+// Mentor không tự tạo khung giờ; slot do hệ thống sinh sẵn, mentor chỉ gán service.
+/** Khớp MentorManagedAvailabilitySlotResponse — kết quả sau khi gán service vào slot. */
+export interface ManagedAvailabilitySlot {
+  slotId: string;
   startTime: string;
   endTime: string;
   timezone?: string;
   active: boolean;
-  note?: string;
-  serviceId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface UpsertAvailabilityRulePayload {
-  ruleType: AvailabilityRuleType;
-  serviceId?: string;
-  repeatType: AvailabilityRepeatType;
-  daysOfWeek?: string[];
-  effectiveFrom?: string;
-  effectiveTo?: string;
-  startTime: string;
-  endTime: string;
-  note?: string;
+  services?: AvailabilitySlotServiceBasic[];
 }
 
 // ---------- Admin / System users ----------
@@ -467,6 +512,9 @@ export type NotificationType =
   | 'BOOKING_REQUEST_CREATED' | 'BOOKING_ACCEPTED' | 'BOOKING_REJECTED'
   | 'BOOKING_CANCELLED_BY_MENTEE' | 'BOOKING_CANCELLED_BY_MENTOR' | 'BOOKING_AUTO_REJECTED'
   | 'MEETING_LINK_UPDATED' | 'SESSION_COMPLETED' | 'FEEDBACK_RECEIVED'
+  | 'BOOKING_RESCHEDULE_REQUESTED' | 'BOOKING_RESCHEDULE_ACCEPTED'
+  | 'BOOKING_RESCHEDULE_REJECTED' | 'BOOKING_RESCHEDULE_EXPIRED'
+  | 'FORUM_POST_COMMENTED' | 'FORUM_POST_HIDDEN' | 'FORUM_COMMENT_HIDDEN'
   | string;
 
 /** Khớp NotificationResponse của BE. */
@@ -506,7 +554,7 @@ export interface Conversation {
 }
 
 /**
- * Payload realtime đẩy qua WebSocket (/user/queue/messages) — khớp ChatMessageEvent của BE.
+ * Payload realtime trong envelope CHAT_MESSAGE_CREATED của raw WebSocket — khớp ChatMessageEvent của BE.
  * Lưu ý: KHÔNG có `isMine`; FE tự suy ra bằng cách so senderId với user hiện tại.
  */
 export interface ChatMessageEvent {
@@ -530,4 +578,209 @@ export interface ChatMessage {
   createdAt?: string;
   /** True nếu tin nhắn do user hiện tại gửi. */
   isMine: boolean;
+}
+
+// =====================================================================
+// Payment / Wallet / Payout (module payment BE mới — PayOS, SCoin)
+// =====================================================================
+
+/** Trạng thái payment order — khớp PaymentOrderStatus của BE. */
+export type PaymentOrderStatus =
+  | 'PENDING'
+  | 'PARTIALLY_COVERED_BY_CREDIT'
+  | 'AWAITING_PROVIDER_PAYMENT'
+  | 'PAID'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'EXPIRED';
+
+export type PaymentProvider = 'PAYOS';
+
+/** Kết quả checkout / trạng thái payment order — khớp PaymentCheckoutResponse của BE. */
+export interface PaymentCheckout {
+  paymentOrderId: string;
+  orderCode: string;
+  bookingId: string;
+  attemptNo?: number;
+  /** Giá gốc dịch vụ (SCoin). */
+  basePriceScoin?: number;
+  couponDiscountScoin?: number;
+  campaignCreditAppliedScoin?: number;
+  userCreditAppliedScoin?: number;
+  /** Số SCoin còn phải trả qua cổng thanh toán. */
+  remainingPayableScoin?: number;
+  /** Số tiền VND tương ứng còn phải trả qua PayOS. */
+  remainingPayableVnd?: number;
+  status: PaymentOrderStatus;
+  paymentProvider?: PaymentProvider;
+  providerOrderCode?: string;
+  providerPaymentLinkId?: string;
+  providerStatus?: string;
+  /** URL PayOS để redirect người dùng sang thanh toán. */
+  checkoutUrl?: string;
+  paymentLink?: string;
+  expiresAt?: string;
+}
+
+/** Trạng thái payout request — khớp PayoutRequestStatus của BE. */
+export type PayoutRequestStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PAID' | 'CANCELLED';
+
+/** Payout profile (tài khoản nhận tiền) của mentor — khớp MentorPayoutProfileResponse. */
+export interface MentorPayoutProfile {
+  payoutProfileId: string;
+  mentorUserId?: string;
+  accountHolderName: string;
+  bankCode?: string;
+  bankName: string;
+  accountNumberMasked?: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Payload tạo/cập nhật payout profile — khớp MentorPayoutProfileUpsertRequest. */
+export interface MentorPayoutProfilePayload {
+  accountHolderName: string;
+  bankCode?: string;
+  bankName: string;
+  accountNumber: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+}
+
+/** Payout request của mentor — khớp PayoutRequestResponse. */
+export interface PayoutRequest {
+  payoutRequestId: string;
+  mentorUserId?: string;
+  settlementAccountId?: string;
+  payoutProfileId?: string;
+  amountScoin: number;
+  status: PayoutRequestStatus;
+  bankAccountNameSnapshot?: string;
+  bankNameSnapshot?: string;
+  bankAccountNumberMaskedSnapshot?: string;
+  adminUserId?: string;
+  adminNote?: string;
+  requestedAt?: string;
+  reviewedAt?: string;
+  approvedAt?: string;
+  paidAt?: string;
+  rejectedAt?: string;
+}
+
+/** Payload tạo payout request — khớp PayoutRequestCreateRequest. */
+export interface PayoutRequestPayload {
+  amountScoin: number;
+  payoutProfileId?: string;
+  note?: string;
+}
+
+// =====================================================================
+// Wallet (ví Scoin mentee + settlement earnings mentor) — endpoint BE mới
+// =====================================================================
+
+/** Loại bút toán sổ cái — khớp LedgerEntryType của BE. */
+export type LedgerEntryType =
+  | 'ISSUE' | 'RESERVE' | 'CONSUME' | 'RELEASE' | 'REFUND'
+  | 'ADJUSTMENT' | 'HOLD' | 'PAID_OUT' | 'COMMISSION' | 'VOID';
+
+/** Nguồn phát sinh giao dịch — khớp LedgerSourceType của BE. */
+export type LedgerSourceType =
+  | 'PAYMENT_ORDER' | 'BOOKING' | 'CAMPAIGN' | 'COUPON' | 'MANUAL' | 'PAYOUT_REQUEST' | 'REFUND';
+
+/** Một giao dịch ví — khớp WalletTransactionResponse. */
+export interface WalletTransaction {
+  id: string;
+  entryType: LedgerEntryType;
+  originType?: CreditOriginType;
+  sourceType?: LedgerSourceType;
+  sourceId?: string;
+  amountScoin: number;
+  /** Ảnh hưởng số dư, có dấu: > 0 cộng vào ví, < 0 trừ ra. */
+  balanceEffectScoin: number;
+  memo?: string;
+  createdAt?: string;
+}
+
+/** Nguồn gốc credit của mentee — khớp CreditOriginType của BE. */
+export type CreditOriginType =
+  | 'CAMPAIGN_BONUS' | 'COUPON_BONUS' | 'REFUND' | 'MANUAL' | 'PAYMENT_RESERVATION';
+
+/** Ví Scoin của mentee — khớp CreditWalletResponse (GET /api/me/credit-wallet). */
+export interface CreditWallet {
+  availableScoin: number;
+  recentTransactions: WalletTransaction[];
+}
+
+/** Ví settlement earnings của mentor — khớp MentorWalletResponse (GET /api/me/mentor-wallet). */
+export interface MentorWallet {
+  availableScoin: number;
+  recentTransactions: WalletTransaction[];
+}
+
+// =====================================================================
+// Forum (diễn đàn thảo luận) — module BE mới /api/forum
+// =====================================================================
+
+export type ForumPostStatus = 'PUBLISHED' | 'HIDDEN';
+export type ForumReactionType = 'LIKE';
+export type ForumReportTargetType = 'POST' | 'COMMENT';
+export type ForumReportReasonType = 'SPAM' | 'OFF_TOPIC' | 'HARASSMENT' | 'MISLEADING' | 'OTHER';
+
+/** Help topic gắn vào post forum — khớp ForumHelpTopicResponse. */
+export interface ForumHelpTopicLite {
+  id: string;
+  code?: string;
+  nameVi: string;
+  nameEn?: string;
+}
+
+/** Bài viết forum — khớp ForumPostResponse. */
+export interface ForumPost {
+  postId: string;
+  authorUserId: string;
+  authorFullName: string;
+  authorAvatarUrl?: string;
+  helpTopic?: ForumHelpTopicLite;
+  title: string;
+  content: string;
+  status: ForumPostStatus;
+  commentCount: number;
+  reactionCount: number;
+  reportCount?: number;
+  lastActivityAt?: string;
+  reactedByCurrentUser: boolean;
+  myReactionType?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Comment forum — khớp ForumCommentResponse. */
+export interface ForumComment {
+  commentId: string;
+  postId: string;
+  authorUserId: string;
+  authorFullName: string;
+  authorAvatarUrl?: string;
+  content: string;
+  status: ForumPostStatus;
+  reportCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Payload tạo/cập nhật post — khớp ForumPostUpsertRequest. */
+export interface ForumPostPayload {
+  title: string;
+  content: string;
+  helpTopicId: string;
+}
+
+/** Payload tạo report — khớp ForumReportCreateRequest. */
+export interface ForumReportPayload {
+  targetType: ForumReportTargetType;
+  targetId: string;
+  reasonType: ForumReportReasonType;
+  description?: string;
 }

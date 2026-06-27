@@ -40,9 +40,16 @@ interface AuthContextType {
  * và trạng thái hồ sơ của user. ADMIN/SYSTEM_ADMIN luôn được đưa vào khu vực
  * quản trị, bất kể profileCompleted.
  */
+/**
+ * Quy ước admin DUY NHẤT cho toàn app: user là admin khi có role ADMIN HOẶC SYSTEM_ADMIN.
+ * Mọi nơi (ProtectedRoute, redirect, các trang /admin) phải dùng helper này — tránh lệch
+ * định nghĩa gây vòng lặp redirect (SYSTEM_ADMIN bị coi là non-admin ở 1 chỗ → trang trắng).
+ */
+export const isAdminRole = (roles?: ReadonlyArray<string>): boolean =>
+  !!roles && (roles.includes('ADMIN') || roles.includes('SYSTEM_ADMIN'));
+
 export const getPostLoginRedirect = (user: UserMeResponse): string => {
-  const isAdmin = user.roles.includes('ADMIN') || user.roles.includes('SYSTEM_ADMIN');
-  if (isAdmin) return '/admin';
+  if (isAdminRole(user.roles)) return '/admin';
   if (!user.profileCompleted) return '/complete-profile';
   return '/dashboard';
 };

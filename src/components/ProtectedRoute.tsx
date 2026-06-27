@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, isAdminRole } from '../context/AuthContext';
 
 interface ProtectedRouteProps {
   children?: React.ReactNode;
@@ -28,8 +28,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const roles = user?.roles ?? [];
-  const isAdmin = roles.includes('ADMIN') || roles.includes('SYSTEM_ADMIN');
+  const isAdmin = isAdminRole(user?.roles);
 
   // If logged in but profile is not completed (only check for non-admin)
   if (user && !isAdmin && !user.profileCompleted && location.pathname !== '/complete-profile') {
