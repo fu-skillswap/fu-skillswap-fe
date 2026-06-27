@@ -198,12 +198,12 @@ export const MentorSetupProfile: React.FC = () => {
                 <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">
                   Môn học hỗ trợ ({supportingSubjects.length}/{SUPPORTING_MAX}, không bắt buộc)
                 </label>
-                <textarea
-                  rows={3}
+                 <textarea
+                  rows={4}
                   maxLength={SUPPORTING_MAX}
                   value={supportingSubjects}
                   onChange={(e) => setSupportingSubjects(e.target.value)}
-                  placeholder="Ví dụ: PRJ301, SWP391, EXE101..."
+                  placeholder={"Nhập mỗi môn một dòng (Xuống dòng để phân tách).\nVí dụ:\nPRJ301\nSWP391\nEXE101"}
                   className="w-full bg-brand-bg/50 border border-brand-border rounded-field p-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none font-medium"
                 />
               </div>

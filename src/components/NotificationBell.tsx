@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, Loader2, BellOff } from 'lucide-react';
+import { 
+  Bell, CheckCheck, Loader2, BellOff, X, CheckCircle2, AlertTriangle, BellRing 
+} from 'lucide-react';
 import { notificationsApi } from '../api/notifications';
 import { chatSocket } from '../lib/chatSocket';
 import type { NotificationItem } from '../api/types';
@@ -41,47 +43,155 @@ export const NotificationBell: React.FC = () => {
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  
+  // State quản lý danh sách Toasts đang hiển thị ở góc màn hình
+  const [toasts, setToasts] = useState<NotificationItem[]>([]);
 
-  const loadUnread = useCallback(async () => {
-    try {
-      const res = await notificationsApi.unreadCount();
-      setUnread(res?.unreadCount ?? 0);
-    } catch {
-      /* im lặng: badge không chặn UI */
-    }
+  const ref = useRef<HTMLDivElement>(null);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const isInitialLoadRef = useRef(true);
+
+  // Đóng toast cụ thể
+  const closeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.notificationId !== id));
   }, []);
 
+  // Xử lý khi nhận được thông báo mới (cả từ WebSocket và Polling)
+  const handleIncomingNotification = useCallback((n: NotificationItem) => {
+    if (knownIdsRef.current.has(n.notificationId)) return;
+    
+    // Lưu ID để tránh trùng lặp
+    knownIdsRef.current.add(n.notificationId);
+
+    // Thêm vào danh sách thông báo hiển thị ở quả chuông (tối đa 20)
+    setItems((prev) => {
+      if (prev.some((item) => item.notificationId === n.notificationId)) return prev;
+      return [n, ...prev].slice(0, 20);
+    });
+
+    // Chỉ đếm và báo Toast cho các thông báo chưa đọc
+    if (!n.read) {
+      setUnread((c) => c + 1);
+      
+      // Bắn Toast thông báo nổi
+      setToasts((prev) => {
+        if (prev.some((t) => t.notificationId === n.notificationId)) return prev;
+        return [...prev, n];
+      });
+
+      // Tự động đóng sau 5 giây
+      setTimeout(() => {
+        closeToast(n.notificationId);
+      }, 5000);
+    }
+  }, [closeToast]);
+
+  // Hàm tải thông tin từ API (vừa dùng để đồng bộ vừa làm polling fallback)
+  const pollNotifications = useCallback(async () => {
+    try {
+      const res = await notificationsApi.list({ size: 10 });
+      const newItems = res.content ?? [];
+
+      if (isInitialLoadRef.current) {
+        // Lần đầu tải trang: lưu toàn bộ ID hiện tại vào set để không bắn Toast thông báo cũ
+        newItems.forEach((n) => knownIdsRef.current.add(n.notificationId));
+        setItems(newItems);
+        isInitialLoadRef.current = false;
+
+        // Fetch số chưa đọc chuẩn xác nhất
+        const countRes = await notificationsApi.unreadCount();
+        setUnread(countRes?.unreadCount ?? 0);
+      } else {
+        // Các lần poll sau: Duyệt từ cũ đến mới để hiển thị Toast theo đúng thứ tự thời gian
+        const reversed = [...newItems].reverse();
+        reversed.forEach((n) => {
+          if (!knownIdsRef.current.has(n.notificationId)) {
+            handleIncomingNotification(n);
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Lỗi poll thông báo:', e);
+    }
+  }, [handleIncomingNotification]);
+
+  // Khởi tạo và thiết lập lắng nghe
+  useEffect(() => {
+    // 1. Kích hoạt kết nối WebSocket toàn cục
+    chatSocket.connect();
+
+    // 2. Lắng nghe qua kênh STOMP
+    const unsubscribeWs = chatSocket.onNotification((n) => {
+      handleIncomingNotification(n);
+    });
+
+    // 3. Thực hiện tải lần đầu và lập lịch poll mỗi 20 giây
+    pollNotifications();
+    const timer = setInterval(pollNotifications, 20000);
+
+    return () => {
+      unsubscribeWs();
+      clearInterval(timer);
+    };
+  }, [pollNotifications, handleIncomingNotification]);
+
+  // Tải lại toàn bộ danh sách khi mở quả chuông
   const loadList = useCallback(async () => {
     setLoading(true);
     try {
       const res = await notificationsApi.list({ size: 20 });
-      setItems(res.content ?? []);
+      const currentItems = res.content ?? [];
+      setItems(currentItems);
+      // Đảm bảo đồng bộ hóa ID đã biết
+      currentItems.forEach((n) => knownIdsRef.current.add(n.notificationId));
     } catch (e) {
-      console.error('Lỗi tải thông báo:', e);
+      console.error('Lỗi tải danh sách thông báo:', e);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Badge: tải lần đầu + poll mỗi 30s (fallback nếu socket rớt).
+  // Lắng nghe sự kiện để kích hoạt toast hoặc tải lại từ các component khác
   useEffect(() => {
-    loadUnread();
-    const t = setInterval(loadUnread, 30000);
-    return () => clearInterval(t);
-  }, [loadUnread]);
+    const handleRefresh = () => {
+      pollNotifications();
+      loadList();
+    };
 
-  // Realtime: BE đẩy NEW_NOTIFICATION qua WebSocket -> cập nhật badge + danh sách ngay.
-  useEffect(() => {
-    chatSocket.connect();
-    const off = chatSocket.onNotification((n) => {
-      setUnread((c) => c + 1);
-      setItems((prev) => [n, ...prev.filter((it) => it.notificationId !== n.notificationId)]);
-    });
-    return off;
-  }, []);
+    const handlePushToast = (e: Event) => {
+      const customEvent = e as CustomEvent<{ title: string; message: string; type?: string }>;
+      if (customEvent.detail) {
+        const { title, message, type } = customEvent.detail;
+        const fakeNotification: NotificationItem = {
+          notificationId: `toast-${Date.now()}-${Math.random()}`,
+          type: type || 'INFO',
+          title,
+          message,
+          read: false,
+          createdAt: new Date().toISOString()
+        };
+        
+        setToasts((prev) => {
+          if (prev.some((t) => t.notificationId === fakeNotification.notificationId)) return prev;
+          return [...prev, fakeNotification];
+        });
 
-  // Đóng khi click ra ngoài.
+        setTimeout(() => {
+          closeToast(fakeNotification.notificationId);
+        }, 5000);
+      }
+    };
+
+    window.addEventListener('refresh-notifications', handleRefresh);
+    window.addEventListener('push-toast', handlePushToast);
+
+    return () => {
+      window.removeEventListener('refresh-notifications', handleRefresh);
+      window.removeEventListener('push-toast', handlePushToast);
+    };
+  }, [pollNotifications, loadList, closeToast]);
+
+  // Đóng khi click ra ngoài quả chuông
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -96,17 +206,26 @@ export const NotificationBell: React.FC = () => {
     if (next) loadList();
   };
 
-  const handleItemClick = async (n: NotificationItem) => {
+  const handleItemClick = useCallback(async (n: NotificationItem) => {
     setOpen(false);
     if (!n.read) {
-      // Optimistic: giảm badge + đánh dấu đã đọc.
+      // Cập nhật giao diện lạc quan (optimistic UI update)
       setItems((prev) => prev.map((it) => (it.notificationId === n.notificationId ? { ...it, read: true } : it)));
       setUnread((c) => Math.max(0, c - 1));
-      notificationsApi.markAsRead(n.notificationId).catch(() => loadUnread());
+      notificationsApi.markAsRead(n.notificationId).catch((err) => {
+        console.error('Lỗi đánh dấu đã đọc:', err);
+        pollNotifications();
+      });
     }
     const path = linkFor(n);
     if (path) navigate(path);
-  };
+  }, [navigate, pollNotifications]);
+
+  // Click vào Toast
+  const handleToastClick = useCallback((n: NotificationItem) => {
+    closeToast(n.notificationId);
+    handleItemClick(n);
+  }, [closeToast, handleItemClick]);
 
   const handleMarkAll = async () => {
     if (markingAll || unread === 0) return;
@@ -115,8 +234,9 @@ export const NotificationBell: React.FC = () => {
     setUnread(0);
     try {
       await notificationsApi.markAllAsRead();
-    } catch {
-      loadUnread();
+    } catch (e) {
+      console.error('Lỗi đọc tất cả:', e);
+      pollNotifications();
     } finally {
       setMarkingAll(false);
     }
@@ -126,6 +246,7 @@ export const NotificationBell: React.FC = () => {
 
   return (
     <div className="relative" ref={ref}>
+      {/* Icon quả chuông */}
       <button
         onClick={toggleOpen}
         title="Thông báo"
@@ -139,6 +260,7 @@ export const NotificationBell: React.FC = () => {
         )}
       </button>
 
+      {/* Menu dropdown chứa danh sách thông báo */}
       {open && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface border border-line rounded-card shadow-xl z-50 text-left animate-fadeIn overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line-soft">
@@ -193,6 +315,55 @@ export const NotificationBell: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Danh sách các Banner Toast nổi ở góc phải màn hình */}
+      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        {toasts.map((t) => {
+          let Icon = BellRing;
+          let iconColor = 'text-primary';
+          let borderColor = 'border-line';
+
+          if (t.type === 'BOOKING_ACCEPTED' || t.type?.endsWith('APPROVED')) {
+            Icon = CheckCircle2;
+            iconColor = 'text-success';
+            borderColor = 'border-success/20';
+          } else if (
+            t.type === 'BOOKING_REJECTED' || 
+            t.type?.endsWith('REJECTED') || 
+            t.type?.includes('CANCELLED') ||
+            t.type?.includes('FAIL')
+          ) {
+            Icon = AlertTriangle;
+            iconColor = 'text-danger';
+            borderColor = 'border-danger/20';
+          }
+
+          return (
+            <div
+              key={t.notificationId}
+              onClick={() => handleToastClick(t)}
+              className={`bg-surface border ${borderColor} rounded-card shadow-2xl p-4 flex items-start gap-3 pointer-events-auto cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-card animate-fadeIn`}
+            >
+              <div className={`p-1.5 rounded-lg bg-surface-muted shrink-0 ${iconColor}`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <h4 className="text-body font-extrabold text-fg leading-tight truncate">{t.title}</h4>
+                <p className="text-meta text-fg-muted font-medium mt-1 leading-snug line-clamp-2">{t.message}</p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeToast(t.notificationId);
+                }}
+                className="p-1 rounded-full text-fg-faint hover:text-fg hover:bg-surface-muted transition-all shrink-0 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
