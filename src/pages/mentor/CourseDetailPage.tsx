@@ -141,8 +141,9 @@ export const CourseDetailPage: React.FC = () => {
       await mentorServicesApi.toggleActive(course.serviceId, nextState);
       triggerToast(`Đã ${nextState ? 'kích hoạt' : 'tạm dừng'} hiển thị khóa học.`, 'success');
       await loadData();
-    } catch (err) {
-      triggerToast('Không thể cập nhật trạng thái.', 'danger');
+    } catch (err: any) {
+      const detailMsg = getErrorMessage(err) || 'Không thể cập nhật trạng thái.';
+      triggerToast(detailMsg, 'danger');
       setLoading(false);
     }
   };

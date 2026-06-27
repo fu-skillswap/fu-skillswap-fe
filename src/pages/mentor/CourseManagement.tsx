@@ -237,7 +237,8 @@ export const CourseManagement: React.FC = () => {
       await fetchServices();
     } catch (err: any) {
       console.error(err);
-      showAlert('danger', 'Thay đổi trạng thái thất bại.');
+      const detailMsg = getErrorMessage(err) || 'Thay đổi trạng thái thất bại.';
+      showAlert('danger', detailMsg);
       setLoading(false);
     }
   };
