@@ -12,13 +12,30 @@ import type { HelpTopic, MentorServiceItem } from '../../api/types';
 
 // Fallback topics if helpTopicApi fails to load
 const DEFAULT_TOPICS: HelpTopic[] = [
-  { id: '1', nameVi: 'Lập trình Web', nameEn: 'Web Development' },
-  { id: '2', nameVi: 'Trí tuệ nhân tạo', nameEn: 'Artificial Intelligence' },
-  { id: '3', nameVi: 'Kỹ nghệ phần mềm', nameEn: 'Software Engineering' },
-  { id: '4', nameVi: 'UI/UX & Graphics', nameEn: 'UI/UX & Graphics' },
-  { id: '5', nameVi: 'An toàn thông tin', nameEn: 'Information Security' },
-  { id: '6', nameVi: 'Kinh tế & Marketing', nameEn: 'Business & Marketing' },
+  { id: '00000000-0000-0000-0000-000000000001', nameVi: 'Lập trình Web', nameEn: 'Web Development' },
+  { id: '00000000-0000-0000-0000-000000000002', nameVi: 'Trí tuệ nhân tạo', nameEn: 'Artificial Intelligence' },
+  { id: '00000000-0000-0000-0000-000000000003', nameVi: 'Kỹ nghệ phần mềm', nameEn: 'Software Engineering' },
+  { id: '00000000-0000-0000-0000-000000000004', nameVi: 'UI/UX & Graphics', nameEn: 'UI/UX & Graphics' },
+  { id: '00000000-0000-0000-0000-000000000005', nameVi: 'An toàn thông tin', nameEn: 'Information Security' },
+  { id: '00000000-0000-0000-0000-000000000006', nameVi: 'Kinh tế & Marketing', nameEn: 'Business & Marketing' },
 ];
+
+const getErrorMessage = (err: any): string => {
+  const data = err?.response?.data;
+  if (!data) return '';
+  if (typeof data === 'string') return data;
+  if (data.message) return data.message;
+  if (data.error) return data.error;
+  if (data.errors) {
+    if (Array.isArray(data.errors)) {
+      return data.errors.map((e: any) => e.message || e.defaultMessage || JSON.stringify(e)).join(', ');
+    }
+    if (typeof data.errors === 'object') {
+      return Object.entries(data.errors).map(([key, val]) => `${key}: ${val}`).join(', ');
+    }
+  }
+  return JSON.stringify(data);
+};
 
 
 
@@ -210,6 +227,7 @@ export const CourseManagement: React.FC = () => {
       description: fullDescription,
       durationMinutes: sessionDuration,
       isFree: isFree,
+      free: isFree,
       priceScoin: isFree ? 0 : priceScoin,
       helpTopicIds: [topicId],
     };
@@ -227,10 +245,7 @@ export const CourseManagement: React.FC = () => {
       await fetchServices();
     } catch (err: any) {
       console.error('Lưu khóa học thất bại:', err);
-      const serverData = err?.response?.data;
-      const detailMsg = serverData 
-        ? (serverData.message || JSON.stringify(serverData)) 
-        : 'Có lỗi xảy ra khi lưu khóa học.';
+      const detailMsg = getErrorMessage(err) || 'Có lỗi xảy ra khi lưu khóa học.';
       showAlert('danger', detailMsg);
       setLoading(false);
     }
