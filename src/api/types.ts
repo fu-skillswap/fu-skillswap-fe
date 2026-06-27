@@ -243,6 +243,7 @@ export interface MentorServiceItem {
   mentorUserId?: string;
   title: string;
   description?: string;
+  expectedOutcome?: string;
   durationMinutes: number;
   free: boolean;
   /** Giá dịch vụ theo SCoin (BE mới). 0 nghĩa là miễn phí. */

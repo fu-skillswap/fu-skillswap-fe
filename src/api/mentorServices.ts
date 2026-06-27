@@ -7,8 +7,10 @@ import type { MentorServiceItem } from './types';
 export interface MentorServicePayload {
   title: string;
   description: string;
+  expectedOutcome?: string;
   durationMinutes: number;
   isFree: boolean;
+  free?: boolean;
   /** Giá theo SCoin (BE mới). BE yêu cầu @NotNull; gửi 0 khi miễn phí. */
   priceScoin: number;
   helpTopicIds: string[];

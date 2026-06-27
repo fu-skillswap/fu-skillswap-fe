@@ -50,24 +50,7 @@ const parseTitle = (fullTitle: string = '') => {
   };
 };
 
-const serializeDescriptionAndOutcomes = (desc: string, outcomes: string[]) => {
-  if (outcomes.length === 0) return desc;
-  return `${desc}\n\n=== OUTCOMES ===\n${outcomes.join('\n')}`;
-};
-
-const deserializeDescriptionAndOutcomes = (fullDesc: string = '') => {
-  const parts = fullDesc.split('\n\n=== OUTCOMES ===\n');
-  if (parts.length > 1) {
-    return {
-      description: parts[0],
-      outcomes: parts[1].split('\n').filter(Boolean)
-    };
-  }
-  return {
-    description: fullDesc,
-    outcomes: []
-  };
-};
+// Outcomes serialization helpers removed as expectedOutcome is supported natively
 
 export const CourseDetailPage: React.FC = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -167,14 +150,13 @@ export const CourseDetailPage: React.FC = () => {
   const handleOpenEditModal = () => {
     if (!course) return;
     const { subjectCode: sCode, cleanTitle } = parseTitle(course.title);
-    const { description: cleanDesc, outcomes } = deserializeDescriptionAndOutcomes(course.description);
-
+ 
     setTitle(cleanTitle);
     setSubjectCode(sCode);
     setTopicId(course.helpTopics && course.helpTopics.length > 0 ? course.helpTopics[0].id : topics[0]?.id || '');
     setSessionDuration(course.durationMinutes);
-    setDescription(cleanDesc);
-    setOutcomesText(outcomes.join('\n'));
+    setDescription(course.description || '');
+    setOutcomesText(course.expectedOutcome || '');
     setIsFree(course.free);
     setPriceScoin(course.priceScoin || 0);
     setErrors({});
@@ -197,17 +179,12 @@ export const CourseDetailPage: React.FC = () => {
     e.preventDefault();
     if (!course || !validateForm()) return;
 
-    const outcomes = outcomesText
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    const fullDescription = serializeDescriptionAndOutcomes(description.trim(), outcomes);
     const fullTitle = `[${subjectCode.trim().toUpperCase()}] ${title.trim()}`;
 
     const payload = {
       title: fullTitle,
-      description: fullDescription,
+      description: description.trim(),
+      expectedOutcome: outcomesText.trim(),
       durationMinutes: sessionDuration,
       isFree: isFree,
       free: isFree,
@@ -269,7 +246,8 @@ export const CourseDetailPage: React.FC = () => {
   }
 
   const { subjectCode: sCode, cleanTitle } = parseTitle(course.title);
-  const { description: cleanDesc, outcomes } = deserializeDescriptionAndOutcomes(course.description);
+  const cleanDesc = course.description || '';
+  const outcomes = course.expectedOutcome ? course.expectedOutcome.split('\n').filter(Boolean) : [];
   const topicName = course.helpTopics && course.helpTopics.length > 0 ? course.helpTopics[0].nameVi : 'Chủ đề khác';
   const createdDate = (course as any).createdAt 
     ? new Date((course as any).createdAt).toLocaleDateString('vi-VN', {
