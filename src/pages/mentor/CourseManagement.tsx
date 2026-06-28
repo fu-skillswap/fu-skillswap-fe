@@ -327,10 +327,9 @@ export const CourseManagement: React.FC = () => {
 
       // Simultaneously create availability rules if days are checked
       if (selectedDays.length > 0) {
-        const weekDays = getWeekDays(0);
-        const startOfWeek = weekDays[0];
-        const endRange = new Date(startOfWeek);
-        endRange.setDate(startOfWeek.getDate() + 30); // Active for 30 days
+        const today = new Date();
+        const endRange = new Date();
+        endRange.setDate(today.getDate() + 30); // Active for 30 days
 
         const formatTime = (t: string) => t.slice(0, 5);
         
@@ -338,7 +337,7 @@ export const CourseManagement: React.FC = () => {
           ruleType: 'OPEN' as const,
           repeatType: 'WEEKLY' as const,
           daysOfWeek: selectedDays,
-          effectiveFrom: formatDateISO(startOfWeek),
+          effectiveFrom: formatDateISO(today),
           effectiveTo: formatDateISO(endRange),
           startTime: formatTime(startTime),
           endTime: formatTime(endTime),
