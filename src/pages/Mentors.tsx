@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, Send, Calendar, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle } from 'lucide-react';
+import { Sparkles, Send, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
 import type {
   MentorCard, MentorRecommendation, MentorReview,
@@ -7,6 +7,65 @@ import type {
 } from '../api/types';
 import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
+
+const WEEKDAYS = [
+  { value: 'MONDAY', label: 'T2' },
+  { value: 'TUESDAY', label: 'T3' },
+  { value: 'WEDNESDAY', label: 'T4' },
+  { value: 'THURSDAY', label: 'T5' },
+  { value: 'FRIDAY', label: 'T6' },
+  { value: 'SATURDAY', label: 'T7' },
+  { value: 'SUNDAY', label: 'CN' },
+];
+
+const getWeekDays = (offset = 0) => {
+  const start = new Date();
+  const day = start.getDay();
+  // Monday is 1, Sunday is 0. Adjust so Monday is first day of the week
+  const diff = start.getDate() - day + (day === 0 ? -6 : 1) + (offset * 7);
+  const monday = new Date(start.setDate(diff));
+  
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const next = new Date(monday);
+    next.setDate(monday.getDate() + i);
+    days.push(next);
+  }
+  return days;
+};
+
+const formatDateISO = (d: Date) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const formatDateDisplay = (d: Date) => {
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+};
+
+const getLocalDateStr = (iso: string) => {
+  const d = new Date(iso);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const fmtTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+const getDayNameLong = (date: Date) => {
+  const dayIndex = date.getDay();
+  const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+  return days[dayIndex];
+};
+
+const getSubjectCode = (fullTitle: string = '') => {
+  const match = fullTitle.match(/^\[(.*?)\]/);
+  return match ? match[1] : '';
+};
 
 // View-model gộp card + thông tin tương hợp (nếu có từ recommendations).
 interface MentorVM extends MentorCard {
@@ -50,6 +109,7 @@ export const Mentors: React.FC = () => {
   const [goalTitle, setGoalTitle] = useState('');
   const [goalDescription, setGoalDescription] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingWeekOffset, setBookingWeekOffset] = useState<number>(0);
 
   // Review Drawer State
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
@@ -126,6 +186,7 @@ export const Mentors: React.FC = () => {
     setGoalDescription('');
     setActiveSlots([]);
     setBookingLoading(true);
+    setBookingWeekOffset(0);
     try {
       const slots = await mentorsApi.getAvailabilitySlots(mentor.mentorUserId);
       setActiveSlots(slots);
@@ -230,6 +291,10 @@ export const Mentors: React.FC = () => {
     }
   };
 
+  const getBookingDaySlots = (dayDate: Date) => {
+    const targetStr = formatDateISO(dayDate);
+    return activeSlots.filter(s => getLocalDateStr(s.startTime) === targetStr);
+  };
 
   return (
     <div className="space-y-8 text-left relative min-h-screen pb-16">
@@ -536,182 +601,321 @@ export const Mentors: React.FC = () => {
       {/* Booking Scheduler Modal */}
       {showBookingModal && activeMentor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-surface border border-brand-border rounded-card p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-5xl bg-surface border border-brand-border rounded-card p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto animate-scaleUp">
 
             <button
               onClick={() => setShowBookingModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-brand-bg hover:bg-brand-bg/85 border border-brand-border text-brand-text-muted hover:text-brand-text transition-all cursor-pointer"
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-brand-bg hover:bg-brand-bg/85 border border-brand-border text-brand-text-muted hover:text-brand-text transition-all cursor-pointer z-10"
             >
               <X className="w-4 h-4" />
             </button>
 
             {bookingSuccess ? (
-              <div className="py-8 text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto border border-green-200">
-                  <Check className="w-6 h-6" />
+              <div className="py-12 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto border border-green-200 shadow-md">
+                  <Check className="w-8 h-8 stroke-[3]" />
                 </div>
-                <h3 className="text-brand-text font-bold text-base">Yêu cầu đã được gửi!</h3>
-                <p className="text-brand-text-muted text-body font-semibold">Hệ thống đã gửi yêu cầu tới {activeMentor.displayName}. Theo dõi trạng thái ở mục "Lịch của tôi".</p>
+                <h3 className="text-brand-text font-bold text-lg font-serif">Gửi yêu cầu đặt lịch thành công!</h3>
+                <p className="text-brand-text-muted text-body font-semibold max-w-md mx-auto">Hệ thống đã gửi yêu cầu tới {activeMentor.displayName}. Bạn có thể theo dõi trạng thái tại mục "Lịch của tôi".</p>
               </div>
             ) : bookingLoading ? (
-              <div className="py-16 flex flex-col items-center gap-3">
-                <Loader2 className="w-7 h-7 animate-spin text-brand-terracotta" />
-                <p className="text-brand-text-muted text-body font-semibold">Đang tải lịch trống...</p>
+              <div className="py-24 flex flex-col items-center gap-4">
+                <Loader2 className="w-10 h-10 animate-spin text-brand-terracotta" />
+                <p className="text-brand-text-muted text-body font-semibold animate-pulse">Đang tải lịch trống của mentor...</p>
               </div>
             ) : (
-              <form onSubmit={handleBookingSubmit} className="space-y-4">
-                <div className="text-left">
-                  <h3 className="text-brand-text font-bold text-lg font-serif">Đặt lịch với {activeMentor.displayName}</h3>
-                  <p className="text-brand-text-muted text-body font-medium mt-0.5">Chọn khung lịch → dịch vụ → giờ học cụ thể</p>
+              <div className="space-y-6">
+                
+                {/* Header */}
+                <div className="text-left border-b border-brand-border pb-4">
+                  <h3 className="text-brand-text font-bold text-xl font-serif">Đặt lịch học với {activeMentor.displayName}</h3>
+                  <p className="text-brand-text-muted text-body font-medium mt-0.5">Chọn khung giờ trống trên lịch → Chọn môn học hỗ trợ → Điền mục tiêu học tập</p>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-brand-bg border border-brand-border rounded-card text-left">
+                {/* Mentor Info Row */}
+                <div className="flex items-center gap-3.5 p-3.5 bg-brand-bg/40 border border-brand-border rounded-card text-left max-w-md">
                   <img
                     src={activeMentor.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
                     onError={onAvatarError}
                     alt={activeMentor.displayName}
-                    className="w-10 h-10 rounded-field border border-brand-border"
+                    className="w-12 h-12 rounded-card bg-surface object-cover border border-brand-border"
                   />
                   <div>
-                    <span className="text-body font-bold text-brand-text block">{activeMentor.displayName}</span>
-                    <span className="text-meta text-brand-terracotta font-bold">{activeMentor.specializationName || activeMentor.headline}</span>
+                    <span className="text-body font-extrabold text-brand-text block">{activeMentor.displayName}</span>
+                    <span className="text-meta text-brand-terracotta font-extrabold">{activeMentor.specializationName || activeMentor.headline}</span>
                   </div>
                 </div>
 
                 {bookingError && (
-                  <div className="flex items-start gap-2 bg-red-500/5 border border-red-200 text-red-600 p-3 rounded-field text-meta font-semibold">
+                  <div className="flex items-start gap-2 bg-red-500/5 border border-red-200 text-red-600 p-3.5 rounded-field text-meta font-semibold text-left">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>{bookingError}</span>
                   </div>
                 )}
 
-                {/* Bước 1: chọn slot (khung lịch trống của mentor) */}
-                <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">1. Khung lịch trống</label>
-                  {activeSlots.length === 0 ? (
-                    <p className="text-meta text-red-600 font-semibold">Mentor hiện chưa mở khung lịch trống nào.</p>
-                  ) : (
-                    <select
-                      required
-                      value={selectedSlotId}
-                      onChange={(e) => handleSelectSlot(e.target.value)}
-                      className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
-                    >
-                      <option value="">-- Chọn khung lịch --</option>
-                      {activeSlots.map((slot) => (
-                        <option key={slot.slotId} value={slot.slotId}>
-                          {fmtDateTime(slot.startTime)} - {fmtDateTime(slot.endTime)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Bước 2: chọn dịch vụ gắn vào slot đó */}
-                {selectedSlotId && (
-                  <div>
-                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">2. Dịch vụ</label>
-                    {slotServices.length === 0 ? (
-                      <p className="text-meta text-red-600 font-semibold">Khung lịch này chưa gắn dịch vụ nào.</p>
-                    ) : (
-                      <select
-                        required
-                        value={selectedServiceId}
-                        onChange={(e) => { setSelectedServiceId(e.target.value); setBookingError(null); }}
-                        className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-semibold"
-                      >
-                        <option value="">-- Chọn dịch vụ --</option>
-                        {slotServices.map((s) => (
-                          <option key={s.serviceId} value={s.serviceId}>
-                            {s.title} · {s.durationMinutes} phút{s.isFree ? ' · Miễn phí' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                )}
-
-                {/* Bước 3: chọn khung giờ cụ thể (candidate) */}
-                {selectedSlotId && selectedServiceId && (
-                  <div>
-                    <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">3. Giờ học cụ thể</label>
-                    {candidatesLoading ? (
-                      <div className="flex items-center gap-2 text-meta text-brand-text-muted font-semibold py-1">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Đang tải khung giờ...
+                {/* Main 2-Column Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Left Column: Calendar (col-span-8) */}
+                  <div className="lg:col-span-8 space-y-4 text-left">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-brand-border/60 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-brand-terracotta" />
+                        <h4 className="text-body font-extrabold text-brand-text">Chọn khung lịch rảnh của mentor</h4>
                       </div>
-                    ) : candidates.length === 0 ? (
-                      <p className="text-meta text-red-600 font-semibold">Không còn khung giờ đặt được cho dịch vụ này.</p>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto">
-                        {candidates.map((c) => {
-                          const key = `${c.startTime}|${c.endTime}`;
-                          const selected = selectedCandidateKey === key;
-                          return (
-                            <button
-                              type="button"
-                              key={key}
-                              disabled={!c.isSelectable}
-                              onClick={() => setSelectedCandidateKey(key)}
-                              title={!c.isSelectable ? (c.reasonIfBlocked || 'Không đặt được') : undefined}
-                              className={`px-2.5 py-2 rounded-field text-meta font-bold border transition-all text-left ${
-                                selected
-                                  ? 'bg-brand-terracotta text-white border-brand-terracotta'
-                                  : c.isSelectable
-                                    ? 'bg-brand-bg/50 border-brand-border text-brand-text hover:border-brand-terracotta cursor-pointer'
-                                    : 'bg-brand-bg/30 border-brand-border text-brand-grey opacity-50 cursor-not-allowed'
-                              }`}
-                            >
-                              {fmtDateTime(c.startTime)}
-                              {c.isSelectable && c.remainingPendingQuota > 0 && (
-                                <span className="block text-[10px] font-semibold opacity-80">còn {c.remainingPendingQuota} chỗ</span>
+                      
+                      {/* Week switcher */}
+                      <div className="flex bg-brand-bg border border-brand-border p-0.5 rounded-field gap-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setBookingWeekOffset(0)}
+                          className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${bookingWeekOffset === 0 ? 'bg-surface text-brand-text shadow-xs border border-brand-border' : 'text-brand-text-muted hover:text-brand-text'}`}
+                        >
+                          Tuần này
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBookingWeekOffset(1)}
+                          className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${bookingWeekOffset === 1 ? 'bg-surface text-brand-text shadow-xs border border-brand-border' : 'text-brand-text-muted hover:text-brand-text'}`}
+                        >
+                          Tuần sau
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Week calendar grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-7 gap-2 pt-1.5">
+                      {getWeekDays(bookingWeekOffset).map((dayDate, idx) => {
+                        const dayName = WEEKDAYS[idx].label;
+                        const dateStr = formatDateISO(dayDate);
+                        const isToday = formatDateISO(new Date()) === dateStr;
+                        const daySlots = getBookingDaySlots(dayDate);
+                        
+                        return (
+                          <div key={idx} className={`rounded-xl border p-2 flex flex-col text-left min-h-[260px] transition-all ${isToday ? 'bg-brand-terracotta/5 border-brand-terracotta/30' : 'bg-surface/30 border-brand-border'}`}>
+                            {/* Day Header */}
+                            <div className="text-center pb-1.5 border-b border-brand-border mb-2 shrink-0">
+                              <span className={`text-[10px] font-extrabold block tracking-wide uppercase ${isToday ? 'text-brand-terracotta' : 'text-brand-text-muted'}`}>
+                                {dayName}
+                              </span>
+                              <span className={`text-meta font-extrabold inline-flex items-center justify-center w-6 h-6 rounded-full mt-0.5 ${isToday ? 'bg-brand-terracotta text-white shadow-xs' : 'text-brand-text'}`}>
+                                {dayDate.getDate()}
+                              </span>
+                            </div>
+                            
+                            {/* Day Slots List */}
+                            <div className="flex-1 space-y-1.5 overflow-y-auto scrollbar-none pr-0.5">
+                              {daySlots.length === 0 ? (
+                                <div className="h-full flex items-center justify-center py-8">
+                                  <span className="text-[10px] text-brand-text-muted/50 italic font-semibold text-center leading-tight">
+                                    Không có lịch
+                                  </span>
+                                </div>
+                              ) : (
+                                daySlots.map(slot => {
+                                  const selected = selectedSlotId === slot.slotId;
+                                  const hasServices = slot.services && slot.services.length > 0;
+                                  
+                                  return (
+                                    <div
+                                      key={slot.slotId}
+                                      onClick={() => {
+                                        if (hasServices) {
+                                          handleSelectSlot(slot.slotId);
+                                        }
+                                      }}
+                                      className={`p-2 rounded-lg border text-left shadow-2xs group/item relative cursor-pointer transition-all hover:-translate-y-[1px] ${
+                                        selected
+                                          ? 'bg-brand-terracotta/15 border-brand-terracotta hover:bg-brand-terracotta/20 text-brand-terracotta'
+                                          : hasServices
+                                            ? 'bg-green-50/70 border-green-200 hover:bg-green-100/70 text-green-800'
+                                            : 'bg-brand-bg/40 border-brand-border text-brand-text-muted/60 opacity-50 cursor-not-allowed'
+                                      }`}
+                                    >
+                                      <div className="text-[9px] font-extrabold flex items-center justify-between">
+                                        <span className="flex items-center gap-0.5">
+                                          <Clock className="w-2.5 h-2.5 shrink-0" />
+                                          {fmtTime(slot.startTime)}
+                                        </span>
+                                      </div>
+                                      
+                                      {hasServices && (
+                                        <div className="mt-1.5 space-y-1">
+                                          {slot.services?.map(sv => {
+                                            const code = getSubjectCode(sv.title);
+                                            return (
+                                              <span
+                                                key={sv.serviceId}
+                                                className="block text-[8px] font-black tracking-wide truncate bg-white/70 border border-brand-border/30 px-1 py-0.5 rounded text-center leading-normal"
+                                                title={sv.title}
+                                              >
+                                                {code ? code : sv.title}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
                               )}
-                            </button>
-                          );
-                        })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Booking Configuration Form (col-span-4) */}
+                  <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-brand-border pt-4 lg:pt-0 lg:pl-6 text-left animate-fadeIn">
+                    {!selectedSlotId ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-brand-bg/30 border border-brand-border border-dashed rounded-card">
+                        <Calendar className="w-10 h-10 text-brand-text-muted opacity-50 mb-2.5" />
+                        <h4 className="text-body font-extrabold text-brand-text">Cấu hình Đăng ký</h4>
+                        <p className="text-meta text-brand-text-muted font-medium mt-1">Vui lòng chọn một khung lịch rảnh (màu xanh lá) trên lịch để bắt đầu điền thông tin đặt lịch học.</p>
                       </div>
+                    ) : (
+                      <form onSubmit={handleBookingSubmit} className="space-y-4">
+                        <div className="border-b border-brand-border/60 pb-3">
+                          <span className="text-[10px] font-extrabold text-brand-text-muted uppercase tracking-wider block">Khung giờ đã chọn</span>
+                          <span className="text-body font-extrabold text-brand-text block mt-1">
+                            {selectedSlot ? (
+                              <>
+                                {getDayNameLong(new Date(selectedSlot.startTime))}, {formatDateDisplay(new Date(selectedSlot.startTime))}
+                                <span className="text-brand-terracotta ml-1.5 font-black">
+                                  ({fmtTime(selectedSlot.startTime)} - {fmtTime(selectedSlot.endTime)})
+                                </span>
+                              </>
+                            ) : 'Chưa chọn'}
+                          </span>
+                        </div>
+
+                        {/* Service selector (Môn học) */}
+                        <div>
+                          <label className="block text-meta font-extrabold text-brand-text-muted uppercase mb-1.5">Môn học / Dịch vụ</label>
+                          {slotServices.length === 0 ? (
+                            <p className="text-meta text-red-600 font-semibold">Khung lịch này chưa được gán dịch vụ nào.</p>
+                          ) : slotServices.length === 1 ? (
+                            <div className="p-3 bg-brand-bg border border-brand-border rounded-field text-body font-bold text-brand-text flex items-center justify-between">
+                              <span>{slotServices[0].title}</span>
+                              <span className="text-meta font-black text-brand-terracotta">{slotServices[0].isFree ? 'Miễn phí' : `${slotServices[0].priceScoin?.toLocaleString('en-US') || 0} Point`}</span>
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {slotServices.map(s => {
+                                const selected = selectedServiceId === s.serviceId;
+                                return (
+                                  <button
+                                    key={s.serviceId}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedServiceId(s.serviceId);
+                                      setBookingError(null);
+                                    }}
+                                    className={`w-full p-2.5 rounded-field border flex items-center justify-between text-left transition-all ${
+                                      selected
+                                        ? 'bg-brand-terracotta/10 border-brand-terracotta text-brand-terracotta'
+                                        : 'bg-brand-bg border-brand-border text-brand-text hover:bg-brand-bg/85 cursor-pointer'
+                                    }`}
+                                  >
+                                    <span className="text-meta font-bold">{s.title}</span>
+                                    <span className="text-[10px] font-black">{s.isFree ? 'FREE' : `${s.priceScoin?.toLocaleString('en-US')} P`}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Precise time segment candidates selector */}
+                        {selectedSlotId && selectedServiceId && (
+                          <div>
+                            <label className="block text-meta font-extrabold text-brand-text-muted uppercase mb-1.5">Giờ học cụ thể</label>
+                            {candidatesLoading ? (
+                              <div className="flex items-center gap-2 text-meta text-brand-text-muted font-semibold py-1">
+                                <Loader2 className="w-4 h-4 animate-spin text-brand-terracotta" /> Đang kiểm tra slot trống...
+                              </div>
+                            ) : candidates.length === 0 ? (
+                              <p className="text-meta text-red-600 font-semibold">Khung giờ đã đầy hoặc không phù hợp.</p>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                                {candidates.map((c) => {
+                                  const key = `${c.startTime}|${c.endTime}`;
+                                  const selected = selectedCandidateKey === key;
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={key}
+                                      disabled={!c.isSelectable}
+                                      onClick={() => setSelectedCandidateKey(key)}
+                                      title={!c.isSelectable ? (c.reasonIfBlocked || 'Không đặt được') : undefined}
+                                      className={`px-2 py-1.5 rounded-field text-[11px] font-bold border transition-all text-center leading-tight ${
+                                        selected
+                                          ? 'bg-brand-terracotta text-white border-brand-terracotta shadow-sm'
+                                          : c.isSelectable
+                                            ? 'bg-brand-bg border-brand-border text-brand-text hover:border-brand-terracotta cursor-pointer'
+                                            : 'bg-brand-bg/30 border-brand-border text-brand-grey opacity-50 cursor-not-allowed'
+                                      }`}
+                                    >
+                                      {new Date(c.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                      {c.isSelectable && c.remainingPendingQuota > 0 && (
+                                        <span className="block text-[8px] font-medium opacity-80 mt-0.5">còn {c.remainingPendingQuota} chỗ</span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Goal Title */}
+                        <div>
+                          <label className="block text-meta font-extrabold text-brand-text-muted uppercase mb-1">Mục tiêu (tiêu đề ngắn)</label>
+                          <input
+                            type="text"
+                            required
+                            value={goalTitle}
+                            onChange={(e) => setGoalTitle(e.target.value)}
+                            placeholder="Ví dụ: Cần support bài Lab 3 Java Web"
+                            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
+                          />
+                        </div>
+
+                        {/* Goal Description */}
+                        <div>
+                          <label className="block text-meta font-extrabold text-brand-text-muted uppercase mb-1">Mô tả chi tiết</label>
+                          <textarea
+                            required
+                            rows={3}
+                            value={goalDescription}
+                            onChange={(e) => setGoalDescription(e.target.value)}
+                            placeholder="Mô tả rõ lỗi gặp phải hoặc phần kiến thức cần mentor hỗ trợ..."
+                            className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={bookingSubmitting || !selectedSlotId || !selectedServiceId || !selectedCandidateKey}
+                          className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer hover:opacity-90 transition-all active:scale-[0.98] shadow-md shadow-brand-terracotta/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {bookingSubmitting ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <>
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Gửi yêu cầu đặt lịch</span>
+                            </>
+                          )}
+                        </button>
+                      </form>
                     )}
                   </div>
-                )}
-
-                <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Mục tiêu (tiêu đề ngắn)</label>
-                  <input
-                    type="text"
-                    required
-                    value={goalTitle}
-                    onChange={(e) => setGoalTitle(e.target.value)}
-                    placeholder="Ví dụ: Học cơ bản về React Hooks"
-                    className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
-                  />
+                  
                 </div>
 
-                <div>
-                  <label className="block text-meta font-bold text-brand-text-muted uppercase mb-1">Mô tả chi tiết</label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={goalDescription}
-                    onChange={(e) => setGoalDescription(e.target.value)}
-                    placeholder="Mô tả rõ điều bạn muốn được hỗ trợ trong buổi học này..."
-                    className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={bookingSubmitting || !selectedSlotId || !selectedServiceId || !selectedCandidateKey}
-                  className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer hover:opacity-90 transition-all active:scale-[0.98] shadow-md shadow-brand-terracotta/20 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {bookingSubmitting ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Gửi yêu cầu đặt lịch</span>
-                    </>
-                  )}
-                </button>
-              </form>
+              </div>
             )}
           </div>
         </div>

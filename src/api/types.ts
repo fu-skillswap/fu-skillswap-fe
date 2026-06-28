@@ -442,6 +442,42 @@ export interface BookingIssueResult {
   issueSubmittedAt?: string;
 }
 
+/** Payload tạo yêu cầu đổi lịch (reschedule) */
+export interface CreateBookingRescheduleRequest {
+  proposedSlotId: string;
+  proposedSelectedStartTime: string;
+  proposedSelectedEndTime: string;
+  reason: string;
+}
+
+/** Payload phản hồi (chấp nhận/từ chối) đổi lịch */
+export interface RespondBookingRescheduleRequest {
+  reason: string;
+}
+
+/** Thông tin một reschedule request của booking */
+export interface BookingRescheduleRequestResponse {
+  rescheduleRequestId: string;
+  bookingId: string;
+  currentSlotId: string;
+  proposedSlotId: string;
+  previousSelectedStartTime: string;
+  previousSelectedEndTime: string;
+  proposedSelectedStartTime: string;
+  proposedSelectedEndTime: string;
+  requesterRole: string;
+  requestedByUserId?: string;
+  responderRole?: string;
+  respondedByUserId?: string;
+  status: string; // e.g. PENDING, ACCEPTED, REJECTED, EXPIRED
+  requestReason: string;
+  responseNote?: string;
+  adminOverride?: boolean;
+  requestedAt?: string;
+  respondedAt?: string;
+  expiredAt?: string;
+}
+
 export interface MyBookingsParams {
   role?: 'MENTOR' | 'MENTEE';
   status?: BookingStatus;

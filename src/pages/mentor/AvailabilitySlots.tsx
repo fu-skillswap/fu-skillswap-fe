@@ -124,21 +124,17 @@ export const AvailabilitySlots: React.FC = () => {
     setAttached({ ...attached, [slotId]: next }); // optimistic
     setSavingSlotId(slotId);
     try {
-      await availabilityApi.replaceSlotServices(slotId, next);
+      const updatedSlot = await availabilityApi.replaceSlotServices(slotId, next);
       flash('Đã cập nhật dịch vụ cho khung giờ.');
-      // Update services in activeSlotForConfig if it's currently open
+      
+      // Cập nhật lại slots array trong state
+      setSlots(prevSlots => prevSlots.map(s => s.slotId === slotId ? { ...s, services: updatedSlot.services } : s));
+
+      // Cập nhật lại services trong activeSlotForConfig nếu modal của slot này đang mở
       if (activeSlotForConfig && activeSlotForConfig.slotId === slotId) {
-        // Find selected services from services catalog
-        const updatedServices = services.filter(s => next.includes(s.serviceId));
         setActiveSlotForConfig({
           ...activeSlotForConfig,
-          services: updatedServices.map(s => ({
-            serviceId: s.serviceId,
-            title: s.title,
-            durationMinutes: s.durationMinutes,
-            isFree: s.free,
-            priceScoin: s.priceScoin
-          }))
+          services: updatedSlot.services
         });
       }
     } catch (err: any) {

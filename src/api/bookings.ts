@@ -5,6 +5,7 @@ import { http } from './http';
 import type {
   Booking, CreateBookingPayload, SubmitFeedbackPayload, MyBookingsParams,
   SubmitBookingIssuePayload, BookingIssueResult, MeetingPlatform, Paged,
+  CreateBookingRescheduleRequest, RespondBookingRescheduleRequest, BookingRescheduleRequestResponse,
 } from './types';
 
 export const bookingsApi = {
@@ -30,7 +31,7 @@ export const bookingsApi = {
     http.get<Booking>(`/api/me/bookings/${bookingId}`),
 
   /** POST /api/me/bookings/{bookingId}/cancel — mentee huỷ */
-  cancel: (bookingId: string, cancelReason?: string) =>
+  cancel: (bookingId: string, cancelReason: string) =>
     http.post<Booking>(`/api/me/bookings/${bookingId}/cancel`, { cancelReason }),
 
   /** POST /api/me/bookings/{bookingId}/complete — đánh dấu buổi đã hoàn tất */
@@ -52,6 +53,23 @@ export const bookingsApi = {
   submitFeedback: (bookingId: string, payload: SubmitFeedbackPayload) =>
     http.post<unknown>(`/api/bookings/${bookingId}/feedback`, payload),
 
+  // -------------------- reschedule (mentee side) --------------------
+  /** GET /api/me/bookings/{bookingId}/reschedule-requests */
+  listRescheduleRequests: (bookingId: string) =>
+    http.get<BookingRescheduleRequestResponse[]>(`/api/me/bookings/${bookingId}/reschedule-requests`),
+
+  /** POST /api/me/bookings/{bookingId}/reschedule-requests */
+  createRescheduleRequest: (bookingId: string, payload: CreateBookingRescheduleRequest) =>
+    http.post<BookingRescheduleRequestResponse>(`/api/me/bookings/${bookingId}/reschedule-requests`, payload),
+
+  /** POST /api/me/bookings/reschedule-requests/{requestId}/accept */
+  acceptRescheduleRequest: (requestId: string, payload: RespondBookingRescheduleRequest) =>
+    http.post<BookingRescheduleRequestResponse>(`/api/me/bookings/reschedule-requests/${requestId}/accept`, payload),
+
+  /** POST /api/me/bookings/reschedule-requests/{requestId}/reject */
+  rejectRescheduleRequest: (requestId: string, payload: RespondBookingRescheduleRequest) =>
+    http.post<BookingRescheduleRequestResponse>(`/api/me/bookings/reschedule-requests/${requestId}/reject`, payload),
+
   // -------------------- mentor side --------------------
   /** POST /api/mentor/bookings/{bookingId}/accept */
   accept: (bookingId: string, mentorResponseNote?: string) =>
@@ -62,7 +80,7 @@ export const bookingsApi = {
     http.post<Booking>(`/api/mentor/bookings/${bookingId}/reject`, { rejectReason, mentorResponseNote }),
 
   /** POST /api/mentor/bookings/{bookingId}/cancel — mentor huỷ buổi đã nhận */
-  mentorCancel: (bookingId: string, cancelReason?: string) =>
+  mentorCancel: (bookingId: string, cancelReason: string) =>
     http.post<Booking>(`/api/mentor/bookings/${bookingId}/cancel`, { cancelReason }),
 
   /**
@@ -77,4 +95,17 @@ export const bookingsApi = {
     bookingId: string,
     body: { meetingPlatform: MeetingPlatform; meetingLink?: string; location?: string },
   ) => http.patch<Booking>(`/api/mentor/bookings/${bookingId}/meeting-link`, body),
+
+  // -------------------- reschedule (mentor side) --------------------
+  /** POST /api/mentor/bookings/{bookingId}/reschedule-requests */
+  mentorCreateRescheduleRequest: (bookingId: string, payload: CreateBookingRescheduleRequest) =>
+    http.post<BookingRescheduleRequestResponse>(`/api/mentor/bookings/${bookingId}/reschedule-requests`, payload),
+
+  /** POST /api/mentor/bookings/reschedule-requests/{requestId}/accept */
+  mentorAcceptRescheduleRequest: (requestId: string, payload: RespondBookingRescheduleRequest) =>
+    http.post<BookingRescheduleRequestResponse>(`/api/mentor/bookings/reschedule-requests/${requestId}/accept`, payload),
+
+  /** POST /api/mentor/bookings/reschedule-requests/{requestId}/reject */
+  mentorRejectRescheduleRequest: (requestId: string, payload: RespondBookingRescheduleRequest) =>
+    http.post<BookingRescheduleRequestResponse>(`/api/mentor/bookings/reschedule-requests/${requestId}/reject`, payload),
 };

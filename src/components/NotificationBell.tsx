@@ -176,6 +176,15 @@ export const NotificationBell: React.FC = () => {
           return [...prev, fakeNotification];
         });
 
+        // Thêm vào danh sách thông báo hiển thị ở quả chuông
+        setItems((prev) => {
+          if (prev.some((item) => item.notificationId === fakeNotification.notificationId)) return prev;
+          return [fakeNotification, ...prev].slice(0, 20);
+        });
+
+        // Tăng số thông báo chưa đọc
+        setUnread((c) => c + 1);
+
         setTimeout(() => {
           closeToast(fakeNotification.notificationId);
         }, 5000);

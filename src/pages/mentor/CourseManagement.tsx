@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Calendar, Clock, Plus, Search, BookOpen, Pencil, Trash, 
-  ToggleLeft, ToggleRight, Check, AlertCircle, Loader2, X
+  Calendar, Plus, Search, BookOpen, Pencil, Trash, 
+  ToggleLeft, ToggleRight, AlertCircle, Loader2, X
 } from 'lucide-react';
 import { mentorServicesApi } from '../../api/mentorServices';
 import { helpTopicApi } from '../../api/mentorProfile';
@@ -119,7 +119,7 @@ export const CourseManagement: React.FC = () => {
   const [description, setDescription] = useState('');
   const [outcomesText, setOutcomesText] = useState('');
   const [isFree, setIsFree] = useState(true);
-  const [priceScoin, setPriceScoin] = useState<number>(0);
+  const [priceScoin, setPriceScoin] = useState<string | number>('0');
 
   // Form Fields - Availability Schedule Config
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -138,6 +138,7 @@ export const CourseManagement: React.FC = () => {
   // Confirmation Delete Modals
   const [courseToDelete, setCourseToDelete] = useState<MentorServiceItem | null>(null);
   const [ruleToDelete, setRuleToDelete] = useState<AvailabilityRule | null>(null);
+  const [courseToHide, setCourseToHide] = useState<MentorServiceItem | null>(null);
 
   // Edit Rule states
   const [ruleToEdit, setRuleToEdit] = useState<AvailabilityRule | null>(null);
@@ -147,9 +148,17 @@ export const CourseManagement: React.FC = () => {
   const [editRuleNote, setEditRuleNote] = useState('');
   const [editRuleErrors, setEditRuleErrors] = useState<Record<string, string>>({});
 
+  // Create Rule states are removed as createRule flows through Course Creation
+
   const triggerToast = (message: string, type: 'success' | 'danger') => {
-    setToast({ message, type });
-    setToastVisible(true);
+    window.dispatchEvent(new CustomEvent('push-toast', {
+      detail: {
+        title: type === 'success' ? 'Thành công' : 'Lỗi hệ thống',
+        message,
+        type: type === 'success' ? 'BOOKING_ACCEPTED' : 'BOOKING_REJECTED'
+      }
+    }));
+    window.dispatchEvent(new Event('refresh-notifications'));
   };
 
   const fetchServices = async () => {
@@ -219,7 +228,7 @@ export const CourseManagement: React.FC = () => {
     if (!subjectCode.trim()) newErrors.subjectCode = 'Vui lòng nhập mã môn học.';
     if (!topicId) newErrors.topicId = 'Vui lòng chọn chủ đề.';
     if (!description.trim()) newErrors.description = 'Vui lòng nhập mô tả khóa học.';
-    if (!isFree && priceScoin <= 0) newErrors.priceScoin = 'Vui lòng nhập số Point lớn hơn 0.';
+    if (!isFree && (Number(priceScoin) <= 0 || !priceScoin)) newErrors.priceScoin = 'Vui lòng nhập số Point lớn hơn 0.';
     
     // Time format validation
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -245,7 +254,7 @@ export const CourseManagement: React.FC = () => {
     setDescription('');
     setOutcomesText('');
     setIsFree(true);
-    setPriceScoin(0);
+    setPriceScoin('');
     setSelectedDays([]);
     setStartTime('08:00');
     setEndTime('09:00');
@@ -267,7 +276,7 @@ export const CourseManagement: React.FC = () => {
     setDescription(course.description || '');
     setOutcomesText(course.expectedOutcome || '');
     setIsFree(course.free !== undefined ? course.free : (course as any).isFree);
-    setPriceScoin(course.priceScoin || 0);
+    setPriceScoin(course.priceScoin !== undefined ? String(course.priceScoin) : '');
     
     // Default schedule config empty for edit
     setSelectedDays([]);
@@ -292,7 +301,7 @@ export const CourseManagement: React.FC = () => {
       durationMinutes: sessionDuration,
       isFree: isFree,
       free: isFree,
-      priceScoin: isFree ? 0 : priceScoin,
+      priceScoin: isFree ? 0 : (Number(priceScoin) || 0),
       helpTopicIds: [topicId],
     };
 
@@ -308,9 +317,10 @@ export const CourseManagement: React.FC = () => {
 
       // Simultaneously create availability rules if days are checked
       if (selectedDays.length > 0) {
-        const today = new Date();
-        const twoWeeksLater = new Date();
-        twoWeeksLater.setDate(today.getDate() + 14);
+        const weekDays = getWeekDays(0);
+        const startOfWeek = weekDays[0];
+        const endRange = new Date(startOfWeek);
+        endRange.setDate(startOfWeek.getDate() + 30); // Active for 30 days
 
         const formatTime = (t: string) => t.length === 5 ? `${t}:00` : t;
         
@@ -318,8 +328,8 @@ export const CourseManagement: React.FC = () => {
           ruleType: 'OPEN' as const,
           repeatType: 'WEEKLY' as const,
           daysOfWeek: selectedDays,
-          effectiveFrom: formatDateISO(today),
-          effectiveTo: formatDateISO(twoWeeksLater),
+          effectiveFrom: formatDateISO(startOfWeek),
+          effectiveTo: formatDateISO(endRange),
           startTime: formatTime(startTime),
           endTime: formatTime(endTime),
           note: ruleNote.trim() || `Lịch khả dụng: ${fullTitle}`,
@@ -355,6 +365,21 @@ export const CourseManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleClick = (course: MentorServiceItem) => {
+    if (course.active) {
+      setCourseToHide(course);
+    } else {
+      handleToggleStatus(course);
+    }
+  };
+
+  const confirmHideCourse = async () => {
+    if (!courseToHide) return;
+    const currentCourse = courseToHide;
+    setCourseToHide(null);
+    await handleToggleStatus(currentCourse);
   };
 
   const handleDeleteCourse = async () => {
@@ -450,6 +475,8 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
+  // createRule helpers removed as createRule flows through Course Creation
+
   const toggleEditDaySelection = (dayValue: string) => {
     setEditRuleDays(prev => 
       prev.includes(dayValue) ? prev.filter(d => d !== dayValue) : [...prev, dayValue]
@@ -493,20 +520,19 @@ export const CourseManagement: React.FC = () => {
     return matchesSearch && matchesTopic && matchesStatus;
   });
 
+  // Keep only unique courses by clean title to prevent sidebar duplicates
+  const uniqueFilteredCourses: MentorServiceItem[] = [];
+  const seenTitles = new Set<string>();
+  for (const c of filteredCourses) {
+    const titleKey = parseTitle(c.title).cleanTitle.trim().toLowerCase();
+    if (!seenTitles.has(titleKey)) {
+      seenTitles.add(titleKey);
+      uniqueFilteredCourses.push(c);
+    }
+  }
+
   return (
     <div className="space-y-6 text-left animate-fadeIn">
-      {/* Toast Alert popup */}
-      {toast && toastVisible && (
-        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 p-4 rounded-card shadow-lg border transition-all duration-300 transform scale-100 ${
-          toast.type === 'success' 
-            ? 'bg-green-50 border-green-200 text-green-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="text-body font-bold">{toast.message}</span>
-        </div>
-      )}
-
       {/* Header section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1">
@@ -567,12 +593,12 @@ export const CourseManagement: React.FC = () => {
           <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 scrollbar-thin">
             {loading ? (
               <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-            ) : filteredCourses.length === 0 ? (
+            ) : uniqueFilteredCourses.length === 0 ? (
               <div className="meetmind-card py-10 text-center text-meta text-fg-faint font-semibold">
                 Không tìm thấy lớp học nào.
               </div>
             ) : (
-              filteredCourses.map(course => {
+              uniqueFilteredCourses.map(course => {
                 const { subjectCode, cleanTitle } = parseTitle(course.title);
                 const isFreeCourse = course.free !== undefined ? course.free : (course as any).isFree;
                 
@@ -597,14 +623,14 @@ export const CourseManagement: React.FC = () => {
                           {isFreeCourse ? (
                             <span className="text-green-600 font-extrabold">Miễn phí</span>
                           ) : (
-                            <span className="text-amber-600 font-extrabold">{course.priceScoin} Pt</span>
+                            <span className="text-amber-600 font-extrabold">{course.priceScoin?.toLocaleString('en-US')} Pt</span>
                           )}
                         </div>
                       </div>
 
                       {/* Toggle status control */}
                       <button
-                        onClick={() => handleToggleStatus(course)}
+                        onClick={() => handleToggleClick(course)}
                         className="cursor-pointer text-fg-faint hover:text-primary transition-colors mt-0.5 shrink-0"
                         title={course.active ? "Ẩn lớp học" : "Hiện lớp học"}
                       >
@@ -671,87 +697,176 @@ export const CourseManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* Grid 7 Columns View */}
+            {/* Google Calendar-style Vertical Timeline View */}
             {loadingRules ? (
               <div className="py-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-3 pt-2">
-                {getWeekDays(weekOffset).map((dayDate, idx) => {
-                  const dayName = WEEKDAYS[idx].label;
-                  const dateStr = formatDateISO(dayDate);
-                  const isToday = formatDateISO(new Date()) === dateStr;
-                  const dayRules = getRulesForDay(dayDate);
+              <div className="border border-line rounded-xl overflow-hidden bg-surface shadow-xs mt-4">
+                
+                {/* 1. Header Row (Day names and dates) */}
+                <div className="flex border-b border-line bg-surface-muted/50 select-none">
+                  {/* Spacer for Time Sidebar column */}
+                  <div className="w-14 border-r border-line shrink-0" />
+                  
+                  {/* 7 Columns Day Headers */}
+                  <div className="flex-1 grid grid-cols-7">
+                    {getWeekDays(weekOffset).map((dayDate, idx) => {
+                      const dayName = WEEKDAYS[idx].label;
+                      const dateStr = formatDateISO(dayDate);
+                      const isToday = formatDateISO(new Date()) === dateStr;
+                      return (
+                        <div
+                          key={idx}
+                          className={`py-3 text-center border-r border-line last:border-r-0 ${
+                            isToday ? 'bg-primary-soft/10' : ''
+                          }`}
+                        >
+                          <span className={`text-[10px] font-extrabold block tracking-wide uppercase ${isToday ? 'text-primary' : 'text-fg-faint'}`}>
+                            {dayName}
+                          </span>
+                          <span className={`text-base font-extrabold inline-flex items-center justify-center w-7 h-7 rounded-full mt-0.5 ${
+                            isToday ? 'bg-primary text-white shadow-sm' : 'text-fg'
+                          }`}>
+                            {dayDate.getDate()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                  return (
-                    <div key={idx} className={`rounded-xl border p-3 flex flex-col text-left min-h-[380px] transition-all ${
-                      isToday ? 'bg-primary-soft/10 border-primary/30' : 'bg-surface/30 border-line-soft'
-                    }`}>
-                      {/* Day Header */}
-                      <div className="text-center pb-2 border-b border-line-soft mb-2 shrink-0">
-                        <span className={`text-[11px] font-extrabold block tracking-wide uppercase ${isToday ? 'text-primary' : 'text-fg-faint'}`}>
-                          {dayName}
-                        </span>
-                        <span className={`text-title font-extrabold inline-flex items-center justify-center w-7 h-7 rounded-full mt-1 ${isToday ? 'bg-primary text-white shadow-sm' : 'text-fg'}`}>
-                          {dayDate.getDate()}
-                        </span>
-                      </div>
+                {/* 2. Scrollable Timeline Area */}
+                <div className="max-h-[500px] overflow-y-auto relative scrollbar-thin flex">
+                  
+                  {/* Time Sidebar Column */}
+                  <div className="w-14 border-r border-line shrink-0 relative bg-surface select-none" style={{ height: '750px' }}>
+                    {Array.from({ length: 22 - 7 + 1 }).map((_, idx) => {
+                      const hour = 7 + idx;
+                      const displayHour = hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`;
+                      return (
+                        <div
+                          key={hour}
+                          className="absolute right-2 text-[10px] font-bold text-fg-faint text-right"
+                          style={{ top: `${(hour - 7) * 50 - 7}px` }}
+                        >
+                          {displayHour}
+                        </div>
+                      );
+                    })}
+                  </div>
 
-                      {/* Day Event Blocks */}
-                      <div className="flex-1 space-y-2 overflow-y-auto scrollbar-none pr-0.5">
-                        {dayRules.length === 0 ? (
-                          <div className="h-full flex items-center justify-center py-10">
-                            <span className="text-[10px] text-fg-faint italic font-semibold text-center leading-tight">
-                              Không có lịch
-                            </span>
-                          </div>
-                        ) : (
-                          dayRules.map(rule => {
-                            const isSaving = savingRuleId === rule.ruleId;
-                            
-                            return (
-                              <div
-                                key={rule.ruleId}
-                                className="p-2.5 rounded-lg border border-primary/20 bg-primary-soft/40 shadow-xs relative text-left group/rule transition-all hover:bg-primary-soft/60"
-                              >
-                                <div className="text-[10px] font-bold text-fg flex items-center justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-fg-faint shrink-0" />
-                                    {rule.startTime} - {rule.endTime}
-                                  </span>
-                                  
-                                  {isSaving ? (
-                                    <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                                  ) : (
-                                    <div className="flex items-center gap-1.5 opacity-0 group-hover/rule:opacity-100 transition-opacity">
-                                      <button
-                                        onClick={() => handleOpenEditRuleModal(rule)}
-                                        className="text-fg-faint hover:text-primary cursor-pointer"
-                                        title="Chỉnh sửa giờ rảnh"
-                                      >
-                                        <Pencil className="w-3 h-3" />
-                                      </button>
-                                      <button
-                                        onClick={() => setRuleToDelete(rule)}
-                                        className="text-fg-faint hover:text-danger cursor-pointer"
-                                        title="Xóa giờ rảnh"
-                                      >
-                                        <Trash className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                                
-                                <div className="mt-1 text-[9px] font-extrabold text-primary truncate leading-normal" title={rule.note}>
-                                  {rule.note || 'Lịch khả dụng'}
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
+                  {/* 7 Columns Timeline Grid */}
+                  <div className="flex-1 relative" style={{ height: '750px' }}>
+                    
+                    {/* Horizontal Grid Lines */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      {Array.from({ length: 22 - 7 }).map((_, idx) => (
+                        <div
+                          key={idx}
+                          className="border-b border-line-soft/40"
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            top: `${(idx + 1) * 50}px`,
+                            height: '1px'
+                          }}
+                        />
+                      ))}
                     </div>
-                  );
-                })}
+
+                    {/* Columns containing Events */}
+                    <div className="absolute inset-0 grid grid-cols-7 h-full">
+                      {getWeekDays(weekOffset).map((dayDate, dayIdx) => {
+                        const dayRules = getRulesForDay(dayDate);
+                        const dateStr = formatDateISO(dayDate);
+                        const isToday = formatDateISO(new Date()) === dateStr;
+
+                        return (
+                          <div
+                            key={dayIdx}
+                            className={`relative h-full border-r border-line last:border-r-0 ${
+                              isToday ? 'bg-primary-soft/5' : ''
+                            }`}
+                          >
+                            {/* Absolute Event blocks for this day */}
+                            {dayRules.map((rule) => {
+                              const isSaving = savingRuleId === rule.ruleId;
+                              
+                              // Calculate position
+                              const START_HOUR = 7;
+                              const END_HOUR = 22;
+                              const HOUR_HEIGHT = 50;
+
+                              const parseTimeToDecimal = (timeStr: string): number => {
+                                if (!timeStr) return START_HOUR;
+                                const parts = timeStr.split(':');
+                                const hours = parseInt(parts[0], 10) || 0;
+                                const minutes = parseInt(parts[1], 10) || 0;
+                                return hours + minutes / 60;
+                              };
+
+                              const startDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(rule.startTime)));
+                              const endDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(rule.endTime)));
+                              
+                              const top = (startDec - START_HOUR) * HOUR_HEIGHT;
+                              const height = Math.max(25, (endDec - startDec) * HOUR_HEIGHT); // Min height 25px
+
+                              return (
+                                <div
+                                  key={rule.ruleId}
+                                  className="absolute left-1 right-1 rounded-md border border-primary/20 bg-primary-soft/85 hover:bg-primary-soft shadow-xs p-1.5 overflow-hidden group/rule transition-all hover:z-10 hover:shadow-md text-left"
+                                  style={{
+                                    top: `${top}px`,
+                                    height: `${height}px`
+                                  }}
+                                >
+                                  {/* Time & actions */}
+                                  <div className="flex items-center justify-between text-[9px] font-extrabold text-primary leading-tight">
+                                    <span className="truncate">
+                                      {rule.startTime} - {rule.endTime}
+                                    </span>
+                                    
+                                    {isSaving ? (
+                                      <Loader2 className="w-2.5 h-2.5 animate-spin text-primary shrink-0" />
+                                    ) : (
+                                      <div className="hidden group-hover/rule:flex items-center gap-1 shrink-0 bg-primary-soft rounded px-0.5 ml-1">
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleOpenEditRuleModal(rule); }}
+                                          className="text-primary hover:text-primary-hover cursor-pointer"
+                                          title="Sửa"
+                                        >
+                                          <Pencil className="w-2.5 h-2.5" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setRuleToDelete(rule); }}
+                                          className="text-danger hover:text-danger-hover cursor-pointer"
+                                          title="Xóa"
+                                        >
+                                          <Trash className="w-2.5 h-2.5" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Note */}
+                                  <div
+                                    className="text-[10px] font-bold text-fg truncate mt-0.5 leading-normal"
+                                    title={rule.note}
+                                  >
+                                    {rule.note || 'Lịch khả dụng'}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                  </div>
+                </div>
+
               </div>
             )}
 
@@ -763,7 +878,7 @@ export const CourseManagement: React.FC = () => {
       {/* Create / Edit Class Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto animate-fadeIn">
-          <div className="w-full max-w-3xl bg-surface border border-line rounded-card p-6 shadow-xl relative text-left my-8">
+          <div className="w-full max-w-5xl bg-surface border border-line rounded-card p-6 shadow-xl relative text-left my-8 animate-scaleUp">
             
             {/* Modal Header */}
             <div className="flex justify-between items-center border-b border-line-soft pb-3">
@@ -780,209 +895,211 @@ export const CourseManagement: React.FC = () => {
 
             <form onSubmit={handleSaveCourse} className="py-4 space-y-5">
               
-              {/* SECTION 1: Class details */}
-              <div className="space-y-4">
-                <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">1. Thông tin chi tiết lớp dạy</h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-1">
-                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Mã môn học <span className="text-danger">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="VD: FER201, PRN211"
-                      value={subjectCode}
-                      onChange={(e) => { setSubjectCode(e.target.value); if(errors.subjectCode) setErrors({...errors, subjectCode: ''}); }}
-                      className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold uppercase ${
-                        errors.subjectCode ? 'border-danger/60 focus:border-danger' : 'border-line'
-                      }`}
-                    />
-                    {errors.subjectCode && <p className="text-meta text-danger font-semibold mt-1">{errors.subjectCode}</p>}
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Column 1: SECTION 1: Class details */}
+                <div className="space-y-4 text-left">
+                  <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">1. Thông tin chi tiết lớp dạy</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1">
+                      <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Mã môn học <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="VD: FER201, PRN211"
+                        value={subjectCode}
+                        onChange={(e) => { setSubjectCode(e.target.value); if(errors.subjectCode) setErrors({...errors, subjectCode: ''}); }}
+                        className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold uppercase ${
+                          errors.subjectCode ? 'border-danger/60 focus:border-danger' : 'border-line'
+                        }`}
+                      />
+                      {errors.subjectCode && <p className="text-meta text-danger font-semibold mt-1">{errors.subjectCode}</p>}
+                    </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Tên lớp học / Dịch vụ <span className="text-danger">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="VD: Hướng dẫn ReactJS cơ bản"
-                      value={title}
-                      onChange={(e) => { setTitle(e.target.value); if(errors.title) setErrors({...errors, title: ''}); }}
-                      className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                        errors.title ? 'border-danger/60 focus:border-danger' : 'border-line'
-                      }`}
-                    />
-                    {errors.title && <p className="text-meta text-danger font-semibold mt-1">{errors.title}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Chủ đề <span className="text-danger">*</span></label>
-                    <select
-                      value={topicId}
-                      onChange={(e) => { setTopicId(e.target.value); if(errors.topicId) setErrors({...errors, topicId: ''}); }}
-                      className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
-                    >
-                      {topics.map(t => (
-                        <option key={t.id} value={t.id}>{t.nameVi}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Thời lượng học (phút/buổi)</label>
-                    <select
-                      value={sessionDuration}
-                      onChange={(e) => setSessionDuration(Number(e.target.value))}
-                      className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
-                    >
-                      <option value={15}>15 phút</option>
-                      <option value={30}>30 phút</option>
-                      <option value={45}>45 phút</option>
-                      <option value={60}>60 phút</option>
-                      <option value={90}>90 phút</option>
-                      <option value={120}>120 phút</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Chi phí lớp học</label>
-                    <select
-                      value={isFree ? 'free' : 'point'}
-                      onChange={(e) => {
-                        const val = e.target.value === 'free';
-                        setIsFree(val);
-                        if (val) setPriceScoin(0);
-                      }}
-                      className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
-                    >
-                      <option value="free">Miễn phí (Trao đổi chéo)</option>
-                      <option value="point">Tính phí (Point)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {!isFree && (
-                  <div className="animate-fadeIn">
-                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Số Point yêu cầu <span className="text-danger">*</span></label>
-                    <input
-                      type="number"
-                      min={1}
-                      required
-                      value={priceScoin}
-                      onChange={(e) => { setPriceScoin(Number(e.target.value)); if(errors.priceScoin) setErrors({...errors, priceScoin: ''}); }}
-                      className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                        errors.priceScoin ? 'border-danger/60 focus:border-danger' : 'border-line'
-                      }`}
-                    />
-                    {errors.priceScoin && <p className="text-meta text-danger font-semibold mt-1">{errors.priceScoin}</p>}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Mô tả lớp học <span className="text-danger">*</span></label>
-                  <textarea
-                    required
-                    rows={3}
-                    placeholder="VD: Cung cấp kiến thức cơ bản về React component, state, effect..."
-                    value={description}
-                    onChange={(e) => { setDescription(e.target.value); if(errors.description) setErrors({...errors, description: ''}); }}
-                    className={`w-full bg-surface border rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium ${
-                      errors.description ? 'border-danger/60 focus:border-danger' : 'border-line'
-                    }`}
-                  />
-                  {errors.description && <p className="text-meta text-danger font-semibold mt-1">{errors.description}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1 flex justify-between">
-                    <span>Kết quả đầu ra đạt được</span>
-                    <span className="text-fg-faint font-semibold normal-case">Mỗi dòng là một kết quả</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="VD: Có thể tự tạo project React cơ bản&#10;Hiểu và dùng thành thạo các Hook thông dụng"
-                    value={outcomesText}
-                    onChange={(e) => setOutcomesText(e.target.value)}
-                    className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* SECTION 2: Schedule configuration */}
-              <div className="space-y-4 pt-3 border-t border-line-soft">
-                <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">
-                  2. Cấu hình lịch rảnh khả dụng trong tuần (Tạo trước tối đa 2 tuần)
-                </h4>
-                
-                <p className="text-[11px] text-fg-muted font-medium">
-                  Tích chọn các thứ trong tuần mà bạn rảnh. Hệ thống sẽ tự động tạo các slot thời gian tương ứng từ hôm nay đến 2 tuần tiếp theo.
-                </p>
-
-                <div className="space-y-3">
-                  {/* Days checkbox group */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">Thứ trong tuần</label>
-                    <div className="flex flex-wrap gap-2">
-                      {WEEKDAYS.map(day => {
-                        const checked = selectedDays.includes(day.value);
-                        return (
-                          <button
-                            key={day.value}
-                            type="button"
-                            onClick={() => toggleDaySelection(day.value)}
-                            className={`px-4 py-2 text-meta font-bold border rounded-field transition-all cursor-pointer ${
-                              checked 
-                                ? 'bg-primary text-white border-primary shadow-xs' 
-                                : 'bg-surface text-fg border-line hover:bg-surface-muted/40'
-                            }`}
-                          >
-                            {day.label}
-                          </button>
-                        );
-                      })}
+                    <div className="md:col-span-2">
+                      <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Tên lớp học / Dịch vụ <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="VD: Hướng dẫn ReactJS cơ bản"
+                        value={title}
+                        onChange={(e) => { setTitle(e.target.value); if(errors.title) setErrors({...errors, title: ''}); }}
+                        className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                          errors.title ? 'border-danger/60 focus:border-danger' : 'border-line'
+                        }`}
+                      />
+                      {errors.title && <p className="text-meta text-danger font-semibold mt-1">{errors.title}</p>}
                     </div>
                   </div>
 
-                  {/* Time selection group */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (HH:mm) <span className="text-danger">*</span></label>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => { setStartTime(e.target.value); if(errors.startTime) setErrors({...errors, startTime: ''}); }}
-                        className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                          errors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
-                        }`}
-                      />
-                      {errors.startTime && <p className="text-meta text-danger font-semibold mt-1">{errors.startTime}</p>}
+                      <label className="block text-meta font-bold text-fg-muted uppercase min-h-[2.25rem] flex items-end mb-1.5">Chủ đề <span className="text-danger">*</span></label>
+                      <select
+                        value={topicId}
+                        onChange={(e) => { setTopicId(e.target.value); if(errors.topicId) setErrors({...errors, topicId: ''}); }}
+                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold font-bold"
+                      >
+                        {topics.map(t => (
+                          <option key={t.id} value={t.id}>{t.nameVi}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (HH:mm) <span className="text-danger">*</span></label>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => { setEndTime(e.target.value); if(errors.endTime) setErrors({...errors, endTime: ''}); }}
-                        className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                          errors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
-                        }`}
-                      />
-                      {errors.endTime && <p className="text-meta text-danger font-semibold mt-1">{errors.endTime}</p>}
+                      <label className="block text-meta font-bold text-fg-muted uppercase min-h-[2.25rem] flex items-end mb-1.5">Thời lượng học (phút/buổi)</label>
+                      <select
+                        value={sessionDuration}
+                        onChange={(e) => setSessionDuration(Number(e.target.value))}
+                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold font-bold"
+                      >
+                        <option value={15}>15 phút</option>
+                        <option value={30}>30 phút</option>
+                        <option value={45}>45 phút</option>
+                        <option value={60}>60 phút</option>
+                        <option value={90}>90 phút</option>
+                        <option value={120}>120 phút</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-meta font-bold text-fg-muted uppercase min-h-[2.25rem] flex items-end mb-1.5">Chi phí lớp học</label>
+                      <select
+                        value={isFree ? 'free' : 'point'}
+                        onChange={(e) => {
+                          const val = e.target.value === 'free';
+                          setIsFree(val);
+                          if (val) setPriceScoin('');
+                        }}
+                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold font-bold"
+                      >
+                        <option value="free">Miễn phí (Trao đổi chéo)</option>
+                        <option value="point">Tính phí (Point)</option>
+                      </select>
                     </div>
                   </div>
 
+                  {!isFree && (
+                    <div className="animate-fadeIn text-left">
+                      <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Số Point yêu cầu <span className="text-danger">*</span></label>
+                      <input
+                        type="number"
+                        min={1}
+                        required
+                        value={priceScoin}
+                        onChange={(e) => { setPriceScoin(e.target.value); if(errors.priceScoin) setErrors({...errors, priceScoin: ''}); }}
+                        className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                          errors.priceScoin ? 'border-danger/60 focus:border-danger' : 'border-line'
+                        }`}
+                      />
+                      {errors.priceScoin && <p className="text-meta text-danger font-semibold mt-1">{errors.priceScoin}</p>}
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
-                    <input
-                      type="text"
-                      placeholder="VD: Rảnh buổi tối sau giờ làm"
-                      value={ruleNote}
-                      onChange={(e) => setRuleNote(e.target.value)}
-                      className="w-full bg-surface border border-line rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Mô tả lớp học <span className="text-danger">*</span></label>
+                    <textarea
+                      required
+                      rows={3}
+                      placeholder="VD: Cung cấp kiến thức cơ bản về React component, state, effect..."
+                      value={description}
+                      onChange={(e) => { setDescription(e.target.value); if(errors.description) setErrors({...errors, description: ''}); }}
+                      className={`w-full bg-surface border rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium ${
+                        errors.description ? 'border-danger/60 focus:border-danger' : 'border-line'
+                      }`}
                     />
+                    {errors.description && <p className="text-meta text-danger font-semibold mt-1">{errors.description}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1 flex justify-between">
+                      <span>Kết quả đầu ra đạt được</span>
+                      <span className="text-fg-faint font-semibold normal-case">Mỗi dòng là một kết quả</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="VD: Có thể tự tạo project React cơ bản&#10;Hiểu và dùng thành thạo các Hook thông dụng"
+                      value={outcomesText}
+                      onChange={(e) => setOutcomesText(e.target.value)}
+                      className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Column 2: SECTION 2: Schedule configuration */}
+                <div className="space-y-4 lg:border-l lg:border-line-soft lg:pl-8 text-left">
+                  <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">
+                    2. Cấu hình lịch rảnh khả dụng
+                  </h4>
+                  
+                  <p className="text-[11px] text-fg-muted font-medium">
+                    Tích chọn các thứ trong tuần mà bạn rảnh. Hệ thống sẽ tự động tạo các slot thời gian tương ứng từ hôm nay đến 2 tuần tiếp theo.
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* Days checkbox group */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">Thứ trong tuần</label>
+                      <div className="flex flex-wrap gap-2">
+                        {WEEKDAYS.map(day => {
+                          const checked = selectedDays.includes(day.value);
+                          return (
+                            <button
+                              key={day.value}
+                              type="button"
+                              onClick={() => toggleDaySelection(day.value)}
+                              className={`px-4 py-2 text-meta font-bold border rounded-field transition-all cursor-pointer ${
+                                checked 
+                                  ? 'bg-primary text-white border-primary shadow-xs' 
+                                  : 'bg-surface text-fg border-line hover:bg-surface-muted/40'
+                              }`}
+                            >
+                              {day.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Time selection group */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (HH:mm) <span className="text-danger">*</span></label>
+                        <input
+                          type="time"
+                          value={startTime}
+                          onChange={(e) => { setStartTime(e.target.value); if(errors.startTime) setErrors({...errors, startTime: ''}); }}
+                          className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                            errors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                          }`}
+                        />
+                        {errors.startTime && <p className="text-meta text-danger font-semibold mt-1">{errors.startTime}</p>}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (HH:mm) <span className="text-danger">*</span></label>
+                        <input
+                          type="time"
+                          value={endTime}
+                          onChange={(e) => { setEndTime(e.target.value); if(errors.endTime) setErrors({...errors, endTime: ''}); }}
+                          className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                            errors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                          }`}
+                        />
+                        {errors.endTime && <p className="text-meta text-danger font-semibold mt-1">{errors.endTime}</p>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
+                      <input
+                        type="text"
+                        placeholder="VD: Rảnh buổi tối sau giờ làm"
+                        value={ruleNote}
+                        onChange={(e) => setRuleNote(e.target.value)}
+                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1033,6 +1150,34 @@ export const CourseManagement: React.FC = () => {
                 className="bg-danger hover:bg-danger-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
               >
                 Xóa lớp học
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Hide Course Modal */}
+      {courseToHide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
+            <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
+              <AlertCircle className="w-6 h-6 text-amber-500" /> Xác nhận ẩn lớp học
+            </h3>
+            <p className="text-body text-fg-muted mt-3 font-medium">
+              Bạn có chắc chắn muốn ẩn lớp học <strong>"{parseTitle(courseToHide.title).cleanTitle}"</strong>? Mentee sẽ không tìm thấy hoặc đặt lịch mới cho lớp này nữa.
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setCourseToHide(null)}
+                className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmHideCourse}
+                className="bg-amber-500 hover:bg-amber-600 text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+              >
+                Xác nhận ẩn
               </button>
             </div>
           </div>
@@ -1171,6 +1316,8 @@ export const CourseManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Create Rule Modal has been removed */}
 
     </div>
   );
