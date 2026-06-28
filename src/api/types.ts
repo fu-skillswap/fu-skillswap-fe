@@ -326,15 +326,13 @@ export interface MentorAvailabilitySlot {
   maxPendingRequests?: number;
   remainingRequestSlots?: number;
   services?: AvailabilitySlotServiceBasic[];
+  note?: string;
 }
 
 /** 1 candidate segment cụ thể trong slot — khớp ServiceSlotCandidateItemResponse. */
 export interface ServiceSlotCandidate {
   startTime: string;
   endTime: string;
-  pendingCount: number;
-  remainingPendingQuota: number;
-  isSelectable: boolean;
   reasonIfBlocked?: string;
 }
 
@@ -414,10 +412,16 @@ export interface Booking {
   menteeNote?: string;
   createdAt?: string;
   updatedAt?: string;
+  canCancel?: boolean;
+  canComplete?: boolean;
+  canReschedule?: boolean;
+  canSubmitFeedback?: boolean;
+  conversationId?: string;
 }
 
 /** POST /api/bookings — payload mới: bỏ mentorUserId, thêm khung giờ đã chọn. */
 export interface CreateBookingPayload {
+  mentorUserId?: string;
   availabilitySlotId: string;
   serviceId: string;
   selectedStartTime: string;
@@ -503,6 +507,7 @@ export interface ManagedAvailabilitySlot {
   timezone?: string;
   active: boolean;
   services?: AvailabilitySlotServiceBasic[];
+  note?: string;
 }
 
 // ---------- Admin / System users ----------

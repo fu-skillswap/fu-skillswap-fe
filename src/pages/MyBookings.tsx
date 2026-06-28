@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bookmark, Calendar, Clock, Video, Check, X, Star, MessageSquare, Smile, Loader2, AlertCircle, Coins,
 } from 'lucide-react';
@@ -120,6 +121,7 @@ const timeOf = (b: Booking) => {
 };
 
 export const MyBookings: React.FC = () => {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<TabKey>('pending');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [bookingWeekOffset, setBookingWeekOffset] = useState<number>(0);
@@ -194,7 +196,6 @@ export const MyBookings: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  /* ---- Mentor-side actions (lịch mình dạy) ---- */
   const handleOpenAccept = (booking: Booking) => {
     setActiveMentorBooking(booking);
     setMeetingLink('https://meet.google.com/');
@@ -218,14 +219,14 @@ export const MyBookings: React.FC = () => {
       });
       setShowLinkModal(false);
       if (activeMentorBooking.status === 'PENDING') {
-        flashSuccess(`Đã chấp nhận yêu cầu của ${activeMentorBooking.menteeDisplayName}. Lịch hẹn và link đã được gửi!`);
+        flashSuccess(`Đã chấp nhận yêu cầu của ${activeMentorBooking.menteeDisplayName}. Lịch hẹn và link học đã được lưu!`);
       } else {
         flashSuccess('Cập nhật liên kết phòng học thành công!');
       }
       await load();
     } catch (err: any) {
       setShowLinkModal(false);
-      flashSuccess(err?.response?.data?.message || 'Chấp nhận/Cập nhật lịch thất bại.');
+      flashSuccess(err?.response?.data?.message || 'Chấp nhận/Cập nhật liên kết phòng học thất bại.');
     } finally {
       setBusy(false);
     }
@@ -656,52 +657,35 @@ export const MyBookings: React.FC = () => {
                     </div>
 
                     <div className="flex md:flex-col justify-end items-end gap-2 shrink-0">
-                      {b.status === 'PENDING' && (
-                        <div className="flex gap-2">
-                          <button
-                            disabled={busy}
-                            onClick={() => handleOpenAccept(b)}
-                            className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2 px-3.5 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95 disabled:opacity-50"
-                          >
-                            <Check className="w-3.5 h-3.5" /> Nhận dạy
-                          </button>
-                          <button
-                            disabled={busy}
-                            onClick={() => handleOpenReject(b)}
-                            className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-body font-bold py-2 px-3.5 rounded-field cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-                          >
-                            <X className="w-3.5 h-3.5" /> Từ chối
-                          </button>
-                        </div>
+                      {/* Status Badge */}
+                      {b.status !== 'PENDING' && (
+                        <span className={`text-meta font-bold py-0.5 px-2 rounded-lg border mb-1 ${statusBadge(b.status)}`}>
+                          {statusLabel(b.status)}
+                        </span>
                       )}
 
-                      {b.status === 'ACCEPTED' && (
-                        <div className="flex flex-col gap-2 items-end">
-                          <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3 py-1.5 rounded-field text-center">
-                            Chờ tới giờ học
-                          </span>
-                          <div className="flex items-center gap-2">
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2 justify-end items-center">
+                        {b.status === 'PENDING' && (
+                          <>
                             <button
                               disabled={busy}
-                              onClick={() => handleOpenEditMeetingLink(b)}
-                              className="text-meta font-bold text-brand-blue hover:underline cursor-pointer"
+                              onClick={() => handleOpenAccept(b)}
+                              className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2 px-3.5 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95 disabled:opacity-50"
                             >
-                              Đổi link học
+                              <Check className="w-3.5 h-3.5" /> Nhận dạy
                             </button>
-                            <span className="text-brand-border/60">|</span>
                             <button
                               disabled={busy}
-                              onClick={() => handleOpenCancel(b, 'MENTOR')}
-                              className="text-meta font-bold text-red-600 hover:underline cursor-pointer"
+                              onClick={() => handleOpenReject(b)}
+                              className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-body font-bold py-2 px-3.5 rounded-field cursor-pointer transition-all active:scale-95 disabled:opacity-50"
                             >
-                              Hủy dạy
+                              <X className="w-3.5 h-3.5" /> Từ chối
                             </button>
-                          </div>
-                        </div>
-                      )}
+                          </>
+                        )}
 
-                      {b.status === 'AWAITING_MENTOR_COMPLETION' && (
-                        <div className="flex md:flex-col gap-2 items-end">
+                        {b.canComplete && (
                           <button
                             disabled={busy}
                             onClick={() => handleMarkComplete(b.bookingId)}
@@ -709,27 +693,47 @@ export const MyBookings: React.FC = () => {
                           >
                             Đánh dấu hoàn thành
                           </button>
+                        )}
+
+                        {b.conversationId && (
+                          <button
+                            onClick={() => navigate(`/chat?conversationId=${b.conversationId}`)}
+                            className="flex items-center gap-1.5 bg-brand-blue/15 hover:bg-brand-blue/25 text-brand-blue border border-brand-blue/30 text-body font-bold py-2 px-3.5 rounded-field cursor-pointer transition-all active:scale-95"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" /> Trò chuyện
+                          </button>
+                        )}
+
+                        {b.status === 'ACCEPTED' && (
+                          <button
+                            disabled={busy}
+                            onClick={() => handleOpenEditMeetingLink(b)}
+                            className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2 px-3.5 rounded-field cursor-pointer transition-all active:scale-95"
+                          >
+                            Đổi link học
+                          </button>
+                        )}
+
+                        {b.canCancel && (
+                          <button
+                            disabled={busy}
+                            onClick={() => handleOpenCancel(b, 'MENTOR')}
+                            className="text-meta font-bold text-red-600 hover:underline cursor-pointer py-2 px-1"
+                          >
+                            Hủy dạy
+                          </button>
+                        )}
+
+                        {b.status === 'AWAITING_MENTOR_COMPLETION' && (
                           <button
                             disabled={busy}
                             onClick={() => handleOpenIssue(b)}
-                            className="text-meta font-bold text-red-600 hover:underline cursor-pointer"
+                            className="text-meta font-bold text-red-600 hover:underline cursor-pointer py-2 px-1"
                           >
                             Báo sự cố
                           </button>
-                        </div>
-                      )}
-
-                      {b.status === 'AWAITING_MENTEE_CONFIRMATION' && (
-                        <span className="text-meta text-indigo-600 font-bold bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-field text-center">
-                          Chờ mentee xác nhận
-                        </span>
-                      )}
-
-                      {(b.status === 'COMPLETED' || b.status === 'AUTO_CLOSED') && (
-                        <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3 py-1.5 rounded-field">
-                          Buổi học đã hoàn tất
-                        </span>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -798,65 +802,42 @@ export const MyBookings: React.FC = () => {
                       </div>
 
                       <div className="flex md:flex-col justify-end items-end gap-2 shrink-0">
-                        {b.status === 'PENDING' && (
-                          <div className="flex flex-col gap-2 items-end">
-                            <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3.5 py-2 rounded-field">
-                              Đang chờ Mentor phản hồi
-                            </span>
-                            <button
-                              disabled={busy}
-                              onClick={() => handleOpenCancel(b, 'MENTEE')}
-                              className="text-meta font-bold text-red-600 hover:underline cursor-pointer"
-                            >
-                              Hủy yêu cầu
-                            </button>
-                          </div>
-                        )}
-
-                        {b.status === 'ACCEPTED' && (
-                          <div className="flex flex-col gap-2 items-end w-full">
-                            <div className="flex flex-wrap gap-2 justify-end">
-                              {isPaidBooking(b) && (
-                                <button
-                                  onClick={() => setPayBooking(b)}
-                                  className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95"
-                                >
-                                  <Coins className="w-3.5 h-3.5" /> Thanh toán {(b.servicePriceScoinSnapshot ?? 0).toLocaleString('en-US')} SCoin
-                                </button>
-                              )}
-                              {b.meetingLink ? (
-                                <a
-                                  href={b.meetingLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="flex items-center gap-1.5 bg-brand-blue hover:bg-brand-blue-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-blue/20 transition-all active:scale-95"
-                                >
-                                  <Video className="w-3.5 h-3.5" /> Vào lớp học
-                                </a>
-                              ) : (
-                                <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3 py-1.5 rounded-field">
-                                  Chờ mentor gửi link
-                                </span>
-                              )}
-                            </div>
-                            <button
-                              disabled={busy}
-                              onClick={() => handleOpenCancel(b, 'MENTEE')}
-                              className="text-meta font-bold text-red-600 hover:underline cursor-pointer mt-1"
-                            >
-                              Hủy lịch học
-                            </button>
-                          </div>
-                        )}
-
-                        {b.status === 'AWAITING_MENTOR_COMPLETION' && (
-                          <span className="text-meta text-indigo-600 font-bold bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-field text-center">
-                            Chờ mentor xác nhận hoàn thành
+                        {/* Status Badge */}
+                        {b.status !== 'PENDING' && (
+                          <span className={`text-meta font-bold py-0.5 px-2 rounded-lg border mb-1 ${statusBadge(b.status)}`}>
+                            {statusLabel(b.status, 'Đã học xong')}
                           </span>
                         )}
 
-                        {b.status === 'AWAITING_MENTEE_CONFIRMATION' && (
-                          <div className="flex md:flex-col gap-2 items-end">
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap gap-2 justify-end items-center">
+                          {b.status === 'PENDING' && (
+                            <span className="text-meta text-brand-text-muted font-bold bg-brand-bg border border-brand-border px-3.5 py-2 rounded-field mr-2">
+                              Đang chờ Mentor phản hồi
+                            </span>
+                          )}
+
+                          {b.status === 'ACCEPTED' && isPaidBooking(b) && (
+                            <button
+                              onClick={() => setPayBooking(b)}
+                              className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95"
+                            >
+                              <Coins className="w-3.5 h-3.5" /> Thanh toán {(b.servicePriceScoinSnapshot ?? 0).toLocaleString('en-US')} SCoin
+                            </button>
+                          )}
+
+                          {b.meetingLink && b.status === 'ACCEPTED' && (
+                            <a
+                              href={b.meetingLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 bg-brand-blue hover:bg-brand-blue-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-blue/20 transition-all active:scale-95"
+                            >
+                              <Video className="w-3.5 h-3.5" /> Vào lớp học
+                            </a>
+                          )}
+
+                          {b.canComplete && (
                             <button
                               disabled={busy}
                               onClick={() => handleConfirmAsMentee(b.bookingId)}
@@ -864,19 +845,10 @@ export const MyBookings: React.FC = () => {
                             >
                               <Check className="w-3.5 h-3.5" /> Xác nhận hoàn thành
                             </button>
-                            <button
-                              disabled={busy}
-                              onClick={() => handleOpenIssue(b)}
-                              className="text-meta font-bold text-red-600 hover:underline cursor-pointer"
-                            >
-                              Báo sự cố
-                            </button>
-                          </div>
-                        )}
+                          )}
 
-                        {(b.status === 'COMPLETED' || b.status === 'AUTO_CLOSED') && (
-                          <div className="space-y-1.5 text-right">
-                            {reviewed ? (
+                          {b.canSubmitFeedback && (
+                            reviewed ? (
                               <span className="text-meta text-green-700 font-bold bg-green-50 border border-green-200 px-3 py-1.5 rounded-field block">
                                 Đã gửi đánh giá
                               </span>
@@ -887,9 +859,38 @@ export const MyBookings: React.FC = () => {
                               >
                                 <Smile className="w-3.5 h-3.5" /> Đánh giá buổi học
                               </button>
-                            )}
-                          </div>
-                        )}
+                            )
+                          )}
+
+                          {b.conversationId && (
+                            <button
+                              onClick={() => navigate(`/chat?conversationId=${b.conversationId}`)}
+                              className="flex items-center gap-1.5 bg-brand-blue/15 hover:bg-brand-blue/25 text-brand-blue border border-brand-blue/30 text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all active:scale-95"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" /> Trò chuyện
+                            </button>
+                          )}
+
+                          {b.canCancel && (
+                            <button
+                              disabled={busy}
+                              onClick={() => handleOpenCancel(b, 'MENTEE')}
+                              className="text-meta font-bold text-red-600 hover:underline cursor-pointer py-2 px-1"
+                            >
+                              Hủy lịch học
+                            </button>
+                          )}
+
+                          {(b.status === 'AWAITING_MENTEE_CONFIRMATION' || b.status === 'AWAITING_MENTOR_COMPLETION') && (
+                            <button
+                              disabled={busy}
+                              onClick={() => handleOpenIssue(b)}
+                              className="text-meta font-bold text-red-600 hover:underline cursor-pointer py-2 px-1"
+                            >
+                              Báo sự cố
+                            </button>
+                          )}
+                        </div>
 
                         {b.status === 'REJECTED' && (
                           <span className="text-meta text-red-600 font-bold bg-red-50 border border-red-100 px-3.5 py-2 rounded-field">

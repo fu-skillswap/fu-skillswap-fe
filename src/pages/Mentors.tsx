@@ -82,6 +82,15 @@ const fmtDateTime = (iso?: string) => {
   return d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
+const parseCandidateTime = (timeStr: string) => {
+  if (!timeStr) return new Date();
+  if (/^\d{8}T\d{2}:\d{2}:\d{2}$/.test(timeStr)) {
+    const formatted = `${timeStr.slice(0, 4)}-${timeStr.slice(4, 6)}-${timeStr.slice(6, 8)}T${timeStr.slice(9)}`;
+    return new Date(formatted);
+  }
+  return new Date(timeStr);
+};
+
 export const Mentors: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialization, setSelectedSpecialization] = useState('ALL');
@@ -173,13 +182,10 @@ export const Mentors: React.FC = () => {
     return matchesSpecialization && matchesStatus;
   });
 
-  const fetchSlots = async (mentorUserId: string, offset: number) => {
+  const fetchSlots = async (mentorUserId: string) => {
     setBookingLoading(true);
     try {
-      const weekDays = getWeekDays(offset);
-      const fromDate = formatDateISO(weekDays[0]);
-      const toDate = formatDateISO(weekDays[6]);
-      const slots = await mentorsApi.getAvailabilitySlots(mentorUserId, fromDate, toDate);
+      const slots = await mentorsApi.getAvailabilitySlots(mentorUserId);
       setActiveSlots(slots);
       if (slots.length === 1) setSelectedSlotId(slots[0].slotId);
     } catch (err: any) {
@@ -197,7 +203,7 @@ export const Mentors: React.FC = () => {
     setSelectedServiceId('');
     setSelectedCandidateKey('');
     setCandidates([]);
-    await fetchSlots(activeMentor.mentorUserId, offset);
+    await fetchSlots(activeMentor.mentorUserId);
   };
 
   const handleOpenBooking = async (mentor: MentorVM) => {
@@ -226,7 +232,7 @@ export const Mentors: React.FC = () => {
         );
         return;
       }
-      await fetchSlots(mentor.mentorUserId, 0);
+      await fetchSlots(mentor.mentorUserId);
     } catch (err: any) {
       setBookingError(err?.response?.data?.message || 'Không tải được thông tin đặt lịch của mentor.');
     } finally {
@@ -267,7 +273,7 @@ export const Mentors: React.FC = () => {
         if (cancelled) return;
         const list = res.candidateServiceSlots || [];
         setCandidates(list);
-        const firstSelectable = list.find((c) => c.isSelectable);
+        const firstSelectable = list[0];
         if (firstSelectable) setSelectedCandidateKey(`${firstSelectable.startTime}|${firstSelectable.endTime}`);
       })
       .catch(() => {
@@ -295,6 +301,7 @@ export const Mentors: React.FC = () => {
     setBookingError(null);
     try {
       await bookingsApi.create({
+        mentorUserId: activeMentor.mentorUserId,
         availabilitySlotId: selectedSlotId,
         serviceId: selectedServiceId,
         selectedStartTime: selStart,
@@ -882,21 +889,14 @@ export const Mentors: React.FC = () => {
                                     <button
                                       type="button"
                                       key={key}
-                                      disabled={!c.isSelectable}
                                       onClick={() => setSelectedCandidateKey(key)}
-                                      title={!c.isSelectable ? (c.reasonIfBlocked || 'Không đặt được') : undefined}
                                       className={`px-2 py-1.5 rounded-field text-[11px] font-bold border transition-all text-center leading-tight ${
                                         selected
                                           ? 'bg-brand-terracotta text-white border-brand-terracotta shadow-sm'
-                                          : c.isSelectable
-                                            ? 'bg-brand-bg border-brand-border text-brand-text hover:border-brand-terracotta cursor-pointer'
-                                            : 'bg-brand-bg/30 border-brand-border text-brand-grey opacity-50 cursor-not-allowed'
+                                          : 'bg-brand-bg border-brand-border text-brand-text hover:border-brand-terracotta cursor-pointer'
                                       }`}
                                     >
-                                      {new Date(c.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                      {c.isSelectable && c.remainingPendingQuota > 0 && (
-                                        <span className="block text-[8px] font-medium opacity-80 mt-0.5">còn {c.remainingPendingQuota} chỗ</span>
-                                      )}
+                                      {parseCandidateTime(c.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                                     </button>
                                   );
                                 })}
