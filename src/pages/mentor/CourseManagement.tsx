@@ -138,7 +138,6 @@ export const CourseManagement: React.FC = () => {
   const [topics, setTopics] = useState<HelpTopic[]>(DEFAULT_TOPICS);
   const [loading, setLoading] = useState(true);
   const [loadingRules, setLoadingRules] = useState(true);
-  const [savingRuleId, setSavingRuleId] = useState<string | null>(null);
 
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -185,17 +184,7 @@ export const CourseManagement: React.FC = () => {
 
   // Confirmation Delete Modals
   const [courseToDelete, setCourseToDelete] = useState<MentorServiceItem | null>(null);
-  const [ruleToDelete, setRuleToDelete] = useState<AvailabilityRule | null>(null);
   const [courseToHide, setCourseToHide] = useState<MentorServiceItem | null>(null);
-
-  // Edit Rule states
-  const [ruleToEdit, setRuleToEdit] = useState<AvailabilityRule | null>(null);
-  const [editRuleDays, setEditRuleDays] = useState<string[]>([]);
-  const [editRuleStartTime, setEditRuleStartTime] = useState('09:00');
-  const [editRuleEndTime, setEditRuleEndTime] = useState('10:00');
-  const [editRuleNote, setEditRuleNote] = useState('');
-  const [editRuleServiceId, setEditRuleServiceId] = useState<string>('');
-  const [editRuleErrors, setEditRuleErrors] = useState<Record<string, string>>({});
 
   const triggerToast = (message: string, type: 'success' | 'danger') => {
     window.dispatchEvent(new CustomEvent('push-toast', {
@@ -416,145 +405,7 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteRule = async () => {
-    if (!ruleToDelete) return;
-    const deletedId = ruleToDelete.ruleId;
-    setSavingRuleId(deletedId);
-    try {
-      await availabilityApi.deleteRule(deletedId);
-      triggerToast('Đã xóa thời gian rảnh thành công.', 'success');
-      await fetchRulesAndSlots();
-    } catch (err: any) {
-      console.error(err);
-      const detailMsg = getErrorMessage(err) || 'Không thể xóa thời gian rảnh này.';
-      triggerToast(detailMsg, 'danger');
-    } finally {
-      setRuleToDelete(null);
-      setSavingRuleId(null);
-    }
-  };
 
-  const handleOpenEditRuleModal = (rule: AvailabilityRule) => {
-    setRuleToEdit(rule);
-    setEditRuleDays(rule.daysOfWeek || []);
-    setEditRuleStartTime(rule.startTime || '09:00');
-    setEditRuleEndTime(rule.endTime || '10:00');
-    setEditRuleNote(rule.note || '');
-    setEditRuleErrors({});
-
-    // Find the first slot matching this rule to populate current course
-    const targetStart = (rule.startTime || '09:00').slice(0, 5);
-    const targetEnd = (rule.endTime || '10:00').slice(0, 5);
-    const ruleDaysSet = new Set(rule.daysOfWeek || []);
-    
-    const matchedSlot = slots.find(slot => {
-      const slotStartStr = getLocalTimeStr(slot.startTime);
-      const slotEndStr = getLocalTimeStr(slot.endTime);
-      const slotWeekday = getLocalWeekday(slot.startTime);
-      return ruleDaysSet.has(slotWeekday) && slotStartStr === targetStart && slotEndStr === targetEnd;
-    });
-    
-    if (matchedSlot && matchedSlot.services && matchedSlot.services.length > 0) {
-      setEditRuleServiceId(matchedSlot.services[0].serviceId);
-    } else {
-      setEditRuleServiceId('');
-    }
-  };
-
-  const validateEditRuleForm = () => {
-    const newErrors: Record<string, string> = {};
-    if (editRuleDays.length === 0) newErrors.days = 'Vui lòng chọn ít nhất một thứ trong tuần.';
-    
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!editRuleStartTime || !timeRegex.test(editRuleStartTime)) {
-      newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
-    } else if (editRuleStartTime < '09:00' || editRuleStartTime > '21:00') {
-      newErrors.startTime = 'Giờ bắt đầu làm việc chỉ cho phép từ 09:00 đến 21:00';
-    }
-    
-    if (!editRuleEndTime || !timeRegex.test(editRuleEndTime)) {
-      newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
-    } else if (editRuleEndTime < '09:00' || editRuleEndTime > '21:00') {
-      newErrors.endTime = 'Giờ kết thúc làm việc chỉ cho phép từ 09:00 đến 21:00';
-    }
-    
-    if (editRuleStartTime && editRuleEndTime && editRuleStartTime >= editRuleEndTime) {
-      newErrors.endTime = 'Giờ kết thúc phải lớn hơn giờ bắt đầu';
-    }
-
-    setEditRuleErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSaveEditRule = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ruleToEdit || !validateEditRuleForm()) return;
-
-    setLoadingRules(true);
-    try {
-      const today = new Date();
-      const endRange = new Date();
-      endRange.setDate(today.getDate() + 30);
-      const formatTime = (t: string) => t.slice(0, 5);
-
-      const payload = {
-        ruleType: ruleToEdit.ruleType,
-        repeatType: ruleToEdit.repeatType,
-        daysOfWeek: editRuleDays,
-        effectiveFrom: ruleToEdit.effectiveFrom,
-        effectiveTo: ruleToEdit.effectiveTo,
-        startTime: formatTime(editRuleStartTime),
-        endTime: formatTime(editRuleEndTime),
-        note: editRuleNote.trim(),
-      };
-      
-      await availabilityApi.updateRule(ruleToEdit.ruleId, payload);
-
-      // Auto-assign course(s) selected in the edit rule modal
-      if (editRuleServiceId) {
-        try {
-          const updatedSlots = await mentorsApi.getAvailabilitySlots(
-            myUserId, 
-            formatDateISO(today), 
-            formatDateISO(endRange)
-          ).catch(() => [] as MentorAvailabilitySlot[]);
-          
-          const ruleDaysSet = new Set(editRuleDays);
-          const targetStart = formatTime(editRuleStartTime);
-          const targetEnd = formatTime(editRuleEndTime);
-          
-          const matchedSlots = updatedSlots.filter(slot => {
-            const slotStartStr = getLocalTimeStr(slot.startTime);
-            const slotEndStr = getLocalTimeStr(slot.endTime);
-            const slotWeekday = getLocalWeekday(slot.startTime);
-            return ruleDaysSet.has(slotWeekday) && slotStartStr === targetStart && slotEndStr === targetEnd;
-          });
-          
-          if (matchedSlots.length > 0) {
-            await Promise.all(
-              matchedSlots.map(slot => 
-                availabilityApi.replaceSlotServices(slot.slotId, [editRuleServiceId]).catch(err => {
-                  console.error(`Failed to assign services to slot ${slot.slotId}:`, err);
-                })
-              )
-            );
-          }
-        } catch (assignErr) {
-          console.error('Failed to auto-assign edited rule services:', assignErr);
-        }
-      }
-
-      triggerToast('Đã cập nhật lịch rảnh và gán lớp dạy thành công.', 'success');
-      setRuleToEdit(null);
-      await fetchRulesAndSlots();
-    } catch (err: any) {
-      console.error(err);
-      const detailMsg = getErrorMessage(err) || 'Cập nhật lịch rảnh thất bại.';
-      triggerToast(detailMsg, 'danger');
-    } finally {
-      setLoadingRules(false);
-    }
-  };
 
   const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -656,12 +507,97 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
+  const findRuleForSlot = (slot: MentorAvailabilitySlot): AvailabilityRule | undefined => {
+    const slotStartStr = getLocalTimeStr(slot.startTime);
+    const slotEndStr = getLocalTimeStr(slot.endTime);
+    const slotWeekday = getLocalWeekday(slot.startTime);
+
+    return rules.find(rule => {
+      const ruleStart = (rule.startTime || '09:00').slice(0, 5);
+      const ruleEnd = (rule.endTime || '10:00').slice(0, 5);
+      const ruleDaysSet = new Set(rule.daysOfWeek || []);
+      return ruleDaysSet.has(slotWeekday) && ruleStart === slotStartStr && ruleEnd === slotEndStr;
+    });
+  };
+
+  const handleRemoveSlot = async () => {
+    if (!slotToAssign) return;
+    setSavingSlotServices(true);
+    try {
+      const matchedRule = findRuleForSlot(slotToAssign);
+      if (matchedRule) {
+        await availabilityApi.deleteRule(matchedRule.ruleId);
+      } else {
+        await availabilityApi.replaceSlotServices(slotToAssign.slotId, []);
+      }
+      triggerToast('Đã xóa khung giờ dạy thành công.', 'success');
+      setSlotToAssign(null);
+      await fetchRulesAndSlots();
+    } catch (err: any) {
+      console.error(err);
+      const detailMsg = getErrorMessage(err) || 'Không thể xóa khung giờ dạy.';
+      triggerToast(detailMsg, 'danger');
+    } finally {
+      setSavingSlotServices(false);
+    }
+  };
+
   const handleSaveSlotServices = async () => {
     if (!slotToAssign) return;
     setSavingSlotServices(true);
     try {
-      await availabilityApi.replaceSlotServices(slotToAssign.slotId, assignedServiceIds);
-      triggerToast('Đã gán lớp học vào khung giờ thành công.', 'success');
+      const matchedRule = findRuleForSlot(slotToAssign);
+      
+      if (assignedServiceIds.length === 0) {
+        if (matchedRule) {
+          await availabilityApi.deleteRule(matchedRule.ruleId);
+        } else {
+          await availabilityApi.replaceSlotServices(slotToAssign.slotId, []);
+        }
+        triggerToast('Đã xóa khung giờ dạy thành công.', 'success');
+      } else {
+        await availabilityApi.replaceSlotServices(slotToAssign.slotId, assignedServiceIds);
+        
+        // Update siblings generated by the same rule to keep weekly parity
+        if (matchedRule) {
+          try {
+            const today = new Date();
+            const endRange = new Date();
+            endRange.setDate(today.getDate() + 30);
+            
+            const updatedSlots = await mentorsApi.getAvailabilitySlots(
+              myUserId, 
+              formatDateISO(today), 
+              formatDateISO(endRange)
+            ).catch(() => [] as MentorAvailabilitySlot[]);
+            
+            const ruleDaysSet = new Set(matchedRule.daysOfWeek || []);
+            const targetStart = (matchedRule.startTime || '09:00').slice(0, 5);
+            const targetEnd = (matchedRule.endTime || '10:00').slice(0, 5);
+            
+            const matchedSlots = updatedSlots.filter(s => {
+              const sStartStr = getLocalTimeStr(s.startTime);
+              const sEndStr = getLocalTimeStr(s.endTime);
+              const sWeekday = getLocalWeekday(s.startTime);
+              return s.slotId !== slotToAssign.slotId && ruleDaysSet.has(sWeekday) && sStartStr === targetStart && sEndStr === targetEnd;
+            });
+            
+            if (matchedSlots.length > 0) {
+              await Promise.all(
+                matchedSlots.map(s => 
+                  availabilityApi.replaceSlotServices(s.slotId, assignedServiceIds).catch(err => {
+                    console.error(`Failed to assign services to sibling slot ${s.slotId}:`, err);
+                  })
+                )
+              );
+            }
+          } catch (multiErr) {
+            console.error('Failed to update sibling slots:', multiErr);
+          }
+        }
+        triggerToast('Đã gán lớp học vào khung giờ thành công.', 'success');
+      }
+
       setSlotToAssign(null);
       await fetchRulesAndSlots();
     } catch (err: any) {
@@ -673,11 +609,6 @@ export const CourseManagement: React.FC = () => {
     }
   };
 
-  const toggleEditDaySelection = (dayValue: string) => {
-    setEditRuleDays(prev => 
-      prev.includes(dayValue) ? prev.filter(d => d !== dayValue) : [...prev, dayValue]
-    );
-  };
 
   const getLocalDateStr = (iso: string) => {
     const d = new Date(iso);
@@ -689,7 +620,32 @@ export const CourseManagement: React.FC = () => {
 
   const getSlotsForDay = (dayDate: Date) => {
     const dateStr = formatDateISO(dayDate);
-    return slots.filter(s => getLocalDateStr(s.startTime) === dateStr);
+    return slots.filter(s => getLocalDateStr(s.startTime) === dateStr && s.services && s.services.length > 0);
+  };
+
+  const handleCellClick = (dayDate: Date, startTime: string, endTime: string) => {
+    const weekdayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const cellWeekday = weekdayNames[dayDate.getDay()];
+    const cellDateStr = formatDateISO(dayDate);
+    
+    const existingSlot = slots.find(s => {
+      const slotStartStr = getLocalTimeStr(s.startTime);
+      const slotEndStr = getLocalTimeStr(s.endTime);
+      const slotDateStr = getLocalDateStr(s.startTime);
+      return slotDateStr === cellDateStr && slotStartStr === startTime && slotEndStr === endTime;
+    });
+
+    if (existingSlot) {
+      handleOpenAssignModal(existingSlot);
+    } else {
+      setRuleDays([cellWeekday]);
+      setRuleStartTime(startTime);
+      setRuleEndTime(endTime);
+      setRuleNoteField('');
+      setRuleServiceId('');
+      setRuleErrors({});
+      setShowCreateRuleModal(true);
+    }
   };
 
   const handleOpenAssignModal = (slot: MentorAvailabilitySlot) => {
@@ -1008,6 +964,29 @@ export const CourseManagement: React.FC = () => {
                               isToday ? 'bg-primary-soft/5' : ''
                             }`}
                           >
+                            {/* Hourly Clickable Background Cells */}
+                            {Array.from({ length: 12 }).map((_, hourIdx) => {
+                              const hour = 9 + hourIdx;
+                              const hourStr = `${String(hour).padStart(2, '0')}:00`;
+                              const nextHourStr = `${String(hour + 1).padStart(2, '0')}:00`;
+                              
+                              return (
+                                <div
+                                  key={hourIdx}
+                                  onClick={() => handleCellClick(dayDate, hourStr, nextHourStr)}
+                                  className="absolute left-0 right-0 hover:bg-primary-soft/10 cursor-pointer border-b border-line-soft/10 group transition-all"
+                                  style={{
+                                    top: `${hourIdx * 50}px`,
+                                    height: '50px',
+                                  }}
+                                >
+                                  <div className="hidden group-hover:flex items-center justify-center h-full text-primary/70 font-black text-[9px] uppercase tracking-wider select-none">
+                                    + Thêm giờ dạy
+                                  </div>
+                                </div>
+                              );
+                            })}
+
                             {/* Absolute Event blocks for this day */}
                             {daySlots.map((slot) => {
                               // Calculate position
@@ -1037,47 +1016,38 @@ export const CourseManagement: React.FC = () => {
                               return (
                                 <div
                                   key={slot.slotId}
-                                  onClick={() => handleOpenAssignModal(slot)}
-                                  className="absolute left-1 right-1 rounded-md border border-primary/20 bg-primary-soft/85 hover:bg-primary-soft shadow-xs p-1.5 overflow-hidden group/rule transition-all hover:z-10 hover:shadow-md text-left cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenAssignModal(slot);
+                                  }}
+                                  className="absolute left-1 right-1 rounded-md border border-primary/20 bg-primary-soft/85 hover:bg-primary shadow-xs p-1.5 overflow-hidden group/rule transition-all hover:z-10 hover:shadow-md text-left cursor-pointer"
                                   style={{
                                     top: `${top}px`,
                                     height: `${height}px`
                                   }}
                                 >
                                   {/* Time & status */}
-                                  <div className="flex items-center justify-between text-[9px] font-extrabold text-primary leading-tight">
+                                  <div className="flex items-center justify-between text-[9px] font-extrabold text-primary group-hover/rule:text-white leading-tight">
                                     <span className="truncate">
                                       {formatLocalTime(slot.startTime)} - {formatLocalTime(slot.endTime)}
-                                    </span>
-                                    
-                                    <span className={`text-[8px] px-1 rounded-sm ${
-                                      slotServices.length > 0 ? 'bg-success/15 text-success' : 'bg-fg-muted/15 text-fg-muted font-bold'
-                                    }`}>
-                                      {slotServices.length > 0 ? `${slotServices.length} lớp` : 'Chưa gán'}
                                     </span>
                                   </div>
                                   
                                   {/* Assigned Courses Badges */}
                                   <div className="mt-1 space-y-0.5 overflow-y-auto max-h-[calc(100%-14px)] scrollbar-thin">
-                                    {slotServices.length > 0 ? (
-                                      slotServices.map(srv => {
-                                        const { subjectCode, cleanTitle } = parseTitle(srv.title);
-                                        return (
-                                          <div 
-                                            key={srv.serviceId} 
-                                            className="text-[9px] font-bold bg-white/70 text-fg rounded px-1 py-0.5 border border-line-soft truncate"
-                                            title={cleanTitle}
-                                          >
-                                            <span className="text-primary font-extrabold mr-1">[{subjectCode}]</span>
-                                            {cleanTitle}
-                                          </div>
-                                        );
-                                      })
-                                    ) : (
-                                      <div className="text-[9px] font-medium text-fg-muted italic">
-                                        Click để gán lớp dạy
-                                      </div>
-                                    )}
+                                    {slotServices.map(srv => {
+                                      const { subjectCode, cleanTitle } = parseTitle(srv.title);
+                                      return (
+                                        <div 
+                                          key={srv.serviceId} 
+                                          className="text-[9px] font-bold bg-white/90 text-fg rounded px-1.5 py-0.5 border border-line-soft truncate"
+                                          title={cleanTitle}
+                                        >
+                                          <span className="text-primary font-extrabold mr-1">[{subjectCode}]</span>
+                                          {cleanTitle}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               );
@@ -1093,72 +1063,7 @@ export const CourseManagement: React.FC = () => {
               </div>
             )}
 
-            {/* List of Repeating Rules to allow deletion */}
-            <div className="border-t border-line-soft pt-4 mt-6 text-left">
-              <h4 className="text-sm font-bold text-fg mb-3 flex items-center gap-2">
-                <Calendar className="w-4.5 h-4.5 text-primary" /> Khung giờ rảnh lặp lại đã thiết lập
-              </h4>
-              
-              {rules.length === 0 ? (
-                <p className="text-meta text-fg-muted italic">Chưa thiết lập khung giờ lặp lại nào. Nhấp "+ Thiết lập lịch rảnh lặp lại" ở trên để tạo.</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
-                  {rules.map(rule => {
-                    const formatRuleDays = (days?: string[]) => {
-                      if (!days || days.length === 0) return '';
-                      return days.map(d => {
-                        const found = WEEKDAYS.find(w => w.value === d);
-                        return found ? found.label : d;
-                      }).join(', ');
-                    };
-                    
-                    return (
-                      <div 
-                        key={rule.ruleId} 
-                        className="p-3 border border-line rounded-lg bg-surface-muted/30 flex items-center justify-between gap-3 group/rule-item"
-                      >
-                        <div className="text-left leading-snug">
-                          <div className="text-meta font-extrabold text-fg flex items-center gap-1.5">
-                            <span className="text-primary">{rule.startTime} - {rule.endTime}</span>
-                            <span className="text-fg-muted font-normal">•</span>
-                            <span className="text-fg">{formatRuleDays(rule.daysOfWeek)}</span>
-                          </div>
-                          <div className="text-[10px] text-fg-muted font-bold mt-1">
-                            Hiệu lực từ {new Date(rule.effectiveFrom).toLocaleDateString('vi-VN')}
-                            {rule.note && ` (${rule.note})`}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-1 shrink-0">
-                          {savingRuleId === rule.ruleId ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEditRuleModal(rule)}
-                                className="p-1.5 text-fg-muted hover:text-primary hover:bg-primary-soft rounded-md transition-all opacity-60 hover:opacity-100 cursor-pointer"
-                                title="Sửa lịch rảnh"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setRuleToDelete(rule)}
-                                className="p-1.5 text-fg-muted hover:text-danger hover:bg-danger-soft rounded-md transition-all opacity-60 hover:opacity-100 cursor-pointer"
-                                title="Xóa lịch rảnh"
-                              >
-                                <Trash className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+
 
           </div>
         </div>
@@ -1395,174 +1300,6 @@ export const CourseManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Confirmation Delete Rule Modal */}
-      {ruleToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
-            <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
-              <AlertCircle className="w-6 h-6 text-danger" /> Xác nhận xóa lịch rảnh
-            </h3>
-            <p className="text-body text-fg-muted mt-3 font-medium">
-              Bạn có chắc chắn muốn xóa lịch rảnh dạy từ <strong>{ruleToDelete.startTime}</strong> đến <strong>{ruleToDelete.endTime}</strong>?
-            </p>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setRuleToDelete(null)}
-                className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleDeleteRule}
-                className="bg-danger hover:bg-danger-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
-              >
-                Xóa lịch
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Rule Modal */}
-      {ruleToEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto animate-fadeIn">
-          <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
-            <div className="flex justify-between items-center border-b border-line-soft pb-3">
-              <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-primary" /> Chỉnh sửa khung giờ dạy khả dụng
-              </h3>
-              <button
-                onClick={() => setRuleToEdit(null)}
-                className="p-1 rounded-full hover:bg-surface-muted text-fg-muted hover:text-fg cursor-pointer transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEditRule} className="py-4 space-y-4">
-              {/* Days checkbox group */}
-              <div>
-                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">Thứ trong tuần</label>
-                <div className="flex flex-wrap gap-2">
-                  {WEEKDAYS.map(day => {
-                    const checked = editRuleDays.includes(day.value);
-                    return (
-                      <button
-                        key={day.value}
-                        type="button"
-                        onClick={() => toggleEditDaySelection(day.value)}
-                        className={`px-4 py-2 text-meta font-bold border rounded-field transition-all cursor-pointer ${
-                          checked 
-                            ? 'bg-primary text-white border-primary shadow-xs' 
-                            : 'bg-surface text-fg border-line hover:bg-surface-muted/40'
-                        }`}
-                      >
-                        {day.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {editRuleErrors.days && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.days}</p>}
-              </div>
-
-              {/* Time selection group */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu dạy (từ 09:00) <span className="text-danger">*</span></label>
-                  <input
-                    type="time"
-                    required
-                    min="09:00"
-                    max="21:00"
-                    value={editRuleStartTime}
-                    onChange={(e) => { setEditRuleStartTime(e.target.value); if(editRuleErrors.startTime) setEditRuleErrors({...editRuleErrors, startTime: ''}); }}
-                    className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                      editRuleErrors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
-                    }`}
-                  />
-                  {editRuleErrors.startTime && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.startTime}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc dạy (đến 21:00) <span className="text-danger">*</span></label>
-                  <input
-                    type="time"
-                    required
-                    min="09:00"
-                    max="21:00"
-                    value={editRuleEndTime}
-                    onChange={(e) => { setEditRuleEndTime(e.target.value); if(editRuleErrors.endTime) setEditRuleErrors({...editRuleErrors, endTime: ''}); }}
-                    className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                      editRuleErrors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
-                    }`}
-                  />
-                  {editRuleErrors.endTime && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.endTime}</p>}
-                </div>
-              </div>
-
-              <div className="text-[10px] text-primary bg-primary-soft/50 border border-primary/20 rounded-field p-2.5 font-bold leading-normal text-left">
-                💡 Mentor có thể nhập bất cứ khung giờ dạy mong muốn nào (Ví dụ: 10:00 - 12:00, 14:00 - 16:00,...), miễn là nằm trong khoảng từ 09:00 sáng đến 21:00 tối.
-              </div>
-
-              {/* Courses select dropdown */}
-              <div>
-                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">
-                  Môn học áp dụng trong khung giờ này <span className="text-danger">*</span>
-                </label>
-                {uniqueCourses.length === 0 ? (
-                  <p className="text-meta text-fg-muted italic">Bạn chưa tạo lớp học nào. Hãy lưu lịch này sau khi đã tạo lớp học ở danh sách bên trái.</p>
-                ) : (
-                  <select
-                    value={editRuleServiceId}
-                    onChange={(e) => setEditRuleServiceId(e.target.value)}
-                    required
-                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold cursor-pointer"
-                  >
-                    <option value="">-- Chọn môn học gán vào khung giờ --</option>
-                    {uniqueCourses.map(srv => {
-                      const { subjectCode, cleanTitle } = parseTitle(srv.title);
-                      return (
-                        <option key={srv.serviceId} value={srv.serviceId}>
-                          [{subjectCode}] {cleanTitle}
-                        </option>
-                      );
-                    })}
-                  </select>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch dạy</label>
-                <input
-                  type="text"
-                  placeholder="VD: Rảnh buổi tối sau giờ làm"
-                  value={editRuleNote}
-                  onChange={(e) => setEditRuleNote(e.target.value)}
-                  className="w-full bg-surface border border-line rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
-                />
-              </div>
-
-              {/* Modal Actions */}
-              <div className="flex justify-end gap-3 pt-3 border-t border-line-soft">
-                <button
-                  type="button"
-                  onClick={() => setRuleToEdit(null)}
-                  className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98]"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
-                >
-                  Lưu thay đổi
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Create Rule Modal */}
       {showCreateRuleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto animate-fadeIn">
@@ -1738,67 +1475,65 @@ export const CourseManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">
-                  Danh sách lớp học dạy trong khung giờ này
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">
+                  Lớp học giảng dạy trong khung giờ này
                 </label>
                 
-                {courses.length === 0 ? (
+                {uniqueCourses.length === 0 ? (
                   <p className="text-meta text-fg-muted italic">Bạn chưa tạo lớp học nào. Hãy đóng modal này và tạo lớp học mới ở danh sách bên trái trước.</p>
                 ) : (
-                  <div className="max-h-60 overflow-y-auto space-y-2 border border-line rounded-lg p-3 scrollbar-thin">
-                    {courses.map(srv => {
-                      const checked = assignedServiceIds.includes(srv.serviceId);
+                  <select
+                    value={assignedServiceIds[0] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAssignedServiceIds(val ? [val] : []);
+                    }}
+                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold cursor-pointer"
+                  >
+                    <option value="">-- Trống (Chưa gán lớp dạy) --</option>
+                    {uniqueCourses.map(srv => {
                       const { subjectCode, cleanTitle } = parseTitle(srv.title);
                       return (
-                        <label 
-                          key={srv.serviceId}
-                          className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer select-none transition-all ${
-                            checked 
-                              ? 'bg-primary-soft/30 border-primary text-fg font-bold' 
-                              : 'bg-surface border-line hover:bg-surface-muted/40 text-fg-muted font-bold'
-                          }`}
-                        >
-                          <input 
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => {
-                              setAssignedServiceIds(prev => 
-                                prev.includes(srv.serviceId) 
-                                  ? prev.filter(id => id !== srv.serviceId) 
-                                  : [...prev, srv.serviceId]
-                              );
-                            }}
-                            className="w-4 h-4 rounded text-primary focus:ring-primary focus:ring-opacity-20 cursor-pointer shadow-xs"
-                          />
-                          <div className="text-left font-bold text-meta leading-tight">
-                            <span className="text-primary font-black uppercase mr-1">[{subjectCode}]</span>
-                            {cleanTitle}
-                          </div>
-                        </label>
+                        <option key={srv.serviceId} value={srv.serviceId}>
+                          [{subjectCode}] {cleanTitle}
+                        </option>
                       );
                     })}
-                  </div>
+                  </select>
                 )}
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex justify-end gap-3 pt-3 border-t border-line-soft">
-              <button
-                type="button"
-                onClick={() => setSlotToAssign(null)}
-                className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98]"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleSaveSlotServices}
-                disabled={savingSlotServices}
-                className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
-              >
-                {savingSlotServices && <Loader2 className="w-4 h-4 animate-spin" />}
-                Lưu thay đổi
-              </button>
+            <div className="flex justify-between items-center pt-3 border-t border-line-soft">
+              <div>
+                <button
+                  type="button"
+                  onClick={handleRemoveSlot}
+                  disabled={savingSlotServices}
+                  className="bg-danger/10 hover:bg-danger/20 text-danger text-meta font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
+                >
+                  <Trash className="w-3.5 h-3.5" />
+                  Xóa khung giờ dạy
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSlotToAssign(null)}
+                  className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98]"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSaveSlotServices}
+                  disabled={savingSlotServices}
+                  className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
+                >
+                  {savingSlotServices && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Lưu thay đổi
+                </button>
+              </div>
             </div>
           </div>
         </div>
