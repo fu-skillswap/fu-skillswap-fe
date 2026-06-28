@@ -915,7 +915,7 @@ export const CourseManagement: React.FC = () => {
 
             <form onSubmit={handleSaveCourse} className="py-4 space-y-5">
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className={`grid grid-cols-1 ${isEditing ? '' : 'lg:grid-cols-2'} gap-8`}>
                 {/* Column 1: SECTION 1: Class details */}
                 <div className="space-y-4 text-left">
                   <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">1. Thông tin chi tiết lớp dạy</h4>
@@ -1047,85 +1047,87 @@ export const CourseManagement: React.FC = () => {
                 </div>
 
                 {/* Column 2: SECTION 2: Schedule configuration */}
-                <div className="space-y-4 lg:border-l lg:border-line-soft lg:pl-8 text-left">
-                  <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">
-                    2. Cấu hình lịch rảnh khả dụng
-                  </h4>
-                  
-                  <p className="text-[11px] text-fg-muted font-medium">
-                    Tích chọn các thứ trong tuần mà bạn rảnh. Hệ thống sẽ tự động tạo các slot thời gian tương ứng từ hôm nay đến 2 tuần tiếp theo.
-                  </p>
+                {!isEditing && (
+                  <div className="space-y-4 lg:border-l lg:border-line-soft lg:pl-8 text-left">
+                    <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">
+                      2. Cấu hình lịch rảnh khả dụng
+                    </h4>
+                    
+                    <p className="text-[11px] text-fg-muted font-medium">
+                      Tích chọn các thứ trong tuần mà bạn rảnh. Hệ thống sẽ tự động tạo các slot thời gian tương ứng từ hôm nay đến 2 tuần tiếp theo.
+                    </p>
 
-                  <div className="space-y-4">
-                    {/* Days checkbox group */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">Thứ trong tuần</label>
-                      <div className="flex flex-wrap gap-2">
-                        {WEEKDAYS.map(day => {
-                          const checked = selectedDays.includes(day.value);
-                          return (
-                            <button
-                              key={day.value}
-                              type="button"
-                              onClick={() => toggleDaySelection(day.value)}
-                              className={`px-4 py-2 text-meta font-bold border rounded-field transition-all cursor-pointer ${
-                                checked 
-                                  ? 'bg-primary text-white border-primary shadow-xs' 
-                                  : 'bg-surface text-fg border-line hover:bg-surface-muted/40'
-                              }`}
-                            >
-                              {day.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Time selection group */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      {/* Days checkbox group */}
                       <div>
-                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (09:00 - 21:00) <span className="text-danger">*</span></label>
-                        <input
-                          type="time"
-                          min="09:00"
-                          max="21:00"
-                          value={startTime}
-                          onChange={(e) => { setStartTime(e.target.value); if(errors.startTime) setErrors({...errors, startTime: ''}); }}
-                          className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                            errors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
-                          }`}
-                        />
-                        {errors.startTime && <p className="text-meta text-danger font-semibold mt-1">{errors.startTime}</p>}
+                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">Thứ trong tuần</label>
+                        <div className="flex flex-wrap gap-2">
+                          {WEEKDAYS.map(day => {
+                            const checked = selectedDays.includes(day.value);
+                            return (
+                              <button
+                                key={day.value}
+                                type="button"
+                                onClick={() => toggleDaySelection(day.value)}
+                                className={`px-4 py-2 text-meta font-bold border rounded-field transition-all cursor-pointer ${
+                                  checked 
+                                    ? 'bg-primary text-white border-primary shadow-xs' 
+                                    : 'bg-surface text-fg border-line hover:bg-surface-muted/40'
+                                }`}
+                              >
+                                {day.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Time selection group */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (09:00 - 21:00) <span className="text-danger">*</span></label>
+                          <input
+                            type="time"
+                            min="09:00"
+                            max="21:00"
+                            value={startTime}
+                            onChange={(e) => { setStartTime(e.target.value); if(errors.startTime) setErrors({...errors, startTime: ''}); }}
+                            className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                              errors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                            }`}
+                          />
+                          {errors.startTime && <p className="text-meta text-danger font-semibold mt-1">{errors.startTime}</p>}
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (09:00 - 21:00) <span className="text-danger">*</span></label>
+                          <input
+                            type="time"
+                            min="09:00"
+                            max="21:00"
+                            value={endTime}
+                            onChange={(e) => { setEndTime(e.target.value); if(errors.endTime) setErrors({...errors, endTime: ''}); }}
+                            className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                              errors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                            }`}
+                          />
+                          {errors.endTime && <p className="text-meta text-danger font-semibold mt-1">{errors.endTime}</p>}
+                        </div>
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (09:00 - 21:00) <span className="text-danger">*</span></label>
+                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
                         <input
-                          type="time"
-                          min="09:00"
-                          max="21:00"
-                          value={endTime}
-                          onChange={(e) => { setEndTime(e.target.value); if(errors.endTime) setErrors({...errors, endTime: ''}); }}
-                          className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                            errors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
-                          }`}
+                          type="text"
+                          placeholder="VD: Rảnh buổi tối sau giờ làm"
+                          value={ruleNote}
+                          onChange={(e) => setRuleNote(e.target.value)}
+                          className="w-full bg-surface border border-line rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
                         />
-                        {errors.endTime && <p className="text-meta text-danger font-semibold mt-1">{errors.endTime}</p>}
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
-                      <input
-                        type="text"
-                        placeholder="VD: Rảnh buổi tối sau giờ làm"
-                        value={ruleNote}
-                        onChange={(e) => setRuleNote(e.target.value)}
-                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
-                      />
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Modal Actions */}
