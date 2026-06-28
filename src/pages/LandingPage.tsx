@@ -139,9 +139,9 @@ export const LandingPage: React.FC = () => {
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.4px)', backgroundSize: '22px 22px' }}></div>
         <div className="absolute inset-0 bg-gradient-to-r from-[#051138]/90 via-[#051138]/40 to-transparent pointer-events-none"></div>
 
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content Left */}
-          <div className="max-w-2xl space-y-6">
+          <div className="space-y-6">
             <span className="inline-flex items-center gap-1.5 bg-brand-primary text-white text-meta font-extrabold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md shadow-brand-primary/25 animate-pulse">
               <Sparkles className="w-3.5 h-3.5" /> Cộng đồng trao đổi kỹ năng học thuật
             </span>
@@ -171,6 +171,11 @@ export const LandingPage: React.FC = () => {
                 Tìm hiểu cơ chế
               </a>
             </div>
+          </div>
+
+          {/* Hero illustration (tranh vẽ) */}
+          <div className="hidden lg:flex justify-center items-center">
+            <img src="/illustration-hero.svg" alt="Cộng đồng trao đổi kỹ năng" className="w-full max-w-lg drop-shadow-2xl animate-fadeIn" />
           </div>
         </div>
       </section>

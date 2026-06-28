@@ -1,0 +1,70 @@
+<svg width="560" height="480" viewBox="0 0 560 480" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cộng đồng sinh viên trao đổi kỹ năng học thuật">
+  <defs>
+    <linearGradient id="hScreen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e8efff"/>
+    </linearGradient>
+    <linearGradient id="hAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+
+  <!-- glow blobs -->
+  <circle cx="120" cy="120" r="64" fill="#38bdf8" fill-opacity="0.12"/>
+  <circle cx="450" cy="360" r="80" fill="#22c55e" fill-opacity="0.10"/>
+
+  <!-- orbit rings -->
+  <ellipse cx="280" cy="240" rx="210" ry="170" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2" stroke-dasharray="2 12" stroke-linecap="round"/>
+  <ellipse cx="280" cy="240" rx="150" ry="118" stroke="#ffffff" stroke-opacity="0.22" stroke-width="2" stroke-dasharray="2 12" stroke-linecap="round"/>
+
+  <!-- central app window -->
+  <g>
+    <rect x="180" y="150" width="200" height="184" rx="22" fill="url(#hScreen)"/>
+    <rect x="180" y="150" width="200" height="40" rx="20" fill="url(#hAccent)"/>
+    <circle cx="202" cy="170" r="5" fill="#ffffff"/><circle cx="220" cy="170" r="5" fill="#ffffff" fill-opacity="0.7"/><circle cx="238" cy="170" r="5" fill="#ffffff" fill-opacity="0.5"/>
+    <!-- avatar -->
+    <circle cx="280" cy="232" r="30" fill="#dbeafe"/>
+    <circle cx="280" cy="223" r="11" fill="#2563eb"/>
+    <path d="M262 250 a18 16 0 0 1 36 0 z" fill="#2563eb"/>
+    <!-- skill tags -->
+    <rect x="206" y="280" width="62" height="14" rx="7" fill="#bfdbfe"/>
+    <rect x="276" y="280" width="44" height="14" rx="7" fill="#bbf7d0"/>
+    <rect x="206" y="302" width="40" height="12" rx="6" fill="#fde68a"/>
+    <rect x="254" y="302" width="66" height="12" rx="6" fill="#e2e8f0"/>
+  </g>
+
+  <!-- floating skill chips around -->
+  <!-- code chip -->
+  <g transform="rotate(-10 108 200)">
+    <rect x="70" y="170" width="76" height="60" rx="14" fill="#ffffff"/>
+    <rect x="70" y="170" width="76" height="16" rx="8" fill="#2563eb"/>
+    <path d="M96 206 l -10 9 l 10 9 M120 206 l 10 9 l -10 9 M110 200 l -8 26" stroke="#2563eb" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <!-- design/palette chip -->
+  <g transform="rotate(12 452 178)">
+    <rect x="414" y="150" width="76" height="60" rx="14" fill="#ffffff"/>
+    <rect x="414" y="150" width="76" height="16" rx="8" fill="#10b981"/>
+    <circle cx="438" cy="190" r="13" fill="#a7f3d0"/>
+    <rect x="458" y="180" width="24" height="7" rx="3.5" fill="#34d399"/>
+    <rect x="458" y="194" width="16" height="7" rx="3.5" fill="#6ee7b7"/>
+  </g>
+  <!-- language chip -->
+  <g transform="rotate(8 110 360)">
+    <rect x="74" y="332" width="72" height="58" rx="14" fill="#ffffff"/>
+    <rect x="74" y="332" width="72" height="16" rx="8" fill="#f59e0b"/>
+    <text x="110" y="378" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#b45309">Aあ</text>
+  </g>
+  <!-- chat bubble chip -->
+  <g transform="rotate(-8 452 360)">
+    <rect x="416" y="332" width="74" height="56" rx="16" fill="#ffffff"/>
+    <path d="M436 388 l 0 14 l 16 -14 z" fill="#ffffff"/>
+    <circle cx="438" cy="358" r="4.5" fill="#38bdf8"/><circle cx="453" cy="358" r="4.5" fill="#38bdf8"/><circle cx="468" cy="358" r="4.5" fill="#38bdf8"/>
+  </g>
+
+  <!-- connector dots -->
+  <circle cx="160" cy="246" r="5" fill="#38bdf8"/>
+  <circle cx="400" cy="246" r="5" fill="#22c55e"/>
+
+  <!-- sparkles -->
+  <path d="M300 110 l 4 11 l 11 4 l -11 4 l -4 11 l -4 -11 l -11 -4 l 11 -4 z" fill="#fcd34d"/>
+  <path d="M250 360 l 3 8 l 8 3 l -8 3 l -3 8 l -3 -8 l -8 -3 l 8 -3 z" fill="#ffffff" fill-opacity="0.85"/>
+</svg>
