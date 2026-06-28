@@ -312,14 +312,16 @@ export const CourseManagement: React.FC = () => {
         const twoWeeksLater = new Date();
         twoWeeksLater.setDate(today.getDate() + 14);
 
+        const formatTime = (t: string) => t.length === 5 ? `${t}:00` : t;
+        
         const rulePayload = {
           ruleType: 'OPEN' as const,
           repeatType: 'WEEKLY' as const,
           daysOfWeek: selectedDays,
           effectiveFrom: formatDateISO(today),
           effectiveTo: formatDateISO(twoWeeksLater),
-          startTime: startTime,
-          endTime: endTime,
+          startTime: formatTime(startTime),
+          endTime: formatTime(endTime),
           note: ruleNote.trim() || `Lịch khả dụng: ${fullTitle}`,
         };
         
@@ -422,14 +424,16 @@ export const CourseManagement: React.FC = () => {
 
     setLoadingRules(true);
     try {
+      const formatTime = (t: string) => t.length === 5 ? `${t}:00` : t;
+
       const payload = {
         ruleType: ruleToEdit.ruleType,
         repeatType: ruleToEdit.repeatType,
         daysOfWeek: editRuleDays,
         effectiveFrom: ruleToEdit.effectiveFrom,
         effectiveTo: ruleToEdit.effectiveTo,
-        startTime: editRuleStartTime,
-        endTime: editRuleEndTime,
+        startTime: formatTime(editRuleStartTime),
+        endTime: formatTime(editRuleEndTime),
         note: editRuleNote.trim(),
       };
       
