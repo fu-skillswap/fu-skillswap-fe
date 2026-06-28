@@ -31,7 +31,7 @@ export const LandingPage: React.FC = () => {
       skills: ['Python', 'PyTorch', 'SQL'],
       rating: 4.9,
       reviews: 12,
-      bio: 'Sinh viên năm 4 K18, đạt giải nghiên cứu khoa học. Chuyên hướng dẫn làm đồ án AI và muốn swap kỹ năng thiết kế UI/UX.'
+      bio: 'Sinh viên năm 4 K18, đạt giải nghiên cứu khoa học. Chuyên hỗ trợ các bạn làm đồ án AI, xây dựng mô hình Machine Learning từ cơ bản đến nâng cao.'
     },
     {
       name: 'Lê Minh Hương',
@@ -40,7 +40,7 @@ export const LandingPage: React.FC = () => {
       skills: ['React', 'Node.js', 'MongoDB'],
       rating: 4.8,
       reviews: 8,
-      bio: 'Chuyên về web app, có 1 năm kinh nghiệm làm freelancer. Muốn học hỏi thêm về DevOps và bảo mật mạng.'
+      bio: 'Chuyên về web app, có 1 năm kinh nghiệm làm freelancer. Sẵn sàng hỗ trợ các bạn từ thiết kế API đến triển khai ứng dụng thực tế.'
     },
     {
       name: 'Phạm Thùy Linh',
@@ -49,7 +49,7 @@ export const LandingPage: React.FC = () => {
       skills: ['SEO', 'Google Ads', 'Figma'],
       rating: 4.9,
       reviews: 5,
-      bio: 'Có kinh nghiệm chạy chiến dịch marketing thực tế. Muốn học lập trình Python cơ bản để làm phân tích dữ liệu.'
+      bio: 'Có kinh nghiệm chạy chiến dịch marketing thực tế. Hỗ trợ các bạn xây dựng chiến lược nội dung, tối ưu SEO và thiết kế giao diện với Figma.'
     }
   ];
 
@@ -147,13 +147,12 @@ export const LandingPage: React.FC = () => {
             </span>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight">
-              Kết nối, <span className="text-brand-secondary">Trao đổi</span>,<br />
-              <span className="text-brand-secondary">Học tập</span>, Chia sẻ.
+              Kết nối, <span className="text-brand-secondary">Học hỏi</span>,<br />
+              <span className="text-brand-secondary">Phát triển</span>, Chia sẻ.
             </h1>
 
             <p className="text-slate-200 text-body sm:text-body font-semibold max-w-xl leading-relaxed">
-              SkillSwap là nền tảng trao đổi kỹ năng chéo học thuật dành cho sinh viên đại học.
-              Bạn chia sẻ thế mạnh lập trình, đổi lấy sự trợ giúp về thiết kế UI/UX hay ngoại ngữ từ bạn cùng trường.
+              SkillSwap là nền tảng kết nối sinh viên đại học với các mentor có chuyên môn phù hợp. Bạn có thể tìm mentor để được hỗ trợ về lập trình, thiết kế UI/UX, ngoại ngữ hay bất kỳ lĩnh vực học thuật nào — mọi thứ trong cùng một cộng đồng sinh viên.
             </p>
 
             <div className="flex flex-wrap gap-4 pt-2">
@@ -161,7 +160,7 @@ export const LandingPage: React.FC = () => {
                 to="/login"
                 className="flex items-center gap-1.5 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-95 text-white text-body font-bold py-3.5 px-7 rounded-full shadow-lg shadow-brand-primary/20 active:scale-95 transition-all cursor-pointer"
               >
-                <span>Bắt đầu trao đổi ngay</span>
+                <span>Tìm mentor ngay</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
@@ -187,7 +186,7 @@ export const LandingPage: React.FC = () => {
 
             <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
               <span className="text-3xl font-bold text-fg block">1,200+</span>
-              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Giờ học trao đổi</span>
+              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Giờ học với mentor</span>
             </div>
 
             <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
@@ -218,10 +217,10 @@ export const LandingPage: React.FC = () => {
               Cơ chế vận hành
             </span>
             <h2 className="text-3xl font-bold text-fg tracking-tight leading-tight">
-              Mô hình Trao đổi Kỹ năng Chéo hoạt động như thế nào?
+              Nền tảng kết nối Mentor – Mentee hoạt động như thế nào?
             </h2>
             <p className="text-fg-muted text-body font-semibold leading-relaxed">
-              SkillSwap loại bỏ rào cản chi phí trong gia sư học thuật bằng việc thiết lập vòng lặp chia sẻ kiến thức công bằng:
+              SkillSwap giúp sinh viên tiếp cận mentor có chuyên môn phù hợp một cách nhanh chóng, miễn phí và minh bạch:
             </p>
 
             <div className="space-y-4">
@@ -230,9 +229,9 @@ export const LandingPage: React.FC = () => {
                   <span className="text-body font-bold">1</span>
                 </div>
                 <div>
-                  <span className="text-body font-bold text-fg block">Khai báo hồ sơ kỹ năng</span>
+                  <span className="text-body font-bold text-fg block">Tìm mentor phù hợp</span>
                   <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
-                    Bạn cập nhật các kỹ năng bản thân đã thành thạo (được chứng thực qua môn học) và các kỹ năng bạn mong muốn học tập.
+                    Bạn tìm kiếm và lọc danh sách mentor theo lĩnh vực, kỹ năng hoặc độ tương hợp. Xem hồ sơ, đánh giá từ các học viên trước để đưa ra lựa chọn phù hợp nhất.
                   </p>
                 </div>
               </div>
@@ -242,9 +241,9 @@ export const LandingPage: React.FC = () => {
                   <span className="text-body font-bold">2</span>
                 </div>
                 <div>
-                  <span className="text-body font-bold text-fg block">Ghép cặp thông minh</span>
+                  <span className="text-body font-bold text-fg block">Đặt lịch học</span>
                   <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
-                    Thuật toán tự động quét dữ liệu và đề xuất các bạn cùng trường có nhu cầu trao đổi đối ứng (Kỹ năng có ⇄ Kỹ năng cần) phù hợp nhất với bạn.
+                    Chọn khung giờ rảnh của mentor và gửi yêu cầu đặt lịch. Mentor xem xét và xác nhận lịch hẹn, sau đó cung cấp link phòng học trực tuyến.
                   </p>
                 </div>
               </div>
@@ -254,9 +253,9 @@ export const LandingPage: React.FC = () => {
                   <span className="text-body font-bold">3</span>
                 </div>
                 <div>
-                  <span className="text-body font-bold text-fg block">Gặp mặt trực tuyến & Trao đổi chéo</span>
+                  <span className="text-body font-bold text-fg block">Học tập & Đánh giá</span>
                   <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
-                    Mentor duyệt lịch hẹn, cung cấp phòng Google Meet/Zoom trực tiếp và hai bên tiến hành dạy - học lẫn nhau hoàn toàn miễn phí.
+                    Tham gia buổi học qua Google Meet/Zoom hoàn toàn miễn phí. Sau buổi học, để lại đánh giá giúp cộng đồng ngày càng chất lượng hơn.
                   </p>
                 </div>
               </div>
@@ -268,7 +267,7 @@ export const LandingPage: React.FC = () => {
             <div className="w-full bg-surface border border-line p-6 rounded-card shadow-[0_1px_3px_rgba(15,23,42,0.02)] relative space-y-5">
               <div className="flex items-center justify-between border-b border-line-soft pb-3">
                 <span className="text-body font-bold text-fg flex items-center gap-1.5">
-                  <Compass className="w-4 h-4 text-fg-muted animate-spin-slow" /> Mô phỏng thuật toán ghép cặp
+                  <Compass className="w-4 h-4 text-fg-muted animate-spin-slow" /> Mô phỏng gợi ý mentor phù hợp
                 </span>
                 <span className="text-meta bg-green-50 text-green-700 font-extrabold border border-green-200 px-2 py-0.5 rounded-lg">
                   98% Tương hợp
@@ -286,14 +285,14 @@ export const LandingPage: React.FC = () => {
                   />
                   <div className="text-left">
                     <span className="text-body font-bold block">Bạn (Sinh viên K19)</span>
-                    <span className="text-meta text-brand-primary font-bold">Thế mạnh: Figma UI/UX ⇄ Cần học: Python</span>
+                    <span className="text-meta text-brand-primary font-bold">Cần học: Python cơ bản & Machine Learning</span>
                   </div>
                 </div>
 
-                {/* Exchange Symbol */}
+                {/* Arrow Symbol */}
                 <div className="flex justify-center">
                   <div className="w-8 h-8 rounded-full bg-surface-muted border border-line flex items-center justify-center text-slate-705 shadow-2xs">
-                    <span className="text-body font-extrabold">⇄</span>
+                    <span className="text-body font-extrabold">↓</span>
                   </div>
                 </div>
 
@@ -305,8 +304,8 @@ export const LandingPage: React.FC = () => {
                     className="w-8 h-8 rounded-full border border-line object-cover"
                   />
                   <div className="text-left">
-                    <span className="text-body font-bold block">Trần Hoàng Long (Sinh viên K18)</span>
-                    <span className="text-meta text-green-600 font-bold">Thế mạnh: Python ⇄ Cần học: Figma</span>
+                    <span className="text-body font-bold block">Trần Hoàng Long — Mentor AI/ML (K18)</span>
+                    <span className="text-meta text-green-600 font-bold">Chuyên môn: Python · PyTorch · SQL</span>
                   </div>
                 </div>
               </div>
@@ -316,9 +315,9 @@ export const LandingPage: React.FC = () => {
                 <p className="text-fg font-extrabold flex items-center gap-1 uppercase tracking-wider text-[8px] border-b border-line pb-1.5">
                   <Check className="w-3.5 h-3.5 shrink-0 text-fg" /> Lý do đề xuất hệ thống
                 </p>
-                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Bạn sở hữu kỹ năng Figma Long đang tìm kiếm.</span></p>
-                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Long sẵn sàng chia sẻ kỹ năng Python bạn đang cần.</span></p>
-                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Hai bạn cùng học tập tại Cơ sở TP. Hồ Chí Minh.</span></p>
+                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Chuyên môn của Long khớp với nhu cầu học Python của bạn.</span></p>
+                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Long có 12 đánh giá tích cực từ học viên trước.</span></p>
+                <p className="flex items-start gap-1"><Check className="w-3.5 h-3.5 text-fg-muted shrink-0 mt-0.5" /> <span>Cùng cơ sở TP. Hồ Chí Minh, dễ dàng sắp xếp lịch học.</span></p>
               </div>
             </div>
           </div>
@@ -336,7 +335,7 @@ export const LandingPage: React.FC = () => {
             </span>
             <h2 className="text-3xl font-bold text-fg tracking-tight">Trải nghiệm phân vai trò tương tác</h2>
             <p className="text-fg-muted text-body sm:text-body font-semibold leading-relaxed">
-              SkillSwap xây dựng hai vai trò tương thích, mô phỏng chính xác các hoạt động kết nối và trao đổi học thuật.
+              SkillSwap xây dựng hai vai trò rõ ràng, hỗ trợ toàn bộ hành trình từ tìm mentor đến hoàn thành buổi học.
             </p>
           </div>
 
@@ -437,7 +436,7 @@ export const LandingPage: React.FC = () => {
 
                 <div className="pt-4 border-t border-line-soft flex items-center justify-between text-body font-bold text-fg-muted">
                   <span className="text-meta text-green-600 flex items-center gap-1 font-bold">
-                    <Smile className="w-4 h-4 shrink-0" /> Sẵn sàng trao đổi
+                    <Smile className="w-4 h-4 shrink-0" /> Đang nhận học viên
                   </span>
 
                   <Link
@@ -463,7 +462,7 @@ export const LandingPage: React.FC = () => {
             Nâng cao năng lực học tập và kết nối hôm nay!
           </h2>
           <p className="text-white/80 text-body font-semibold max-w-md mx-auto leading-relaxed">
-            Đăng nhập ngay để trải nghiệm các vai trò, đặt lịch học và trao đổi kiến thức học thuật cùng cộng đồng.
+            Đăng nhập ngay để tìm mentor phù hợp, đặt lịch học và phát triển bản thân cùng cộng đồng sinh viên.
           </p>
           <div className="pt-2">
             <Link
@@ -489,7 +488,7 @@ export const LandingPage: React.FC = () => {
               </span>
             </div>
             <p className="leading-relaxed font-semibold">
-              Cộng đồng trao đổi kỹ năng học thuật miễn phí dành cho sinh viên đại học.
+              Nền tảng kết nối sinh viên với mentor có chuyên môn, miễn phí dành cho sinh viên đại học.
             </p>
           </div>
 
@@ -505,7 +504,7 @@ export const LandingPage: React.FC = () => {
           <div className="space-y-3">
             <span className="text-white font-bold block uppercase tracking-wider text-meta">Định hướng học tập</span>
             <ul className="space-y-2 font-semibold">
-              <li><a href="#features" className="hover:text-white transition-colors">Trao đổi kỹ năng</a></li>
+              <li><a href="#features" className="hover:text-white transition-colors">Kết nối mentor</a></li>
               <li><a href="#mentors" className="hover:text-white transition-colors">Tìm mentor</a></li>
               <li><a href="#about" className="hover:text-white transition-colors">Lộ trình học tập</a></li>
             </ul>
