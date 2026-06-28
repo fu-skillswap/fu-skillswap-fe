@@ -91,6 +91,19 @@ const parseTitle = (fullTitle: string = '') => {
   };
 };
 
+const getLocalTimeStr = (iso: string) => {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+};
+
+const getLocalWeekday = (iso: string) => {
+  const d = new Date(iso);
+  const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  return days[d.getDay()];
+};
+
 export const CourseManagement: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -130,6 +143,7 @@ export const CourseManagement: React.FC = () => {
   const [ruleStartTime, setRuleStartTime] = useState('09:00');
   const [ruleEndTime, setRuleEndTime] = useState('10:00');
   const [ruleNoteField, setRuleNoteField] = useState('');
+  const [ruleServiceIds, setRuleServiceIds] = useState<string[]>([]);
   const [ruleErrors, setRuleErrors] = useState<Record<string, string>>({});
   const [ruleSubmitting, setRuleSubmitting] = useState(false);
 
@@ -157,6 +171,7 @@ export const CourseManagement: React.FC = () => {
   const [editRuleStartTime, setEditRuleStartTime] = useState('09:00');
   const [editRuleEndTime, setEditRuleEndTime] = useState('10:00');
   const [editRuleNote, setEditRuleNote] = useState('');
+  const [editRuleServiceIds, setEditRuleServiceIds] = useState<string[]>([]);
   const [editRuleErrors, setEditRuleErrors] = useState<Record<string, string>>({});
 
   const triggerToast = (message: string, type: 'success' | 'danger') => {
@@ -436,6 +451,9 @@ export const CourseManagement: React.FC = () => {
 
     setLoadingRules(true);
     try {
+      const today = new Date();
+      const endRange = new Date();
+      endRange.setDate(today.getDate() + 30);
       const formatTime = (t: string) => t.slice(0, 5);
 
       const payload = {
@@ -450,7 +468,42 @@ export const CourseManagement: React.FC = () => {
       };
       
       await availabilityApi.updateRule(ruleToEdit.ruleId, payload);
-      triggerToast('Đã cập nhật lịch rảnh thành công.', 'success');
+
+      // Auto-assign course(s) selected in the edit rule modal
+      if (editRuleServiceIds.length > 0) {
+        try {
+          const updatedSlots = await mentorsApi.getAvailabilitySlots(
+            myUserId, 
+            formatDateISO(today), 
+            formatDateISO(endRange)
+          ).catch(() => [] as MentorAvailabilitySlot[]);
+          
+          const ruleDaysSet = new Set(editRuleDays);
+          const targetStart = formatTime(editRuleStartTime);
+          const targetEnd = formatTime(editRuleEndTime);
+          
+          const matchedSlots = updatedSlots.filter(slot => {
+            const slotStartStr = getLocalTimeStr(slot.startTime);
+            const slotEndStr = getLocalTimeStr(slot.endTime);
+            const slotWeekday = getLocalWeekday(slot.startTime);
+            return ruleDaysSet.has(slotWeekday) && slotStartStr === targetStart && slotEndStr === targetEnd;
+          });
+          
+          if (matchedSlots.length > 0) {
+            await Promise.all(
+              matchedSlots.map(slot => 
+                availabilityApi.replaceSlotServices(slot.slotId, editRuleServiceIds).catch(err => {
+                  console.error(`Failed to assign services to slot ${slot.slotId}:`, err);
+                })
+              )
+            );
+          }
+        } catch (assignErr) {
+          console.error('Failed to auto-assign edited rule services:', assignErr);
+        }
+      }
+
+      triggerToast('Đã cập nhật lịch rảnh và gán lớp dạy thành công.', 'success');
       setRuleToEdit(null);
       await fetchRulesAndSlots();
     } catch (err: any) {
@@ -509,12 +562,48 @@ export const CourseManagement: React.FC = () => {
       };
 
       await availabilityApi.createRule(payload);
-      triggerToast('Đã thiết lập lịch rảnh lặp lại thành công.', 'success');
+
+      // Auto-assign course(s) selected in the repeating rule modal
+      if (ruleServiceIds.length > 0) {
+        try {
+          const updatedSlots = await mentorsApi.getAvailabilitySlots(
+            myUserId, 
+            formatDateISO(today), 
+            formatDateISO(endRange)
+          ).catch(() => [] as MentorAvailabilitySlot[]);
+          
+          const ruleDaysSet = new Set(ruleDays);
+          const targetStart = formatTime(ruleStartTime);
+          const targetEnd = formatTime(ruleEndTime);
+          
+          const matchedSlots = updatedSlots.filter(slot => {
+            const slotStartStr = getLocalTimeStr(slot.startTime);
+            const slotEndStr = getLocalTimeStr(slot.endTime);
+            const slotWeekday = getLocalWeekday(slot.startTime);
+            return ruleDaysSet.has(slotWeekday) && slotStartStr === targetStart && slotEndStr === targetEnd;
+          });
+          
+          if (matchedSlots.length > 0) {
+            await Promise.all(
+              matchedSlots.map(slot => 
+                availabilityApi.replaceSlotServices(slot.slotId, ruleServiceIds).catch(err => {
+                  console.error(`Failed to assign services to slot ${slot.slotId}:`, err);
+                })
+              )
+            );
+          }
+        } catch (assignErr) {
+          console.error('Failed to auto-assign rule services:', assignErr);
+        }
+      }
+
+      triggerToast('Đã thiết lập lịch rảnh và gán lớp dạy thành công.', 'success');
       setShowCreateRuleModal(false);
       setRuleDays([]);
       setRuleStartTime('09:00');
       setRuleEndTime('10:00');
       setRuleNoteField('');
+      setRuleServiceIds([]);
       setRuleErrors({});
       await fetchRulesAndSlots();
     } catch (err: any) {
@@ -759,7 +848,7 @@ export const CourseManagement: React.FC = () => {
                   }}
                   className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-1.5 px-3 rounded-field cursor-pointer transition-all active:scale-[0.98] flex items-center gap-1 shrink-0"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Thiết lập lịch rảnh lặp lại
+                  <Plus className="w-3.5 h-3.5" /> Thêm khung giờ dạy khả dụng
                 </button>
 
                 <div className="flex bg-surface-muted p-1 rounded-field gap-1 shrink-0">
@@ -1289,7 +1378,7 @@ export const CourseManagement: React.FC = () => {
           <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
             <div className="flex justify-between items-center border-b border-line-soft pb-3">
               <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-primary" /> Chỉnh sửa lịch rảnh khả dụng
+                <Calendar className="w-6 h-6 text-primary" /> Chỉnh sửa khung giờ dạy khả dụng
               </h3>
               <button
                 onClick={() => setRuleToEdit(null)}
@@ -1328,7 +1417,7 @@ export const CourseManagement: React.FC = () => {
               {/* Time selection group */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu rảnh (từ 09:00) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu dạy (từ 09:00) <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
@@ -1344,7 +1433,7 @@ export const CourseManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc rảnh (đến 21:00) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc dạy (đến 21:00) <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
@@ -1364,8 +1453,52 @@ export const CourseManagement: React.FC = () => {
                 💡 Mentor có thể nhập bất cứ khung giờ dạy mong muốn nào (Ví dụ: 10:00 - 12:00, 14:00 - 16:00,...), miễn là nằm trong khoảng từ 09:00 sáng đến 21:00 tối.
               </div>
 
+              {/* Courses list checkbox group */}
               <div>
-                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">
+                  Môn học áp dụng trong khung giờ này <span className="text-danger">*</span>
+                </label>
+                {courses.length === 0 ? (
+                  <p className="text-meta text-fg-muted italic">Bạn chưa tạo lớp học nào. Hãy lưu lịch này sau khi đã tạo lớp học ở danh sách bên trái.</p>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto space-y-2 border border-line rounded-lg p-2.5 scrollbar-thin">
+                    {courses.map(srv => {
+                      const checked = editRuleServiceIds.includes(srv.serviceId);
+                      const { subjectCode, cleanTitle } = parseTitle(srv.title);
+                      return (
+                        <label 
+                          key={srv.serviceId}
+                          className={`flex items-center gap-2.5 p-2 rounded-md border cursor-pointer select-none transition-all ${
+                            checked 
+                              ? 'bg-primary-soft/30 border-primary text-fg font-bold' 
+                              : 'bg-surface border-line hover:bg-surface-muted/40 text-fg-muted font-bold'
+                          }`}
+                        >
+                          <input 
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setEditRuleServiceIds(prev => 
+                                prev.includes(srv.serviceId) 
+                                  ? prev.filter(id => id !== srv.serviceId) 
+                                  : [...prev, srv.serviceId]
+                              );
+                            }}
+                            className="w-4 h-4 rounded text-primary focus:ring-primary focus:ring-opacity-20 cursor-pointer shadow-xs"
+                          />
+                          <div className="text-left font-bold text-meta leading-tight">
+                            <span className="text-primary font-black uppercase mr-1">[{subjectCode}]</span>
+                            {cleanTitle}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch dạy</label>
                 <input
                   type="text"
                   placeholder="VD: Rảnh buổi tối sau giờ làm"
@@ -1402,7 +1535,7 @@ export const CourseManagement: React.FC = () => {
           <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
             <div className="flex justify-between items-center border-b border-line-soft pb-3">
               <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-primary" /> Thiết lập lịch rảnh lặp lại
+                <Calendar className="w-6 h-6 text-primary" /> Thêm khung giờ dạy khả dụng
               </h3>
               <button
                 onClick={() => setShowCreateRuleModal(false)}
@@ -1441,7 +1574,7 @@ export const CourseManagement: React.FC = () => {
               {/* Time selection group */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu rảnh (từ 09:00) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu dạy (từ 09:00) <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
@@ -1457,7 +1590,7 @@ export const CourseManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc rảnh (đến 21:00) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc dạy (đến 21:00) <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
@@ -1477,8 +1610,52 @@ export const CourseManagement: React.FC = () => {
                 💡 Mentor có thể nhập bất cứ khung giờ dạy mong muốn nào (Ví dụ: 10:00 - 12:00, 14:00 - 16:00,...), miễn là nằm trong khoảng từ 09:00 sáng đến 21:00 tối.
               </div>
 
+              {/* Courses list checkbox group */}
               <div>
-                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">
+                  Môn học áp dụng trong khung giờ này <span className="text-danger">*</span>
+                </label>
+                {courses.length === 0 ? (
+                  <p className="text-meta text-fg-muted italic">Bạn chưa tạo lớp học nào. Hãy lưu lịch này sau khi đã tạo lớp học ở danh sách bên trái.</p>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto space-y-2 border border-line rounded-lg p-2.5 scrollbar-thin">
+                    {courses.map(srv => {
+                      const checked = ruleServiceIds.includes(srv.serviceId);
+                      const { subjectCode, cleanTitle } = parseTitle(srv.title);
+                      return (
+                        <label 
+                          key={srv.serviceId}
+                          className={`flex items-center gap-2.5 p-2 rounded-md border cursor-pointer select-none transition-all ${
+                            checked 
+                              ? 'bg-primary-soft/30 border-primary text-fg font-bold' 
+                              : 'bg-surface border-line hover:bg-surface-muted/40 text-fg-muted font-bold'
+                          }`}
+                        >
+                          <input 
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setRuleServiceIds(prev => 
+                                prev.includes(srv.serviceId) 
+                                  ? prev.filter(id => id !== srv.serviceId) 
+                                  : [...prev, srv.serviceId]
+                              );
+                            }}
+                            className="w-4 h-4 rounded text-primary focus:ring-primary focus:ring-opacity-20 cursor-pointer shadow-xs"
+                          />
+                          <div className="text-left font-bold text-meta leading-tight">
+                            <span className="text-primary font-black uppercase mr-1">[{subjectCode}]</span>
+                            {cleanTitle}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch dạy</label>
                 <input
                   type="text"
                   placeholder="VD: Rảnh buổi tối sau giờ làm"
