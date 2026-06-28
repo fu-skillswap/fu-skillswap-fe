@@ -233,8 +233,18 @@ export const CourseManagement: React.FC = () => {
     // Time format validation
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     if (selectedDays.length > 0) {
-      if (!startTime || !timeRegex.test(startTime)) newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
-      if (!endTime || !timeRegex.test(endTime)) newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
+      if (!startTime || !timeRegex.test(startTime)) {
+        newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
+      } else if (startTime < '09:00' || startTime > '21:00') {
+        newErrors.startTime = 'Giờ bắt đầu làm việc chỉ cho phép từ 09:00 đến 21:00';
+      }
+      
+      if (!endTime || !timeRegex.test(endTime)) {
+        newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
+      } else if (endTime < '09:00' || endTime > '21:00') {
+        newErrors.endTime = 'Giờ kết thúc làm việc chỉ cho phép từ 09:00 đến 21:00';
+      }
+      
       if (startTime && endTime && startTime >= endTime) {
         newErrors.endTime = 'Giờ kết thúc phải lớn hơn giờ bắt đầu';
       }
@@ -256,8 +266,8 @@ export const CourseManagement: React.FC = () => {
     setIsFree(true);
     setPriceScoin('');
     setSelectedDays([]);
-    setStartTime('08:00');
-    setEndTime('09:00');
+    setStartTime('09:00');
+    setEndTime('10:00');
     setRuleNote('');
     setErrors({});
     setShowModal(true);
@@ -280,8 +290,8 @@ export const CourseManagement: React.FC = () => {
     
     // Default schedule config empty for edit
     setSelectedDays([]);
-    setStartTime('08:00');
-    setEndTime('09:00');
+    setStartTime('09:00');
+    setEndTime('10:00');
     setRuleNote('');
     
     setErrors({});
@@ -422,8 +432,8 @@ export const CourseManagement: React.FC = () => {
   const handleOpenEditRuleModal = (rule: AvailabilityRule) => {
     setRuleToEdit(rule);
     setEditRuleDays(rule.daysOfWeek || []);
-    setEditRuleStartTime(rule.startTime || '08:00');
-    setEditRuleEndTime(rule.endTime || '09:00');
+    setEditRuleStartTime(rule.startTime || '09:00');
+    setEditRuleEndTime(rule.endTime || '10:00');
     setEditRuleNote(rule.note || '');
     setEditRuleErrors({});
   };
@@ -433,8 +443,18 @@ export const CourseManagement: React.FC = () => {
     if (editRuleDays.length === 0) newErrors.days = 'Vui lòng chọn ít nhất một thứ trong tuần.';
     
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!editRuleStartTime || !timeRegex.test(editRuleStartTime)) newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
-    if (!editRuleEndTime || !timeRegex.test(editRuleEndTime)) newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
+    if (!editRuleStartTime || !timeRegex.test(editRuleStartTime)) {
+      newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
+    } else if (editRuleStartTime < '09:00' || editRuleStartTime > '21:00') {
+      newErrors.startTime = 'Giờ bắt đầu làm việc chỉ cho phép từ 09:00 đến 21:00';
+    }
+    
+    if (!editRuleEndTime || !timeRegex.test(editRuleEndTime)) {
+      newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
+    } else if (editRuleEndTime < '09:00' || editRuleEndTime > '21:00') {
+      newErrors.endTime = 'Giờ kết thúc làm việc chỉ cho phép từ 09:00 đến 21:00';
+    }
+    
     if (editRuleStartTime && editRuleEndTime && editRuleStartTime >= editRuleEndTime) {
       newErrors.endTime = 'Giờ kết thúc phải lớn hơn giờ bắt đầu';
     }
@@ -739,15 +759,15 @@ export const CourseManagement: React.FC = () => {
                 <div className="max-h-[500px] overflow-y-auto relative scrollbar-thin flex">
                   
                   {/* Time Sidebar Column */}
-                  <div className="w-14 border-r border-line shrink-0 relative bg-surface select-none" style={{ height: '750px' }}>
-                    {Array.from({ length: 22 - 7 + 1 }).map((_, idx) => {
-                      const hour = 7 + idx;
+                  <div className="w-14 border-r border-line shrink-0 relative bg-surface select-none" style={{ height: '600px' }}>
+                    {Array.from({ length: 21 - 9 + 1 }).map((_, idx) => {
+                      const hour = 9 + idx;
                       const displayHour = hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`;
                       return (
                         <div
                           key={hour}
                           className="absolute right-2 text-[10px] font-bold text-fg-faint text-right"
-                          style={{ top: `${(hour - 7) * 50 - 7}px` }}
+                          style={{ top: `${(hour - 9) * 50 - 7}px` }}
                         >
                           {displayHour}
                         </div>
@@ -756,11 +776,11 @@ export const CourseManagement: React.FC = () => {
                   </div>
 
                   {/* 7 Columns Timeline Grid */}
-                  <div className="flex-1 relative" style={{ height: '750px' }}>
+                  <div className="flex-1 relative" style={{ height: '600px' }}>
                     
                     {/* Horizontal Grid Lines */}
                     <div className="absolute inset-0 pointer-events-none">
-                      {Array.from({ length: 22 - 7 }).map((_, idx) => (
+                      {Array.from({ length: 21 - 9 }).map((_, idx) => (
                         <div
                           key={idx}
                           className="border-b border-line-soft/40"
@@ -794,8 +814,8 @@ export const CourseManagement: React.FC = () => {
                               const isSaving = savingRuleId === rule.ruleId;
                               
                               // Calculate position
-                              const START_HOUR = 7;
-                              const END_HOUR = 22;
+                              const START_HOUR = 9;
+                              const END_HOUR = 21;
                               const HOUR_HEIGHT = 50;
 
                               const parseTimeToDecimal = (timeStr: string): number => {
@@ -1064,9 +1084,11 @@ export const CourseManagement: React.FC = () => {
                     {/* Time selection group */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (HH:mm) <span className="text-danger">*</span></label>
+                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (09:00 - 21:00) <span className="text-danger">*</span></label>
                         <input
                           type="time"
+                          min="09:00"
+                          max="21:00"
                           value={startTime}
                           onChange={(e) => { setStartTime(e.target.value); if(errors.startTime) setErrors({...errors, startTime: ''}); }}
                           className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
@@ -1077,9 +1099,11 @@ export const CourseManagement: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (HH:mm) <span className="text-danger">*</span></label>
+                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (09:00 - 21:00) <span className="text-danger">*</span></label>
                         <input
                           type="time"
+                          min="09:00"
+                          max="21:00"
                           value={endTime}
                           onChange={(e) => { setEndTime(e.target.value); if(errors.endTime) setErrors({...errors, endTime: ''}); }}
                           className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
@@ -1257,10 +1281,12 @@ export const CourseManagement: React.FC = () => {
               {/* Time selection group */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (HH:mm) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (09:00 - 21:00) <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
+                    min="09:00"
+                    max="21:00"
                     value={editRuleStartTime}
                     onChange={(e) => { setEditRuleStartTime(e.target.value); if(editRuleErrors.startTime) setEditRuleErrors({...editRuleErrors, startTime: ''}); }}
                     className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
@@ -1271,10 +1297,12 @@ export const CourseManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (HH:mm) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (09:00 - 21:00) <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
+                    min="09:00"
+                    max="21:00"
                     value={editRuleEndTime}
                     onChange={(e) => { setEditRuleEndTime(e.target.value); if(editRuleErrors.endTime) setEditRuleErrors({...editRuleErrors, endTime: ''}); }}
                     className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
