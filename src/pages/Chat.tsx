@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Send, Search, ShieldAlert, Sparkles, Check, Clock, Loader2, MessagesSquare } from 'lucide-react';
+import { Send, Search, ShieldAlert, Check, Clock, Loader2, MessagesSquare, Mail } from 'lucide-react';
 import { chatApi } from '../api/chat';
 import { chatSocket } from '../lib/chatSocket';
 import { useAuth } from '../context/AuthContext';
@@ -246,7 +246,7 @@ export const Chat: React.FC = () => {
       <div className="w-full sm:w-80 md:w-96 border-r border-brand-border flex flex-col shrink-0 bg-surface-muted/50">
         <div className="p-4 border-b border-brand-border space-y-3 bg-surface">
           <h2 className="text-lg font-bold text-fg flex items-center gap-1.5">
-            <Sparkles className="w-5 h-5 text-fg-muted animate-pulse" /> Hộp thư trò chuyện
+            <Mail className="w-5 h-5 text-fg-muted" /> Hộp thư trò chuyện
           </h2>
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-brand-grey" />
@@ -254,7 +254,7 @@ export const Chat: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm đối tác chat..."
+              placeholder="Tìm kiếm đoạn hội thoại"
               className="w-full bg-surface-muted border border-brand-border rounded-field py-2 pl-9 pr-3 text-body focus:outline-none focus:border-brand-secondary font-semibold"
             />
           </div>
