@@ -22,7 +22,7 @@ const ADS: Ad[] = [
   { id: 'ad3', title: 'Bootcamp đồ án tốt nghiệp', subtitle: 'Kèm 1-1 từ ý tưởng tới bảo vệ · slot giới hạn', cta: 'Tìm hiểu', tone: 'from-success/15 to-success/5 border-success/25' },
 ];
 
-const INTERVAL_MS = 4000;
+const INTERVAL_MS = 3200;
 
 export const AdCarousel: React.FC = () => {
   const [index, setIndex] = useState(0);
@@ -71,13 +71,13 @@ export const AdCarousel: React.FC = () => {
               key={a.id}
               href={a.href || '#'}
               onClick={(e) => { if (!a.href) e.preventDefault(); }}
-              className={`shrink-0 w-full bg-gradient-to-br ${a.tone} border rounded-field p-4 flex flex-col gap-2 min-h-[120px] justify-between`}
+              className={`shrink-0 w-full bg-gradient-to-br ${a.tone} border rounded-field p-6 flex flex-col gap-3 min-h-[185px] justify-between`}
             >
-              <div className="space-y-1 text-left">
-                <h4 className="text-body font-extrabold text-fg leading-snug">{a.title}</h4>
-                <p className="text-meta text-fg-muted font-medium leading-relaxed">{a.subtitle}</p>
+              <div className="space-y-1.5 text-left">
+                <h4 className="text-lg font-extrabold text-fg leading-snug">{a.title}</h4>
+                <p className="text-body text-fg-muted font-medium leading-relaxed">{a.subtitle}</p>
               </div>
-              <span className="self-start text-meta font-bold text-primary">{a.cta} →</span>
+              <span className="self-start text-body font-bold text-primary">{a.cta} →</span>
             </a>
           ))}
         </div>

@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  BookOpen, ChevronRight, MessageCircle, ChevronUp, ChevronDown,
-  GraduationCap, UserPlus, MapPin,
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BookOpen, ChevronRight, GraduationCap, UserPlus, MapPin } from 'lucide-react';
 import { studentProfileApi } from '../api/studentProfile';
 import type { StudentProfile } from '../api/types';
 import { ForumFeed } from '../components/ForumFeed';
@@ -16,13 +13,10 @@ import { AdCarousel } from '../components/AdCarousel';
  * ------------------------------------------------------------------------- */
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const campusName = profile?.campus?.name || '';
   const programName = profile?.program?.nameVi || '';
-
-  const [chatsOpen, setChatsOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -97,28 +91,6 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* ===== Floating chats drawer ===== */}
-      <div className="fixed bottom-0 right-6 z-40 bg-surface border border-line shadow-2xl rounded-t-card w-72 transition-all">
-        <button onClick={() => setChatsOpen(!chatsOpen)}
-          className="w-full px-4 py-4 bg-surface border-b border-line-soft text-fg rounded-t-card flex items-center justify-between font-bold text-body select-none focus:outline-none cursor-pointer">
-          <span>Trò chuyện trực tiếp</span>
-          <div className="flex items-center gap-3 text-fg-muted">
-            <MessageCircle className="w-5 h-5 text-primary" />
-            {chatsOpen ? <ChevronDown className="w-4.5 h-4.5" /> : <ChevronUp className="w-4.5 h-4.5" />}
-          </div>
-        </button>
-
-        {chatsOpen && (
-          <div className="bg-surface p-4 text-left animate-slideUp">
-            <p className="text-meta text-fg-muted font-medium mb-3">Mở trang trò chuyện để xem tất cả hội thoại của bạn.</p>
-            <button onClick={() => navigate('/chat')}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-field bg-action hover:bg-action-hover text-on-action text-body font-bold transition-all">
-              <MessageCircle className="w-4.5 h-4.5" /> Tới trang trò chuyện
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

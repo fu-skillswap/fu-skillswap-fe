@@ -797,3 +797,42 @@ export interface ForumReportPayload {
   reasonType: ForumReportReasonType;
   description?: string;
 }
+
+// =====================================================================
+// Lịch rảnh mentor (availability rules) — /api/me/availability-rules
+// Mentor tạo rule rảnh theo tuần -> BE sinh slot -> gán service vào slot.
+// =====================================================================
+export type AvailabilityRuleType = 'OPEN' | 'CLOSED';
+export type AvailabilityRepeatType = 'NONE' | 'DAILY' | 'WEEKLY';
+export type DayOfWeekCode = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+
+/** Rule lịch rảnh — khớp AvailabilityRuleResponse. */
+export interface AvailabilityRule {
+  ruleId: string;
+  ruleType: AvailabilityRuleType;
+  repeatType: AvailabilityRepeatType;
+  daysOfWeek?: DayOfWeekCode[];
+  /** YYYY-MM-DD */
+  effectiveFrom: string;
+  effectiveTo?: string;
+  /** HH:mm */
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
+  active?: boolean;
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Payload tạo/cập nhật rule — khớp UpsertAvailabilityRuleRequest. */
+export interface AvailabilityRulePayload {
+  ruleType: AvailabilityRuleType;
+  repeatType: AvailabilityRepeatType;
+  daysOfWeek?: DayOfWeekCode[];
+  effectiveFrom: string;
+  effectiveTo?: string;
+  startTime?: string;
+  endTime?: string;
+  note?: string;
+}
