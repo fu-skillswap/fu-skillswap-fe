@@ -11,6 +11,7 @@ export interface MentorServicePayload {
   expectedOutcome: string;
   durationMinutes: number;
   isFree: boolean;
+  free?: boolean;
   /** Giá theo SCoin (BE mới). BE yêu cầu @NotNull; gửi 0 khi miễn phí. */
   priceScoin: number;
   helpTopicIds: string[];
@@ -39,5 +40,5 @@ export const mentorServicesApi = {
 
   /** PATCH /api/me/mentor-services/{serviceId}/active — Bật/tắt trạng thái hiển thị của dịch vụ */
   toggleActive: (serviceId: string, active: boolean) =>
-    http.patch<MentorServiceItem>(`/api/me/mentor-services/${serviceId}/active`, { active }),
+    http.patch<MentorServiceItem>(`/api/me/mentor-services/${serviceId}/active`, { active }, { params: { active } }),
 };

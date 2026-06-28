@@ -1,28 +1,83 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  BookOpen, Plus, Search, Filter, Pencil, Trash2, 
-  X, CheckCircle2, AlertTriangle, 
-  Clock, BookOpenCheck, ToggleLeft, ToggleRight,
-  Coins, Sparkles
+  Calendar, Plus, Search, BookOpen, Pencil, Trash, 
+  ToggleLeft, ToggleRight, AlertCircle, Loader2, X
 } from 'lucide-react';
-import { helpTopicApi } from '../../api/mentorProfile';
 import { mentorServicesApi } from '../../api/mentorServices';
-import type { HelpTopic, MentorServiceItem } from '../../api/types';
+import { helpTopicApi } from '../../api/mentorProfile';
+import { availabilityApi } from '../../api/availability';
+import type { HelpTopic, MentorServiceItem, AvailabilityRule } from '../../api/types';
 
 // Fallback topics if helpTopicApi fails to load
 const DEFAULT_TOPICS: HelpTopic[] = [
-  { id: '1', nameVi: 'Lập trình Web', nameEn: 'Web Development' },
-  { id: '2', nameVi: 'Trí tuệ nhân tạo', nameEn: 'Artificial Intelligence' },
-  { id: '3', nameVi: 'Kỹ nghệ phần mềm', nameEn: 'Software Engineering' },
-  { id: '4', nameVi: 'UI/UX & Graphics', nameEn: 'UI/UX & Graphics' },
-  { id: '5', nameVi: 'An toàn thông tin', nameEn: 'Information Security' },
-  { id: '6', nameVi: 'Kinh tế & Marketing', nameEn: 'Business & Marketing' },
+  { id: '00000000-0000-0000-0000-000000000001', nameVi: 'Lập trình Web', nameEn: 'Web Development' },
+  { id: '00000000-0000-0000-0000-000000000002', nameVi: 'Trí tuệ nhân tạo', nameEn: 'Artificial Intelligence' },
+  { id: '00000000-0000-0000-0000-000000000003', nameVi: 'Kỹ nghệ phần mềm', nameEn: 'Software Engineering' },
+  { id: '00000000-0000-0000-0000-000000000004', nameVi: 'UI/UX & Graphics', nameEn: 'UI/UX & Graphics' },
+  { id: '00000000-0000-0000-0000-000000000005', nameVi: 'An toàn thông tin', nameEn: 'Information Security' },
+  { id: '00000000-0000-0000-0000-000000000006', nameVi: 'Kinh tế & Marketing', nameEn: 'Business & Marketing' },
 ];
 
+const WEEKDAYS = [
+  { value: 'MONDAY', label: 'T2' },
+  { value: 'TUESDAY', label: 'T3' },
+  { value: 'WEDNESDAY', label: 'T4' },
+  { value: 'THURSDAY', label: 'T5' },
+  { value: 'FRIDAY', label: 'T6' },
+  { value: 'SATURDAY', label: 'T7' },
+  { value: 'SUNDAY', label: 'CN' },
+];
 
+const getDayOfWeekName = (date: Date) => {
+  const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  return days[date.getDay()];
+};
 
-// Helpers to unpack/pack fields inside backend fields to support design elements
+const getWeekDays = (offset = 0) => {
+  const start = new Date();
+  const day = start.getDay();
+  // Monday is 1, Sunday is 0. Adjust so Monday is first day of the week
+  const diff = start.getDate() - day + (day === 0 ? -6 : 1) + (offset * 7);
+  const monday = new Date(start.setDate(diff));
+  
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const next = new Date(monday);
+    next.setDate(monday.getDate() + i);
+    days.push(next);
+  }
+  return days;
+};
+
+const formatDateISO = (d: Date) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const formatDateDisplay = (d: Date) => {
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+};
+
+const getErrorMessage = (err: any): string => {
+  const data = err?.response?.data;
+  if (!data) return '';
+  if (typeof data === 'string') return data;
+  if (data.message) return data.message;
+  if (data.error) return data.error;
+  if (data.errors) {
+    if (Array.isArray(data.errors)) {
+      return data.errors.map((e: any) => e.message || e.defaultMessage || JSON.stringify(e)).join(', ');
+    }
+    if (typeof data.errors === 'object') {
+      return Object.entries(data.errors).map(([key, val]) => `${key}: ${val}`).join(', ');
+    }
+  }
+  return JSON.stringify(data);
+};
+
 const parseTitle = (fullTitle: string = '') => {
   const match = fullTitle.match(/^\[(.*?)\]\s*(.*)$/);
   if (match) {
@@ -37,63 +92,74 @@ const parseTitle = (fullTitle: string = '') => {
   };
 };
 
-const serializeDescriptionAndOutcomes = (desc: string, outcomes: string[]) => {
-  if (outcomes.length === 0) return desc;
-  return `${desc}\n\n=== OUTCOMES ===\n${outcomes.join('\n')}`;
-};
-
-const deserializeDescriptionAndOutcomes = (fullDesc: string = '') => {
-  const parts = fullDesc.split('\n\n=== OUTCOMES ===\n');
-  if (parts.length > 1) {
-    return {
-      description: parts[0],
-      outcomes: parts[1].split('\n').filter(Boolean)
-    };
-  }
-  return {
-    description: fullDesc,
-    outcomes: []
-  };
-};
-
 export const CourseManagement: React.FC = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<MentorServiceItem[]>([]);
+  const [rules, setRules] = useState<AvailabilityRule[]>([]);
   const [topics, setTopics] = useState<HelpTopic[]>(DEFAULT_TOPICS);
   const [loading, setLoading] = useState(true);
-  
+  const [loadingRules, setLoadingRules] = useState(true);
+  const [savingRuleId, setSavingRuleId] = useState<string | null>(null);
+
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('active');
+  const selectedStatus = 'all';
 
   // Modal / Form state
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentServiceId, setCurrentServiceId] = useState<string | null>(null);
 
-  // Form Fields
+  // Form Fields - Course Info
   const [title, setTitle] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
   const [topicId, setTopicId] = useState('');
   const [sessionDuration, setSessionDuration] = useState<number>(60);
   const [description, setDescription] = useState('');
-  const [outcomesText, setOutcomesText] = useState(''); // newline separated
+  const [outcomesText, setOutcomesText] = useState('');
   const [isFree, setIsFree] = useState(true);
-  const [priceScoin, setPriceScoin] = useState<number>(0);
+  const [priceScoin, setPriceScoin] = useState<string | number>('0');
+
+  // Form Fields - Availability Schedule Config
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime] = useState('09:00');
+  const [ruleNote, setRuleNote] = useState('');
+
+  // Calendar parameters
+  const [weekOffset, setWeekOffset] = useState<number>(0);
 
   // Validation & Notifications
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
 
-  const triggerToast = (message: string, type: 'success' | 'danger') => {
-    setToast({ message, type });
-    setToastVisible(true);
-  };
-
-  // Confirmation Delete Modal
+  // Confirmation Delete Modals
   const [courseToDelete, setCourseToDelete] = useState<MentorServiceItem | null>(null);
+  const [ruleToDelete, setRuleToDelete] = useState<AvailabilityRule | null>(null);
+  const [courseToHide, setCourseToHide] = useState<MentorServiceItem | null>(null);
+
+  // Edit Rule states
+  const [ruleToEdit, setRuleToEdit] = useState<AvailabilityRule | null>(null);
+  const [editRuleDays, setEditRuleDays] = useState<string[]>([]);
+  const [editRuleStartTime, setEditRuleStartTime] = useState('08:00');
+  const [editRuleEndTime, setEditRuleEndTime] = useState('09:00');
+  const [editRuleNote, setEditRuleNote] = useState('');
+  const [editRuleErrors, setEditRuleErrors] = useState<Record<string, string>>({});
+
+  // Create Rule states are removed as createRule flows through Course Creation
+
+  const triggerToast = (message: string, type: 'success' | 'danger') => {
+    window.dispatchEvent(new CustomEvent('push-toast', {
+      detail: {
+        title: type === 'success' ? 'Thành công' : 'Lỗi hệ thống',
+        message,
+        type: type === 'success' ? 'BOOKING_ACCEPTED' : 'BOOKING_REJECTED'
+      }
+    }));
+    window.dispatchEvent(new Event('refresh-notifications'));
+  };
 
   const fetchServices = async () => {
     setLoading(true);
@@ -102,15 +168,27 @@ export const CourseManagement: React.FC = () => {
       setCourses(data || []);
     } catch (err: any) {
       console.error('Lấy danh sách dịch vụ thất bại:', err);
-      showAlert('danger', 'Không thể đồng bộ danh sách khóa học với máy chủ.');
+      triggerToast('Không thể đồng bộ danh sách khóa học với máy chủ.', 'danger');
       setCourses([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchRules = async () => {
+    setLoadingRules(true);
+    try {
+      const data = await availabilityApi.listRules();
+      setRules(data || []);
+    } catch (err: any) {
+      console.error('Lấy danh sách luật rảnh thất bại:', err);
+      setRules([]);
+    } finally {
+      setLoadingRules(false);
+    }
+  };
+
   useEffect(() => {
-    // Load topics from API
     const loadTopics = async () => {
       try {
         const list = await helpTopicApi.list();
@@ -123,6 +201,7 @@ export const CourseManagement: React.FC = () => {
     };
     loadTopics();
     fetchServices();
+    fetchRules();
   }, []);
 
   useEffect(() => {
@@ -143,18 +222,24 @@ export const CourseManagement: React.FC = () => {
     }
   }, [toastVisible, toast]);
 
-  const showAlert = (type: 'success' | 'danger', text: string) => {
-    triggerToast(text, type);
-  };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!title.trim()) newErrors.title = 'Vui lòng nhập tên khóa học.';
     if (!subjectCode.trim()) newErrors.subjectCode = 'Vui lòng nhập mã môn học.';
     if (!topicId) newErrors.topicId = 'Vui lòng chọn chủ đề.';
     if (!description.trim()) newErrors.description = 'Vui lòng nhập mô tả khóa học.';
-    if (!isFree && priceScoin <= 0) newErrors.priceScoin = 'Vui lòng nhập số Point lớn hơn 0.';
+    if (!isFree && (Number(priceScoin) <= 0 || !priceScoin)) newErrors.priceScoin = 'Vui lòng nhập số Point lớn hơn 0.';
     
+    // Time format validation
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (selectedDays.length > 0) {
+      if (!startTime || !timeRegex.test(startTime)) newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
+      if (!endTime || !timeRegex.test(endTime)) newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
+      if (startTime && endTime && startTime >= endTime) {
+        newErrors.endTime = 'Giờ kết thúc phải lớn hơn giờ bắt đầu';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -169,7 +254,11 @@ export const CourseManagement: React.FC = () => {
     setDescription('');
     setOutcomesText('');
     setIsFree(true);
-    setPriceScoin(0);
+    setPriceScoin('');
+    setSelectedDays([]);
+    setStartTime('08:00');
+    setEndTime('09:00');
+    setRuleNote('');
     setErrors({});
     setShowModal(true);
   };
@@ -179,16 +268,22 @@ export const CourseManagement: React.FC = () => {
     setCurrentServiceId(course.serviceId);
     
     const { subjectCode: sCode, cleanTitle } = parseTitle(course.title);
-    const { description: cleanDesc, outcomes } = deserializeDescriptionAndOutcomes(course.description);
-    
+
     setTitle(cleanTitle);
     setSubjectCode(sCode);
     setTopicId(course.helpTopics && course.helpTopics.length > 0 ? course.helpTopics[0].id : topics[0]?.id || '');
     setSessionDuration(course.durationMinutes);
-    setDescription(cleanDesc);
-    setOutcomesText(outcomes.join('\n'));
+    setDescription(course.description || '');
+    setOutcomesText(course.expectedOutcome || '');
     setIsFree(course.free !== undefined ? course.free : (course as any).isFree);
-    setPriceScoin(course.priceScoin || 0);
+    setPriceScoin(course.priceScoin !== undefined ? String(course.priceScoin) : '');
+    
+    // Default schedule config empty for edit
+    setSelectedDays([]);
+    setStartTime('08:00');
+    setEndTime('09:00');
+    setRuleNote('');
+    
     setErrors({});
     setShowModal(true);
   };
@@ -197,21 +292,16 @@ export const CourseManagement: React.FC = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const outcomes = outcomesText
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    const fullDescription = serializeDescriptionAndOutcomes(description.trim(), outcomes);
     const fullTitle = `[${subjectCode.trim().toUpperCase()}] ${title.trim()}`;
 
     const payload = {
       title: fullTitle,
-      description: fullDescription,
-      expectedOutcome: outcomes.length > 0 ? outcomes.join('\n') : description.trim(),
+      description: description.trim(),
+      expectedOutcome: outcomesText.trim(),
       durationMinutes: sessionDuration,
       isFree: isFree,
-      priceScoin: isFree ? 0 : priceScoin,
+      free: isFree,
+      priceScoin: isFree ? 0 : (Number(priceScoin) || 0),
       helpTopicIds: [topicId],
     };
 
@@ -219,20 +309,44 @@ export const CourseManagement: React.FC = () => {
     try {
       if (isEditing && currentServiceId) {
         await mentorServicesApi.update(currentServiceId, payload);
-        showAlert('success', 'Đã cập nhật thông tin khóa học thành công trên hệ thống');
+        triggerToast('Đã cập nhật thông tin lớp học thành công.', 'success');
       } else {
         await mentorServicesApi.create(payload);
-        showAlert('success', 'Tạo khóa học mới trên máy chủ thành công!');
+        triggerToast('Tạo lớp học mới thành công!', 'success');
       }
+
+      // Simultaneously create availability rules if days are checked
+      if (selectedDays.length > 0) {
+        const weekDays = getWeekDays(0);
+        const startOfWeek = weekDays[0];
+        const endRange = new Date(startOfWeek);
+        endRange.setDate(startOfWeek.getDate() + 30); // Active for 30 days
+
+        const formatTime = (t: string) => t.length === 5 ? `${t}:00` : t;
+        
+        const rulePayload = {
+          ruleType: 'OPEN' as const,
+          repeatType: 'WEEKLY' as const,
+          daysOfWeek: selectedDays,
+          effectiveFrom: formatDateISO(startOfWeek),
+          effectiveTo: formatDateISO(endRange),
+          startTime: formatTime(startTime),
+          endTime: formatTime(endTime),
+          note: ruleNote.trim() || `Lịch khả dụng: ${fullTitle}`,
+        };
+        
+        await availabilityApi.createRule(rulePayload);
+        triggerToast('Đã tạo lớp và thiết lập lịch rảnh thành công.', 'success');
+        await fetchRules();
+      }
+
       setShowModal(false);
       await fetchServices();
     } catch (err: any) {
-      console.error('Lưu khóa học thất bại:', err);
-      const serverData = err?.response?.data;
-      const detailMsg = serverData 
-        ? (serverData.message || JSON.stringify(serverData)) 
-        : 'Có lỗi xảy ra khi lưu khóa học.';
-      showAlert('danger', detailMsg);
+      console.error('Lưu lớp học thất bại:', err);
+      const detailMsg = getErrorMessage(err) || 'Có lỗi xảy ra khi lưu thông tin lớp học.';
+      triggerToast(detailMsg, 'danger');
+    } finally {
       setLoading(false);
     }
   };
@@ -242,13 +356,30 @@ export const CourseManagement: React.FC = () => {
     try {
       const nextState = !course.active;
       await mentorServicesApi.toggleActive(course.serviceId, nextState);
-      showAlert('success', `Đã ${nextState ? 'kích hoạt' : 'tạm dừng'} hiển thị khóa học: ${parseTitle(course.title).cleanTitle}`);
+      triggerToast(`Đã ${nextState ? 'kích hoạt' : 'tạm dừng'} hiển thị lớp học.`, 'success');
       await fetchServices();
     } catch (err: any) {
       console.error(err);
-      showAlert('danger', 'Thay đổi trạng thái thất bại.');
+      const detailMsg = getErrorMessage(err) || 'Thay đổi trạng thái thất bại.';
+      triggerToast(detailMsg, 'danger');
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleClick = (course: MentorServiceItem) => {
+    if (course.active) {
+      setCourseToHide(course);
+    } else {
+      handleToggleStatus(course);
+    }
+  };
+
+  const confirmHideCourse = async () => {
+    if (!courseToHide) return;
+    const currentCourse = courseToHide;
+    setCourseToHide(null);
+    await handleToggleStatus(currentCourse);
   };
 
   const handleDeleteCourse = async () => {
@@ -257,30 +388,130 @@ export const CourseManagement: React.FC = () => {
     setLoading(true);
     try {
       await mentorServicesApi.delete(deletedId);
-      showAlert('success', `Đã xóa khóa học "${parseTitle(courseToDelete.title).cleanTitle}" thành công.`);
+      triggerToast(`Đã xóa lớp học "${parseTitle(courseToDelete.title).cleanTitle}" thành công.`, 'success');
       setCourseToDelete(null);
       setCourses(prev => prev.filter(c => c.serviceId !== deletedId));
-      await fetchServices();
     } catch (err: any) {
       console.error(err);
-      showAlert('danger', 'Không thể xóa khóa học này.');
+      const detailMsg = getErrorMessage(err) || 'Không thể xóa khóa học này.';
+      triggerToast(detailMsg, 'danger');
+    } finally {
       setCourseToDelete(null);
       setLoading(false);
     }
   };
 
-  // Filtering Logic
+  const handleDeleteRule = async () => {
+    if (!ruleToDelete) return;
+    const deletedId = ruleToDelete.ruleId;
+    setSavingRuleId(deletedId);
+    try {
+      await availabilityApi.deleteRule(deletedId);
+      triggerToast('Đã xóa thời gian rảnh thành công.', 'success');
+      setRules(prev => prev.filter(r => r.ruleId !== deletedId));
+    } catch (err: any) {
+      console.error(err);
+      const detailMsg = getErrorMessage(err) || 'Không thể xóa thời gian rảnh này.';
+      triggerToast(detailMsg, 'danger');
+    } finally {
+      setRuleToDelete(null);
+      setSavingRuleId(null);
+    }
+  };
+
+  const handleOpenEditRuleModal = (rule: AvailabilityRule) => {
+    setRuleToEdit(rule);
+    setEditRuleDays(rule.daysOfWeek || []);
+    setEditRuleStartTime(rule.startTime || '08:00');
+    setEditRuleEndTime(rule.endTime || '09:00');
+    setEditRuleNote(rule.note || '');
+    setEditRuleErrors({});
+  };
+
+  const validateEditRuleForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (editRuleDays.length === 0) newErrors.days = 'Vui lòng chọn ít nhất một thứ trong tuần.';
+    
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!editRuleStartTime || !timeRegex.test(editRuleStartTime)) newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
+    if (!editRuleEndTime || !timeRegex.test(editRuleEndTime)) newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
+    if (editRuleStartTime && editRuleEndTime && editRuleStartTime >= editRuleEndTime) {
+      newErrors.endTime = 'Giờ kết thúc phải lớn hơn giờ bắt đầu';
+    }
+
+    setEditRuleErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveEditRule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ruleToEdit || !validateEditRuleForm()) return;
+
+    setLoadingRules(true);
+    try {
+      const formatTime = (t: string) => t.length === 5 ? `${t}:00` : t;
+
+      const payload = {
+        ruleType: ruleToEdit.ruleType,
+        repeatType: ruleToEdit.repeatType,
+        daysOfWeek: editRuleDays,
+        effectiveFrom: ruleToEdit.effectiveFrom,
+        effectiveTo: ruleToEdit.effectiveTo,
+        startTime: formatTime(editRuleStartTime),
+        endTime: formatTime(editRuleEndTime),
+        note: editRuleNote.trim(),
+      };
+      
+      const updated = await availabilityApi.updateRule(ruleToEdit.ruleId, payload);
+      triggerToast('Đã cập nhật lịch rảnh thành công.', 'success');
+      setRules(prev => prev.map(r => r.ruleId === ruleToEdit.ruleId ? { ...r, ...updated } : r));
+      setRuleToEdit(null);
+    } catch (err: any) {
+      console.error(err);
+      const detailMsg = getErrorMessage(err) || 'Cập nhật lịch rảnh thất bại.';
+      triggerToast(detailMsg, 'danger');
+    } finally {
+      setLoadingRules(false);
+    }
+  };
+
+  // createRule helpers removed as createRule flows through Course Creation
+
+  const toggleEditDaySelection = (dayValue: string) => {
+    setEditRuleDays(prev => 
+      prev.includes(dayValue) ? prev.filter(d => d !== dayValue) : [...prev, dayValue]
+    );
+  };
+
+  const toggleDaySelection = (dayValue: string) => {
+    setSelectedDays(prev => 
+      prev.includes(dayValue) ? prev.filter(d => d !== dayValue) : [...prev, dayValue]
+    );
+  };
+
+  // Filter Rules applying to a specific day
+  const getRulesForDay = (dayDate: Date) => {
+    const dateStr = formatDateISO(dayDate);
+    const weekdayName = getDayOfWeekName(dayDate);
+    
+    return rules.filter(r => {
+      const startRange = r.effectiveFrom;
+      const endRange = r.effectiveTo;
+      const isWithinRange = dateStr >= startRange && (!endRange || dateStr <= endRange);
+      const isWeekdayMatch = !!(r.daysOfWeek && r.daysOfWeek.includes(weekdayName));
+      return isWithinRange && isWeekdayMatch;
+    });
+  };
+
+  // Filter Courses list
   const filteredCourses = courses.filter(c => {
     const { subjectCode, cleanTitle } = parseTitle(c.title);
-    const { description: cleanDesc } = deserializeDescriptionAndOutcomes(c.description);
-
     const matchesSearch = 
       cleanTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
       subjectCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cleanDesc.toLowerCase().includes(searchQuery.toLowerCase());
+      (c.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesTopic = selectedTopic === 'all' || (c.helpTopics && c.helpTopics.some(t => t.id === selectedTopic));
-    
     const matchesStatus = 
       selectedStatus === 'all' || 
       (selectedStatus === 'active' && c.active) || 
@@ -289,426 +520,796 @@ export const CourseManagement: React.FC = () => {
     return matchesSearch && matchesTopic && matchesStatus;
   });
 
+  // Keep only unique courses by clean title to prevent sidebar duplicates
+  const uniqueFilteredCourses: MentorServiceItem[] = [];
+  const seenTitles = new Set<string>();
+  for (const c of filteredCourses) {
+    const titleKey = parseTitle(c.title).cleanTitle.trim().toLowerCase();
+    if (!seenTitles.has(titleKey)) {
+      seenTitles.add(titleKey);
+      uniqueFilteredCourses.push(c);
+    }
+  }
+
   return (
     <div className="space-y-6 text-left animate-fadeIn">
       {/* Header section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-extrabold text-fg tracking-tight flex items-center gap-2">
-            <BookOpen className="w-8 h-8 text-primary" /> Quản lý khóa học
+            <BookOpen className="w-8 h-8 text-primary" /> Quản lý lớp học
           </h1>
           <p className="text-fg-muted text-body font-medium">
-            Tự thiết kế các lớp học chuyên môn của bạn, cấu hình chủ đề và quản lý danh sách các lớp đang cung cấp cho sinh viên.
+            Quản lý các môn học giảng dạy và thiết lập lịch rảnh khả dụng của bạn theo dạng lưới thời khóa biểu.
           </p>
         </div>
+      </div>
+
+      {/* Main Grid: Google Calendar layout (Sidebar on left, Calendar on right) */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        <button
-          onClick={handleOpenCreateModal}
-          className="inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer shadow-md shadow-primary/20 transition-all active:scale-95 shrink-0"
-        >
-          <Plus className="w-5 h-5" /> Tạo khóa học mới
-        </button>
-      </div>
-
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-start gap-3 rounded-lg p-4 shadow-lg text-white w-96 transition-all duration-300 ease-in-out ${
-            toastVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6 pointer-events-none'
-          } ${
-            toast.type === 'success' 
-              ? 'bg-status-approved' 
-              : 'bg-status-rejected'
-          }`}
-        >
-          {toast.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-white" />
-          ) : (
-            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-white" />
-          )}
-          <div className="flex-1 text-left min-w-0">
-            <div className="font-bold text-sm leading-none mb-1 text-white">
-              {toast.type === 'success' ? 'Thành công' : 'Thất bại'}
-            </div>
-            <div className="text-xs text-white/90 leading-tight break-words font-medium">{toast.message}</div>
-          </div>
+        {/* Left column: Courses lists & Search */}
+        <div className="xl:col-span-1 space-y-4">
           <button
-            onClick={() => setToastVisible(false)}
-            className="text-white/80 hover:text-white shrink-0 focus:outline-none cursor-pointer"
+            onClick={handleOpenCreateModal}
+            className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-body font-bold py-3 px-5 rounded-field cursor-pointer shadow-md shadow-primary/20 transition-all active:scale-95 shrink-0"
           >
-            <X className="w-4 h-4" />
+            <Plus className="w-5 h-5 stroke-[3]" /> Tạo lớp học mới
           </button>
-        </div>
-      )}
 
-      {/* Filter and Search Bar */}
-      <div className="meetmind-card p-4 rounded-card flex flex-col md:flex-row gap-4 items-center justify-between">
-        {/* Search */}
-        <div className="relative w-full md:flex-1 md:max-w-2xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-fg-faint" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo tiêu đề, mã môn học..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-surface-muted border border-line rounded-field py-2.5 pl-10 pr-4 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
-          />
-        </div>
+          {/* Search Card */}
+          <div className="meetmind-card p-4 rounded-card space-y-3">
+            <h3 className="text-meta font-extrabold text-fg uppercase tracking-wider">Danh sách lớp dạy</h3>
+            
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-faint" />
+              <input
+                type="text"
+                placeholder="Tìm tên lớp, mã môn..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-surface-muted/50 border border-line rounded-field py-2 pl-9 pr-4 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold"
+              />
+            </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 w-full md:w-auto justify-end">
-          {/* Topic filter */}
-          <div className="inline-flex items-center gap-1.5 bg-surface-muted border border-line px-3 py-1.5 rounded-field">
-            <Filter className="w-3.5 h-3.5 text-fg-muted" />
-            <select
-              value={selectedTopic}
-              onChange={(e) => setSelectedTopic(e.target.value)}
-              className="bg-transparent border-none text-meta font-bold text-fg-muted focus:outline-none cursor-pointer pr-1"
-            >
-              <option value="all">Tất cả chủ đề</option>
-              {topics.map(t => (
-                <option key={t.id} value={t.id}>{t.nameVi}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status filter */}
-          <div className="inline-flex items-center gap-1.5 bg-surface-muted border border-line px-3 py-1.5 rounded-field">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-transparent border-none text-meta font-bold text-fg-muted focus:outline-none cursor-pointer pr-1"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Đang hiển thị</option>
-              <option value="inactive">Đang tạm ẩn</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Loading state indicator */}
-      {loading ? (
-        <div className="py-16 flex justify-center flex-col items-center gap-3">
-          <div className="w-9 h-9 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-meta text-fg-muted font-bold">Đang đồng bộ dữ liệu...</span>
-        </div>
-      ) : filteredCourses.length === 0 ? (
-        <div className="meetmind-card py-20 text-center rounded-card space-y-4 flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full bg-primary-soft text-primary flex items-center justify-center">
-            <BookOpenCheck className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-title font-bold text-fg">Không tìm thấy khóa học nào</h3>
-            <p className="text-meta text-fg-muted font-medium max-w-sm">
-              {courses.length === 0 
-                ? 'Bạn chưa tạo khóa học nào. Hãy bắt đầu bằng cách nhấn vào nút "Tạo khóa học mới".' 
-                : 'Thử thay đổi bộ lọc tìm kiếm hoặc từ khóa của bạn.'}
-            </p>
-          </div>
-          {courses.length === 0 && (
-            <button
-              onClick={handleOpenCreateModal}
-              className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2 px-4 rounded-field cursor-pointer transition-all"
-            >
-              Tạo khóa học ngay
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map(course => {
-            const { subjectCode, cleanTitle } = parseTitle(course.title);
-            const { description: cleanDesc, outcomes } = deserializeDescriptionAndOutcomes(course.description);
-            const topicName = course.helpTopics && course.helpTopics.length > 0 ? course.helpTopics[0].nameVi : 'Chủ đề khác';
-
-            return (
-              <div
-                key={course.serviceId}
-                className={`meetmind-card rounded-card overflow-hidden flex flex-col justify-between transition-all duration-300 border-t-4 ${
-                  course.active 
-                    ? 'border-t-primary shadow-card meetmind-card-hover' 
-                    : 'border-t-fg-faint opacity-75 shadow-sm'
-                }`}
+            {/* Filter Topic selector */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-fg-muted uppercase">Chủ đề</label>
+              <select
+                value={selectedTopic}
+                onChange={(e) => setSelectedTopic(e.target.value)}
+                className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
               >
-                {/* Card Header & Content */}
-                <div 
-                  className="p-6 space-y-4 text-left cursor-pointer hover:bg-surface-muted/20 transition-all duration-200" 
-                  onClick={() => navigate(`/mentor/courses/${course.serviceId}`)}
-                >
-                  {/* Subject Code & Topic Badge */}
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-meta font-extrabold text-primary bg-primary-soft px-2.5 py-1 rounded-pill uppercase tracking-wide">
-                      {subjectCode}
-                    </span>
-                    <span className="text-meta font-semibold text-fg-muted bg-surface-muted px-2.5 py-1 rounded-pill max-w-[150px] truncate" title={topicName}>
-                      {topicName}
-                    </span>
-                  </div>
+                <option value="all">Tất cả chủ đề</option>
+                {topics.map(t => (
+                  <option key={t.id} value={t.id}>{t.nameVi}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-                  {/* Title */}
-                  <h3 className="text-title font-bold text-fg line-clamp-2 min-h-[2.5rem]" title={cleanTitle}>
-                    {cleanTitle}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-meta text-fg-muted font-medium line-clamp-3 leading-relaxed">
-                    {cleanDesc}
-                  </p>
-
-                  {/* Teaching specifications */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-line-soft text-meta text-fg-muted font-semibold">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-fg-faint" />
-                      {course.durationMinutes} phút/buổi
-                    </span>
-
-                    <span className="flex items-center gap-1 text-primary">
-                      {(course.free !== undefined ? course.free : (course as any).isFree) ? (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5 text-success" />
-                          <span className="text-success font-bold">Miễn phí (Dạy chéo)</span>
-                        </>
-                      ) : (
-                        <>
-                          <Coins className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="text-amber-600 font-bold">{course.priceScoin} Point</span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* Learning Outcomes preview */}
-                  {outcomes.length > 0 && (
-                    <div className="space-y-1.5 pt-1">
-                      <p className="text-meta font-bold text-fg">Kết quả đạt được:</p>
-                      <ul className="space-y-1 list-none pl-0">
-                        {outcomes.slice(0, 2).map((outcome, idx) => (
-                          <li key={idx} className="text-meta text-fg-muted font-medium flex items-start gap-1.5">
-                            <span className="text-success mt-0.5 shrink-0">✓</span>
-                            <span className="truncate">{outcome}</span>
-                          </li>
-                        ))}
-                        {outcomes.length > 2 && (
-                          <li className="text-meta text-fg-faint font-semibold italic pl-4">
-                            + {outcomes.length - 2} kết quả khác...
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Footer Actions */}
-                <div className="px-6 py-4 bg-surface-muted/40 border-t border-line-soft flex items-center justify-between">
-                  {/* Active Toggle Switch */}
-                  <button
-                    onClick={() => handleToggleStatus(course)}
-                    className="flex items-center gap-2 group cursor-pointer"
-                    title={course.active ? "Nhấp để tạm ẩn khỏi danh sách" : "Nhấp để hiển thị công khai"}
+          {/* Classes Cards list */}
+          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 scrollbar-thin">
+            {loading ? (
+              <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : uniqueFilteredCourses.length === 0 ? (
+              <div className="meetmind-card py-10 text-center text-meta text-fg-faint font-semibold">
+                Không tìm thấy lớp học nào.
+              </div>
+            ) : (
+              uniqueFilteredCourses.map(course => {
+                const { subjectCode, cleanTitle } = parseTitle(course.title);
+                const isFreeCourse = course.free !== undefined ? course.free : (course as any).isFree;
+                
+                return (
+                  <div
+                    key={course.serviceId}
+                    className={`meetmind-card p-4 rounded-card border-l-4 transition-all duration-300 relative group ${
+                      course.active ? 'border-l-primary shadow-sm hover:shadow-md' : 'border-l-fg-faint opacity-70 shadow-xs'
+                    }`}
                   >
-                    {course.active ? (
-                      <ToggleRight className="w-8 h-8 text-primary transition-all group-hover:scale-105" />
-                    ) : (
-                      <ToggleLeft className="w-8 h-8 text-fg-faint transition-all group-hover:scale-105" />
-                    )}
-                    <span className={`text-meta font-bold ${course.active ? 'text-fg' : 'text-fg-faint'}`}>
-                      {course.active ? 'Đang hiển thị' : 'Đang tạm ẩn'}
-                    </span>
-                  </button>
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="space-y-1 text-left min-w-0 flex-1">
+                        <span className="inline-block text-[9px] font-black text-primary bg-primary-soft px-1.5 py-0.5 rounded uppercase tracking-wide">
+                          {subjectCode}
+                        </span>
+                        <h4 className="text-meta font-extrabold text-fg truncate hover:text-clip leading-snug cursor-pointer" onClick={() => navigate(`/mentor/courses/${course.serviceId}`)}>
+                          {cleanTitle}
+                        </h4>
+                        <div className="text-[10px] text-fg-muted font-bold flex flex-wrap gap-x-2 gap-y-0.5 items-center">
+                          <span>{course.durationMinutes} phút</span>
+                          <span>•</span>
+                          {isFreeCourse ? (
+                            <span className="text-green-600 font-extrabold">Miễn phí</span>
+                          ) : (
+                            <span className="text-amber-600 font-extrabold">{course.priceScoin?.toLocaleString('en-US')} Pt</span>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* Edit & Delete Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleOpenEditModal(course)}
-                      className="p-2 text-fg-muted hover:text-primary hover:bg-primary-soft/40 border border-line rounded-lg bg-surface transition-all cursor-pointer"
-                      title="Chỉnh sửa khóa học"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setCourseToDelete(course)}
-                      className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 border border-line rounded-lg bg-surface transition-all cursor-pointer"
-                      title="Xóa khóa học"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      {/* Toggle status control */}
+                      <button
+                        onClick={() => handleToggleClick(course)}
+                        className="cursor-pointer text-fg-faint hover:text-primary transition-colors mt-0.5 shrink-0"
+                        title={course.active ? "Ẩn lớp học" : "Hiện lớp học"}
+                      >
+                        {course.active ? <ToggleRight className="w-7 h-7 text-primary" /> : <ToggleLeft className="w-7 h-7 text-fg-faint" />}
+                      </button>
+                    </div>
+
+                    {/* Footer Actions (Edit & Delete) */}
+                    <div className="mt-3 pt-2.5 border-t border-line-soft flex justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleOpenEditModal(course)}
+                        className="p-1.5 text-fg-muted hover:text-primary hover:bg-primary-soft border border-line rounded-lg bg-surface transition-all cursor-pointer text-meta font-semibold"
+                        title="Chỉnh sửa lớp"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setCourseToDelete(course)}
+                        className="p-1.5 text-fg-muted hover:text-danger hover:bg-danger-soft border border-line rounded-lg bg-surface transition-all cursor-pointer text-meta font-semibold"
+                        title="Xóa lớp"
+                      >
+                        <Trash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Right column: Google Calendar Grid */}
+        <div className="xl:col-span-3">
+          <div className="meetmind-card p-6 rounded-card space-y-4">
+            
+            {/* Week Selection & Nav block */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-line-soft pb-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-6 h-6 text-primary shrink-0" />
+                <div className="text-left">
+                  <h3 className="text-base font-bold text-fg">Thời khóa biểu / Lịch rảnh dạy</h3>
+                  <p className="text-meta text-fg-muted font-semibold">
+                    {(() => {
+                      const weekDays = getWeekDays(weekOffset);
+                      return `Từ thứ 2 (${formatDateDisplay(weekDays[0])}) đến Chủ nhật (${formatDateDisplay(weekDays[6])})`;
+                    })()}
+                  </p>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+              
+              <div className="flex bg-surface-muted p-1 rounded-field gap-1 shrink-0">
+                <button
+                  onClick={() => setWeekOffset(0)}
+                  className={`px-4 py-1.5 rounded-[10px] text-meta font-bold transition-all cursor-pointer ${weekOffset === 0 ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                >
+                  Tuần này
+                </button>
+                <button
+                  onClick={() => setWeekOffset(1)}
+                  className={`px-4 py-1.5 rounded-[10px] text-meta font-bold transition-all cursor-pointer ${weekOffset === 1 ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                >
+                  Tuần sau
+                </button>
+              </div>
+            </div>
 
-      {/* Add / Edit Course Modal */}
+            {/* Google Calendar-style Vertical Timeline View */}
+            {loadingRules ? (
+              <div className="py-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+            ) : (
+              <div className="border border-line rounded-xl overflow-hidden bg-surface shadow-xs mt-4">
+                
+                {/* 1. Header Row (Day names and dates) */}
+                <div className="flex border-b border-line bg-surface-muted/50 select-none">
+                  {/* Spacer for Time Sidebar column */}
+                  <div className="w-14 border-r border-line shrink-0" />
+                  
+                  {/* 7 Columns Day Headers */}
+                  <div className="flex-1 grid grid-cols-7">
+                    {getWeekDays(weekOffset).map((dayDate, idx) => {
+                      const dayName = WEEKDAYS[idx].label;
+                      const dateStr = formatDateISO(dayDate);
+                      const isToday = formatDateISO(new Date()) === dateStr;
+                      return (
+                        <div
+                          key={idx}
+                          className={`py-3 text-center border-r border-line last:border-r-0 ${
+                            isToday ? 'bg-primary-soft/10' : ''
+                          }`}
+                        >
+                          <span className={`text-[10px] font-extrabold block tracking-wide uppercase ${isToday ? 'text-primary' : 'text-fg-faint'}`}>
+                            {dayName}
+                          </span>
+                          <span className={`text-base font-extrabold inline-flex items-center justify-center w-7 h-7 rounded-full mt-0.5 ${
+                            isToday ? 'bg-primary text-white shadow-sm' : 'text-fg'
+                          }`}>
+                            {dayDate.getDate()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Scrollable Timeline Area */}
+                <div className="max-h-[500px] overflow-y-auto relative scrollbar-thin flex">
+                  
+                  {/* Time Sidebar Column */}
+                  <div className="w-14 border-r border-line shrink-0 relative bg-surface select-none" style={{ height: '750px' }}>
+                    {Array.from({ length: 22 - 7 + 1 }).map((_, idx) => {
+                      const hour = 7 + idx;
+                      const displayHour = hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`;
+                      return (
+                        <div
+                          key={hour}
+                          className="absolute right-2 text-[10px] font-bold text-fg-faint text-right"
+                          style={{ top: `${(hour - 7) * 50 - 7}px` }}
+                        >
+                          {displayHour}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 7 Columns Timeline Grid */}
+                  <div className="flex-1 relative" style={{ height: '750px' }}>
+                    
+                    {/* Horizontal Grid Lines */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      {Array.from({ length: 22 - 7 }).map((_, idx) => (
+                        <div
+                          key={idx}
+                          className="border-b border-line-soft/40"
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            top: `${(idx + 1) * 50}px`,
+                            height: '1px'
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Columns containing Events */}
+                    <div className="absolute inset-0 grid grid-cols-7 h-full">
+                      {getWeekDays(weekOffset).map((dayDate, dayIdx) => {
+                        const dayRules = getRulesForDay(dayDate);
+                        const dateStr = formatDateISO(dayDate);
+                        const isToday = formatDateISO(new Date()) === dateStr;
+
+                        return (
+                          <div
+                            key={dayIdx}
+                            className={`relative h-full border-r border-line last:border-r-0 ${
+                              isToday ? 'bg-primary-soft/5' : ''
+                            }`}
+                          >
+                            {/* Absolute Event blocks for this day */}
+                            {dayRules.map((rule) => {
+                              const isSaving = savingRuleId === rule.ruleId;
+                              
+                              // Calculate position
+                              const START_HOUR = 7;
+                              const END_HOUR = 22;
+                              const HOUR_HEIGHT = 50;
+
+                              const parseTimeToDecimal = (timeStr: string): number => {
+                                if (!timeStr) return START_HOUR;
+                                const parts = timeStr.split(':');
+                                const hours = parseInt(parts[0], 10) || 0;
+                                const minutes = parseInt(parts[1], 10) || 0;
+                                return hours + minutes / 60;
+                              };
+
+                              const startDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(rule.startTime || '')));
+                              const endDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(rule.endTime || '')));
+                              
+                              const top = (startDec - START_HOUR) * HOUR_HEIGHT;
+                              const height = Math.max(25, (endDec - startDec) * HOUR_HEIGHT); // Min height 25px
+
+                              return (
+                                <div
+                                  key={rule.ruleId}
+                                  className="absolute left-1 right-1 rounded-md border border-primary/20 bg-primary-soft/85 hover:bg-primary-soft shadow-xs p-1.5 overflow-hidden group/rule transition-all hover:z-10 hover:shadow-md text-left"
+                                  style={{
+                                    top: `${top}px`,
+                                    height: `${height}px`
+                                  }}
+                                >
+                                  {/* Time & actions */}
+                                  <div className="flex items-center justify-between text-[9px] font-extrabold text-primary leading-tight">
+                                    <span className="truncate">
+                                      {rule.startTime} - {rule.endTime}
+                                    </span>
+                                    
+                                    {isSaving ? (
+                                      <Loader2 className="w-2.5 h-2.5 animate-spin text-primary shrink-0" />
+                                    ) : (
+                                      <div className="hidden group-hover/rule:flex items-center gap-1 shrink-0 bg-primary-soft rounded px-0.5 ml-1">
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleOpenEditRuleModal(rule); }}
+                                          className="text-primary hover:text-primary-hover cursor-pointer"
+                                          title="Sửa"
+                                        >
+                                          <Pencil className="w-2.5 h-2.5" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setRuleToDelete(rule); }}
+                                          className="text-danger hover:text-danger-hover cursor-pointer"
+                                          title="Xóa"
+                                        >
+                                          <Trash className="w-2.5 h-2.5" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Note */}
+                                  <div
+                                    className="text-[10px] font-bold text-fg truncate mt-0.5 leading-normal"
+                                    title={rule.note}
+                                  >
+                                    {rule.note || 'Lịch khả dụng'}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+          </div>
+        </div>
+
+      </div>
+
+      {/* Create / Edit Class Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-2xl bg-surface border border-line rounded-card p-6 shadow-xl relative overflow-y-auto max-h-[90vh] text-left">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto animate-fadeIn">
+          <div className="w-full max-w-5xl bg-surface border border-line rounded-card p-6 shadow-xl relative text-left my-8 animate-scaleUp">
+            
             {/* Modal Header */}
-            <div className="flex justify-between items-center border-b border-line-soft pb-3.5">
-              <h3 className="text-lg font-extrabold text-fg flex items-center gap-2">
-                <BookOpen className="w-5.5 h-5.5 text-primary" />
-                {isEditing ? 'Cấu hình khóa học' : 'Thiết kế khóa học mới'}
+            <div className="flex justify-between items-center border-b border-line-soft pb-3">
+              <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
+                <BookOpen className="w-6 h-6 text-primary" /> {isEditing ? 'Cập nhật thông tin lớp học' : 'Tạo lớp học / Dịch vụ dạy mới'}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-full hover:bg-surface-muted text-fg-muted hover:text-fg cursor-pointer transition-colors"
+                className="p-1 rounded-full hover:bg-surface-muted text-fg-muted hover:text-fg cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body Form */}
-            <form onSubmit={handleSaveCourse} className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Title */}
-                <div className="md:col-span-2">
-                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Tên lớp học / khóa học <span className="text-danger">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => { setTitle(e.target.value); if(errors.title) setErrors({...errors, title: ''}); }}
-                    className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold ${
-                      errors.title ? 'border-danger/60 focus:border-danger' : 'border-line'
-                    }`}
-                    placeholder="Ví dụ: Lập trình ReactJS nâng cao"
-                  />
-                  {errors.title && <p className="text-meta text-danger font-semibold mt-1">{errors.title}</p>}
+            <form onSubmit={handleSaveCourse} className="py-4 space-y-5">
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Column 1: SECTION 1: Class details */}
+                <div className="space-y-4 text-left">
+                  <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">1. Thông tin chi tiết lớp dạy</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1">
+                      <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Mã môn học <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="VD: FER201, PRN211"
+                        value={subjectCode}
+                        onChange={(e) => { setSubjectCode(e.target.value); if(errors.subjectCode) setErrors({...errors, subjectCode: ''}); }}
+                        className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold uppercase ${
+                          errors.subjectCode ? 'border-danger/60 focus:border-danger' : 'border-line'
+                        }`}
+                      />
+                      {errors.subjectCode && <p className="text-meta text-danger font-semibold mt-1">{errors.subjectCode}</p>}
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Tên lớp học / Dịch vụ <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="VD: Hướng dẫn ReactJS cơ bản"
+                        value={title}
+                        onChange={(e) => { setTitle(e.target.value); if(errors.title) setErrors({...errors, title: ''}); }}
+                        className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                          errors.title ? 'border-danger/60 focus:border-danger' : 'border-line'
+                        }`}
+                      />
+                      {errors.title && <p className="text-meta text-danger font-semibold mt-1">{errors.title}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-meta font-bold text-fg-muted uppercase min-h-[2.25rem] flex items-end mb-1.5">Chủ đề <span className="text-danger">*</span></label>
+                      <select
+                        value={topicId}
+                        onChange={(e) => { setTopicId(e.target.value); if(errors.topicId) setErrors({...errors, topicId: ''}); }}
+                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold font-bold"
+                      >
+                        {topics.map(t => (
+                          <option key={t.id} value={t.id}>{t.nameVi}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-meta font-bold text-fg-muted uppercase min-h-[2.25rem] flex items-end mb-1.5">Thời lượng học (phút/buổi)</label>
+                      <select
+                        value={sessionDuration}
+                        onChange={(e) => setSessionDuration(Number(e.target.value))}
+                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold font-bold"
+                      >
+                        <option value={15}>15 phút</option>
+                        <option value={30}>30 phút</option>
+                        <option value={45}>45 phút</option>
+                        <option value={60}>60 phút</option>
+                        <option value={90}>90 phút</option>
+                        <option value={120}>120 phút</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-meta font-bold text-fg-muted uppercase min-h-[2.25rem] flex items-end mb-1.5">Chi phí lớp học</label>
+                      <select
+                        value={isFree ? 'free' : 'point'}
+                        onChange={(e) => {
+                          const val = e.target.value === 'free';
+                          setIsFree(val);
+                          if (val) setPriceScoin('');
+                        }}
+                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold font-bold"
+                      >
+                        <option value="free">Miễn phí (Trao đổi chéo)</option>
+                        <option value="point">Tính phí (Point)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {!isFree && (
+                    <div className="animate-fadeIn text-left">
+                      <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Số Point yêu cầu <span className="text-danger">*</span></label>
+                      <input
+                        type="number"
+                        min={1}
+                        required
+                        value={priceScoin}
+                        onChange={(e) => { setPriceScoin(e.target.value); if(errors.priceScoin) setErrors({...errors, priceScoin: ''}); }}
+                        className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                          errors.priceScoin ? 'border-danger/60 focus:border-danger' : 'border-line'
+                        }`}
+                      />
+                      {errors.priceScoin && <p className="text-meta text-danger font-semibold mt-1">{errors.priceScoin}</p>}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Mô tả lớp học <span className="text-danger">*</span></label>
+                    <textarea
+                      required
+                      rows={3}
+                      placeholder="VD: Cung cấp kiến thức cơ bản về React component, state, effect..."
+                      value={description}
+                      onChange={(e) => { setDescription(e.target.value); if(errors.description) setErrors({...errors, description: ''}); }}
+                      className={`w-full bg-surface border rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium ${
+                        errors.description ? 'border-danger/60 focus:border-danger' : 'border-line'
+                      }`}
+                    />
+                    {errors.description && <p className="text-meta text-danger font-semibold mt-1">{errors.description}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1 flex justify-between">
+                      <span>Kết quả đầu ra đạt được</span>
+                      <span className="text-fg-faint font-semibold normal-case">Mỗi dòng là một kết quả</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="VD: Có thể tự tạo project React cơ bản&#10;Hiểu và dùng thành thạo các Hook thông dụng"
+                      value={outcomesText}
+                      onChange={(e) => setOutcomesText(e.target.value)}
+                      className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium"
+                    />
+                  </div>
                 </div>
 
-                {/* Subject Code */}
-                <div>
-                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Mã môn học <span className="text-danger">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    value={subjectCode}
-                    onChange={(e) => { setSubjectCode(e.target.value); if(errors.subjectCode) setErrors({...errors, subjectCode: ''}); }}
-                    className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold uppercase ${
-                      errors.subjectCode ? 'border-danger/60 focus:border-danger' : 'border-line'
-                    }`}
-                    placeholder="Ví dụ: FER201M"
-                  />
-                  {errors.subjectCode && <p className="text-meta text-danger font-semibold mt-1">{errors.subjectCode}</p>}
+                {/* Column 2: SECTION 2: Schedule configuration */}
+                <div className="space-y-4 lg:border-l lg:border-line-soft lg:pl-8 text-left">
+                  <h4 className="text-meta font-extrabold text-primary uppercase border-b border-line-soft pb-1">
+                    2. Cấu hình lịch rảnh khả dụng
+                  </h4>
+                  
+                  <p className="text-[11px] text-fg-muted font-medium">
+                    Tích chọn các thứ trong tuần mà bạn rảnh. Hệ thống sẽ tự động tạo các slot thời gian tương ứng từ hôm nay đến 2 tuần tiếp theo.
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* Days checkbox group */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">Thứ trong tuần</label>
+                      <div className="flex flex-wrap gap-2">
+                        {WEEKDAYS.map(day => {
+                          const checked = selectedDays.includes(day.value);
+                          return (
+                            <button
+                              key={day.value}
+                              type="button"
+                              onClick={() => toggleDaySelection(day.value)}
+                              className={`px-4 py-2 text-meta font-bold border rounded-field transition-all cursor-pointer ${
+                                checked 
+                                  ? 'bg-primary text-white border-primary shadow-xs' 
+                                  : 'bg-surface text-fg border-line hover:bg-surface-muted/40'
+                              }`}
+                            >
+                              {day.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Time selection group */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (HH:mm) <span className="text-danger">*</span></label>
+                        <input
+                          type="time"
+                          value={startTime}
+                          onChange={(e) => { setStartTime(e.target.value); if(errors.startTime) setErrors({...errors, startTime: ''}); }}
+                          className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                            errors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                          }`}
+                        />
+                        {errors.startTime && <p className="text-meta text-danger font-semibold mt-1">{errors.startTime}</p>}
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (HH:mm) <span className="text-danger">*</span></label>
+                        <input
+                          type="time"
+                          value={endTime}
+                          onChange={(e) => { setEndTime(e.target.value); if(errors.endTime) setErrors({...errors, endTime: ''}); }}
+                          className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                            errors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                          }`}
+                        />
+                        {errors.endTime && <p className="text-meta text-danger font-semibold mt-1">{errors.endTime}</p>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
+                      <input
+                        type="text"
+                        placeholder="VD: Rảnh buổi tối sau giờ làm"
+                        value={ruleNote}
+                        onChange={(e) => setRuleNote(e.target.value)}
+                        className="w-full bg-surface border border-line rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Topic / Category */}
-                <div>
-                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Chủ đề / Chuyên mục <span className="text-danger">*</span></label>
-                  <select
-                    value={topicId}
-                    onChange={(e) => { setTopicId(e.target.value); if(errors.topicId) setErrors({...errors, topicId: ''}); }}
-                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
-                  >
-                    {topics.map(t => (
-                      <option key={t.id} value={t.id}>{t.nameVi}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Session Duration */}
-                <div>
-                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Thời lượng học (phút/buổi)</label>
-                  <select
-                    value={sessionDuration}
-                    onChange={(e) => setSessionDuration(Number(e.target.value))}
-                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
-                  >
-                    <option value={15}>15 phút</option>
-                    <option value={30}>30 phút</option>
-                    <option value={45}>45 phút</option>
-                    <option value={60}>60 phút</option>
-                    <option value={90}>90 phút</option>
-                    <option value={120}>120 phút</option>
-                  </select>
-                </div>
-
-                {/* Free vs Point Select */}
-                <div>
-                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Chi phí buổi học</label>
-                  <select
-                    value={isFree ? 'free' : 'point'}
-                    onChange={(e) => {
-                      const val = e.target.value === 'free';
-                      setIsFree(val);
-                      if (val) setPriceScoin(0);
-                    }}
-                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
-                  >
-                    <option value="free">Miễn phí (Trao đổi chéo)</option>
-                    <option value="point">Tính phí (Point)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Point Amount (Conditional) */}
-              {!isFree && (
-                <div className="animate-fadeIn">
-                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Số Point yêu cầu cho buổi học <span className="text-danger">*</span></label>
-                  <input
-                    type="number"
-                    min={1}
-                    required
-                    value={priceScoin}
-                    onChange={(e) => { setPriceScoin(Number(e.target.value)); if(errors.priceScoin) setErrors({...errors, priceScoin: ''}); }}
-                    className={`w-full bg-surface border rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
-                      errors.priceScoin ? 'border-danger/60 focus:border-danger' : 'border-line'
-                    }`}
-                    placeholder="Nhập số Point (VD: 10)"
-                  />
-                  {errors.priceScoin && <p className="text-meta text-danger font-semibold mt-1">{errors.priceScoin}</p>}
-                </div>
-              )}
-
-              {/* Description */}
-              <div>
-                <label className="block text-meta font-bold text-fg-muted uppercase mb-1.5">Mô tả chi tiết khóa học <span className="text-danger">*</span></label>
-                <textarea
-                  required
-                  rows={4}
-                  value={description}
-                  onChange={(e) => { setDescription(e.target.value); if(errors.description) setErrors({...errors, description: ''}); }}
-                  className={`w-full bg-surface border rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium ${
-                    errors.description ? 'border-danger/60 focus:border-danger' : 'border-line'
-                  }`}
-                  placeholder="Mô tả nội dung đào tạo chính, điều kiện tiên quyết và mục tiêu của lớp học này..."
-                />
-                {errors.description && <p className="text-meta text-danger font-semibold mt-1">{errors.description}</p>}
-              </div>
-
-              {/* Learning Outcomes */}
-              <div>
-                <label className="block text-meta font-bold text-fg-muted uppercase mb-1 flex justify-between">
-                  <span>Kết quả đầu ra đạt được</span>
-                  <span className="text-fg-faint font-semibold normal-case">Mỗi dòng là một kết quả</span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={outcomesText}
-                  onChange={(e) => setOutcomesText(e.target.value)}
-                  className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium"
-                  placeholder="Ví dụ:&#13;Thành thạo xây dựng RESTful API&#13;Biết cách deploy ứng dụng lên AWS Cloud&#13;Hiểu sâu kiến trúc cơ sở dữ liệu"
-                />
-              </div>
-
-              {/* Form Buttons */}
-              <div className="flex gap-3 justify-end pt-4 border-t border-line-soft">
+              {/* Modal Actions */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-line-soft">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="bg-surface border border-line hover:bg-surface-muted text-fg text-body font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98]"
+                  className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98]"
                 >
-                  Hủy bỏ
+                  Hủy
                 </button>
                 <button
                   type="submit"
-                  className="bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer shadow-md shadow-primary/10 transition-all active:scale-[0.98]"
+                  disabled={loading}
+                  className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
                 >
-                  {isEditing ? 'Lưu thay đổi' : 'Tạo khóa học'}
+                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isEditing ? 'Lưu cập nhật' : 'Xác nhận tạo'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Delete Course Modal */}
+      {courseToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
+            <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
+              <AlertCircle className="w-6 h-6 text-danger" /> Xác nhận xóa lớp học
+            </h3>
+            <p className="text-body text-fg-muted mt-3 font-medium">
+              Bạn có chắc chắn muốn xóa lớp học <strong>"{parseTitle(courseToDelete.title).cleanTitle}"</strong>? Hành động này không thể hoàn tác và tất cả lịch dạy liên quan sẽ bị ảnh hưởng.
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setCourseToDelete(null)}
+                className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDeleteCourse}
+                className="bg-danger hover:bg-danger-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+              >
+                Xóa lớp học
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Hide Course Modal */}
+      {courseToHide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
+            <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
+              <AlertCircle className="w-6 h-6 text-amber-500" /> Xác nhận ẩn lớp học
+            </h3>
+            <p className="text-body text-fg-muted mt-3 font-medium">
+              Bạn có chắc chắn muốn ẩn lớp học <strong>"{parseTitle(courseToHide.title).cleanTitle}"</strong>? Mentee sẽ không tìm thấy hoặc đặt lịch mới cho lớp này nữa.
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setCourseToHide(null)}
+                className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmHideCourse}
+                className="bg-amber-500 hover:bg-amber-600 text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+              >
+                Xác nhận ẩn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Delete Rule Modal */}
+      {ruleToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
+            <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
+              <AlertCircle className="w-6 h-6 text-danger" /> Xác nhận xóa lịch rảnh
+            </h3>
+            <p className="text-body text-fg-muted mt-3 font-medium">
+              Bạn có chắc chắn muốn xóa lịch rảnh dạy từ <strong>{ruleToDelete.startTime}</strong> đến <strong>{ruleToDelete.endTime}</strong>?
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setRuleToDelete(null)}
+                className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDeleteRule}
+                className="bg-danger hover:bg-danger-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+              >
+                Xóa lịch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Rule Modal */}
+      {ruleToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto animate-fadeIn">
+          <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
+            <div className="flex justify-between items-center border-b border-line-soft pb-3">
+              <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-primary" /> Chỉnh sửa lịch rảnh khả dụng
+              </h3>
+              <button
+                onClick={() => setRuleToEdit(null)}
+                className="p-1 rounded-full hover:bg-surface-muted text-fg-muted hover:text-fg cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditRule} className="py-4 space-y-4">
+              {/* Days checkbox group */}
+              <div>
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">Thứ trong tuần</label>
+                <div className="flex flex-wrap gap-2">
+                  {WEEKDAYS.map(day => {
+                    const checked = editRuleDays.includes(day.value);
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => toggleEditDaySelection(day.value)}
+                        className={`px-4 py-2 text-meta font-bold border rounded-field transition-all cursor-pointer ${
+                          checked 
+                            ? 'bg-primary text-white border-primary shadow-xs' 
+                            : 'bg-surface text-fg border-line hover:bg-surface-muted/40'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {editRuleErrors.days && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.days}</p>}
+              </div>
+
+              {/* Time selection group */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (HH:mm) <span className="text-danger">*</span></label>
+                  <input
+                    type="time"
+                    required
+                    value={editRuleStartTime}
+                    onChange={(e) => { setEditRuleStartTime(e.target.value); if(editRuleErrors.startTime) setEditRuleErrors({...editRuleErrors, startTime: ''}); }}
+                    className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                      editRuleErrors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                    }`}
+                  />
+                  {editRuleErrors.startTime && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.startTime}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (HH:mm) <span className="text-danger">*</span></label>
+                  <input
+                    type="time"
+                    required
+                    value={editRuleEndTime}
+                    onChange={(e) => { setEditRuleEndTime(e.target.value); if(editRuleErrors.endTime) setEditRuleErrors({...editRuleErrors, endTime: ''}); }}
+                    className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${
+                      editRuleErrors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
+                    }`}
+                  />
+                  {editRuleErrors.endTime && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.endTime}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Ghi chú lịch rảnh</label>
+                <input
+                  type="text"
+                  placeholder="VD: Rảnh buổi tối sau giờ làm"
+                  value={editRuleNote}
+                  onChange={(e) => setEditRuleNote(e.target.value)}
+                  className="w-full bg-surface border border-line rounded-field py-2.5 px-3.5 text-body text-fg focus:outline-none focus:border-primary/50 font-medium"
+                />
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-line-soft">
+                <button
+                  type="button"
+                  onClick={() => setRuleToEdit(null)}
+                  className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98]"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
+                >
+                  Lưu thay đổi
                 </button>
               </div>
             </form>
@@ -716,38 +1317,8 @@ export const CourseManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {courseToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 text-danger">
-                <AlertTriangle className="w-6.5 h-6.5" />
-                <h3 className="text-lg font-extrabold">Xác nhận xóa khóa học</h3>
-              </div>
-              
-              <p className="text-body text-fg-muted font-medium leading-relaxed">
-                Bạn có chắc chắn muốn xóa khóa học <strong className="text-fg font-bold">"{parseTitle(courseToDelete.title).cleanTitle}"</strong> ({parseTitle(courseToDelete.title).subjectCode})? Hành động này không thể hoàn tác.
-              </p>
+      {/* Create Rule Modal has been removed */}
 
-              <div className="flex gap-3 justify-end pt-2">
-                <button
-                  onClick={() => setCourseToDelete(null)}
-                  className="bg-surface border border-line hover:bg-surface-muted text-fg text-body font-bold py-2 px-4.5 rounded-field cursor-pointer transition-all"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleDeleteCourse}
-                  className="bg-danger text-white hover:bg-danger/90 text-body font-bold py-2 px-4.5 rounded-field cursor-pointer transition-all"
-                >
-                  Xác nhận Xóa
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

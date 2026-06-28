@@ -11,13 +11,30 @@ import type { HelpTopic, MentorServiceItem } from '../../api/types';
 
 // Fallback topics if helpTopicApi fails to load
 const DEFAULT_TOPICS: HelpTopic[] = [
-  { id: '1', nameVi: 'Lập trình Web', nameEn: 'Web Development' },
-  { id: '2', nameVi: 'Trí tuệ nhân tạo', nameEn: 'Artificial Intelligence' },
-  { id: '3', nameVi: 'Kỹ nghệ phần mềm', nameEn: 'Software Engineering' },
-  { id: '4', nameVi: 'UI/UX & Graphics', nameEn: 'UI/UX & Graphics' },
-  { id: '5', nameVi: 'An toàn thông tin', nameEn: 'Information Security' },
-  { id: '6', nameVi: 'Kinh tế & Marketing', nameEn: 'Business & Marketing' },
+  { id: '00000000-0000-0000-0000-000000000001', nameVi: 'Lập trình Web', nameEn: 'Web Development' },
+  { id: '00000000-0000-0000-0000-000000000002', nameVi: 'Trí tuệ nhân tạo', nameEn: 'Artificial Intelligence' },
+  { id: '00000000-0000-0000-0000-000000000003', nameVi: 'Kỹ nghệ phần mềm', nameEn: 'Software Engineering' },
+  { id: '00000000-0000-0000-0000-000000000004', nameVi: 'UI/UX & Graphics', nameEn: 'UI/UX & Graphics' },
+  { id: '00000000-0000-0000-0000-000000000005', nameVi: 'An toàn thông tin', nameEn: 'Information Security' },
+  { id: '00000000-0000-0000-0000-000000000006', nameVi: 'Kinh tế & Marketing', nameEn: 'Business & Marketing' },
 ];
+
+const getErrorMessage = (err: any): string => {
+  const data = err?.response?.data;
+  if (!data) return '';
+  if (typeof data === 'string') return data;
+  if (data.message) return data.message;
+  if (data.error) return data.error;
+  if (data.errors) {
+    if (Array.isArray(data.errors)) {
+      return data.errors.map((e: any) => e.message || e.defaultMessage || JSON.stringify(e)).join(', ');
+    }
+    if (typeof data.errors === 'object') {
+      return Object.entries(data.errors).map(([key, val]) => `${key}: ${val}`).join(', ');
+    }
+  }
+  return JSON.stringify(data);
+};
 
 const parseTitle = (fullTitle: string = '') => {
   const match = fullTitle.match(/^\[(.*?)\]\s*(.*)$/);
@@ -33,24 +50,7 @@ const parseTitle = (fullTitle: string = '') => {
   };
 };
 
-const serializeDescriptionAndOutcomes = (desc: string, outcomes: string[]) => {
-  if (outcomes.length === 0) return desc;
-  return `${desc}\n\n=== OUTCOMES ===\n${outcomes.join('\n')}`;
-};
-
-const deserializeDescriptionAndOutcomes = (fullDesc: string = '') => {
-  const parts = fullDesc.split('\n\n=== OUTCOMES ===\n');
-  if (parts.length > 1) {
-    return {
-      description: parts[0],
-      outcomes: parts[1].split('\n').filter(Boolean)
-    };
-  }
-  return {
-    description: fullDesc,
-    outcomes: []
-  };
-};
+// Outcomes serialization helpers removed as expectedOutcome is supported natively
 
 export const CourseDetailPage: React.FC = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -141,8 +141,9 @@ export const CourseDetailPage: React.FC = () => {
       await mentorServicesApi.toggleActive(course.serviceId, nextState);
       triggerToast(`Đã ${nextState ? 'kích hoạt' : 'tạm dừng'} hiển thị khóa học.`, 'success');
       await loadData();
-    } catch (err) {
-      triggerToast('Không thể cập nhật trạng thái.', 'danger');
+    } catch (err: any) {
+      const detailMsg = getErrorMessage(err) || 'Không thể cập nhật trạng thái.';
+      triggerToast(detailMsg, 'danger');
       setLoading(false);
     }
   };
@@ -150,15 +151,14 @@ export const CourseDetailPage: React.FC = () => {
   const handleOpenEditModal = () => {
     if (!course) return;
     const { subjectCode: sCode, cleanTitle } = parseTitle(course.title);
-    const { description: cleanDesc, outcomes } = deserializeDescriptionAndOutcomes(course.description);
-
+ 
     setTitle(cleanTitle);
     setSubjectCode(sCode);
     setTopicId(course.helpTopics && course.helpTopics.length > 0 ? course.helpTopics[0].id : topics[0]?.id || '');
     setSessionDuration(course.durationMinutes);
-    setDescription(cleanDesc);
-    setOutcomesText(outcomes.join('\n'));
-    setIsFree(course.free);
+    setDescription(course.description || '');
+    setOutcomesText(course.expectedOutcome || '');
+    setIsFree(course.free !== undefined ? course.free : (course as any).isFree !== undefined ? (course as any).isFree : true);
     setPriceScoin(course.priceScoin || 0);
     setErrors({});
     setShowEditModal(true);
@@ -180,20 +180,15 @@ export const CourseDetailPage: React.FC = () => {
     e.preventDefault();
     if (!course || !validateForm()) return;
 
-    const outcomes = outcomesText
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    const fullDescription = serializeDescriptionAndOutcomes(description.trim(), outcomes);
     const fullTitle = `[${subjectCode.trim().toUpperCase()}] ${title.trim()}`;
 
     const payload = {
       title: fullTitle,
-      description: fullDescription,
-      expectedOutcome: outcomes.length > 0 ? outcomes.join('\n') : description.trim(),
+      description: description.trim(),
+      expectedOutcome: outcomesText.trim(),
       durationMinutes: sessionDuration,
       isFree: isFree,
+      free: isFree,
       priceScoin: isFree ? 0 : priceScoin,
       helpTopicIds: [topicId],
     };
@@ -206,10 +201,7 @@ export const CourseDetailPage: React.FC = () => {
       await loadData();
     } catch (err: any) {
       console.error('Lưu khóa học thất bại:', err);
-      const serverData = err?.response?.data;
-      const detailMsg = serverData 
-        ? (serverData.message || JSON.stringify(serverData)) 
-        : 'Lưu khóa học thất bại.';
+      const detailMsg = getErrorMessage(err) || 'Lưu khóa học thất bại.';
       triggerToast(detailMsg, 'danger');
       setLoading(false);
     }
@@ -224,8 +216,9 @@ export const CourseDetailPage: React.FC = () => {
       triggerToast('Đã xóa khóa học thành công!', 'success');
       setShowDeleteConfirm(false);
       setTimeout(() => navigate('/mentor/courses'), 1500);
-    } catch (err) {
-      triggerToast('Xóa khóa học thất bại.', 'danger');
+    } catch (err: any) {
+      const detailMsg = getErrorMessage(err) || 'Xóa khóa học thất bại.';
+      triggerToast(detailMsg, 'danger');
       setLoading(false);
     }
   };
@@ -255,7 +248,8 @@ export const CourseDetailPage: React.FC = () => {
   }
 
   const { subjectCode: sCode, cleanTitle } = parseTitle(course.title);
-  const { description: cleanDesc, outcomes } = deserializeDescriptionAndOutcomes(course.description);
+  const cleanDesc = course.description || '';
+  const outcomes = course.expectedOutcome ? course.expectedOutcome.split('\n').filter(Boolean) : [];
   const topicName = course.helpTopics && course.helpTopics.length > 0 ? course.helpTopics[0].nameVi : 'Chủ đề khác';
   const createdDate = (course as any).createdAt 
     ? new Date((course as any).createdAt).toLocaleDateString('vi-VN', {
@@ -356,7 +350,7 @@ export const CourseDetailPage: React.FC = () => {
               <div className="flex justify-between items-center py-2.5 border-b border-line-soft">
                 <span className="text-[11px] font-bold tracking-wider text-gray-500 uppercase">Chi phí</span>
                 <span>
-                  {course.free ? (
+                  {(course.free !== undefined ? course.free : (course as any).isFree) ? (
                     <span className="bg-green-50 text-green-700 border border-green-200/50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-green-600" /> Miễn phí (Dạy chéo)
                     </span>
