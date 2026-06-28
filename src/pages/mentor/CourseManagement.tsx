@@ -62,19 +62,42 @@ const formatDateDisplay = (d: Date) => {
 
 const getErrorMessage = (err: any): string => {
   const data = err?.response?.data;
-  if (!data) return '';
-  if (typeof data === 'string') return data;
-  if (data.message) return data.message;
-  if (data.error) return data.error;
-  if (data.errors) {
-    if (Array.isArray(data.errors)) {
-      return data.errors.map((e: any) => e.message || e.defaultMessage || JSON.stringify(e)).join(', ');
-    }
-    if (typeof data.errors === 'object') {
-      return Object.entries(data.errors).map(([key, val]) => `${key}: ${val}`).join(', ');
-    }
+  const status = err?.response?.status;
+  
+  if (status === 409) {
+    return 'Lịch dạy này đã bị trùng lặp với một khung giờ sẵn có của bạn. Vui lòng kiểm tra lại ô Chọn thứ và Khoảng giờ dạy.';
   }
-  return JSON.stringify(data);
+  
+  if (!data) return '';
+  let msg = '';
+  if (typeof data === 'string') msg = data;
+  else if (data.message) msg = data.message;
+  else if (data.error) msg = data.error;
+  else if (data.errors) {
+    if (Array.isArray(data.errors)) {
+      msg = data.errors.map((e: any) => e.message || e.defaultMessage || JSON.stringify(e)).join(', ');
+    } else if (typeof data.errors === 'object') {
+      msg = Object.entries(data.errors).map(([key, val]) => `${key}: ${val}`).join(', ');
+    }
+  } else {
+    msg = JSON.stringify(data);
+  }
+
+  const lowerMsg = msg.toLowerCase();
+  if (lowerMsg.includes('overlap') || lowerMsg.includes('conflict') || lowerMsg.includes('trùng lặp') || lowerMsg.includes('500') || lowerMsg.includes('hệ thống lưu trữ')) {
+    return 'Khung giờ dạy này bị trùng lặp với lịch dạy sẵn có của bạn. Hãy chọn Thứ khác hoặc thay đổi khoảng giờ dạy từ 09:00 đến 21:00.';
+  }
+  if (lowerMsg.includes('effectivefrom') || lowerMsg.includes('quá khứ') || lowerMsg.includes('past')) {
+    return 'Ngày bắt đầu hiệu lực không được ở quá khứ. Hãy đảm bảo bạn thiết lập bắt đầu từ ngày hôm nay trở đi.';
+  }
+  if (lowerMsg.includes('durationminutes') || lowerMsg.includes('thời lượng')) {
+    return 'Thời lượng buổi học không hợp lệ. Vui lòng nhập lại số phút ở ô Thời lượng.';
+  }
+  if (lowerMsg.includes('pricescoin') || lowerMsg.includes('point')) {
+    return 'Số điểm Point yêu cầu không hợp lệ. Vui lòng nhập lại số lớn hơn 0 ở ô Giá tiền (Point).';
+  }
+
+  return msg;
 };
 
 const parseTitle = (fullTitle: string = '') => {
@@ -143,7 +166,7 @@ export const CourseManagement: React.FC = () => {
   const [ruleStartTime, setRuleStartTime] = useState('09:00');
   const [ruleEndTime, setRuleEndTime] = useState('10:00');
   const [ruleNoteField, setRuleNoteField] = useState('');
-  const [ruleServiceIds, setRuleServiceIds] = useState<string[]>([]);
+  const [ruleServiceId, setRuleServiceId] = useState<string>('');
   const [ruleErrors, setRuleErrors] = useState<Record<string, string>>({});
   const [ruleSubmitting, setRuleSubmitting] = useState(false);
 
@@ -171,7 +194,7 @@ export const CourseManagement: React.FC = () => {
   const [editRuleStartTime, setEditRuleStartTime] = useState('09:00');
   const [editRuleEndTime, setEditRuleEndTime] = useState('10:00');
   const [editRuleNote, setEditRuleNote] = useState('');
-  const [editRuleServiceIds, setEditRuleServiceIds] = useState<string[]>([]);
+  const [editRuleServiceId, setEditRuleServiceId] = useState<string>('');
   const [editRuleErrors, setEditRuleErrors] = useState<Record<string, string>>({});
 
   const triggerToast = (message: string, type: 'success' | 'danger') => {
@@ -418,6 +441,24 @@ export const CourseManagement: React.FC = () => {
     setEditRuleEndTime(rule.endTime || '10:00');
     setEditRuleNote(rule.note || '');
     setEditRuleErrors({});
+
+    // Find the first slot matching this rule to populate current course
+    const targetStart = (rule.startTime || '09:00').slice(0, 5);
+    const targetEnd = (rule.endTime || '10:00').slice(0, 5);
+    const ruleDaysSet = new Set(rule.daysOfWeek || []);
+    
+    const matchedSlot = slots.find(slot => {
+      const slotStartStr = getLocalTimeStr(slot.startTime);
+      const slotEndStr = getLocalTimeStr(slot.endTime);
+      const slotWeekday = getLocalWeekday(slot.startTime);
+      return ruleDaysSet.has(slotWeekday) && slotStartStr === targetStart && slotEndStr === targetEnd;
+    });
+    
+    if (matchedSlot && matchedSlot.services && matchedSlot.services.length > 0) {
+      setEditRuleServiceId(matchedSlot.services[0].serviceId);
+    } else {
+      setEditRuleServiceId('');
+    }
   };
 
   const validateEditRuleForm = () => {
@@ -470,7 +511,7 @@ export const CourseManagement: React.FC = () => {
       await availabilityApi.updateRule(ruleToEdit.ruleId, payload);
 
       // Auto-assign course(s) selected in the edit rule modal
-      if (editRuleServiceIds.length > 0) {
+      if (editRuleServiceId) {
         try {
           const updatedSlots = await mentorsApi.getAvailabilitySlots(
             myUserId, 
@@ -492,7 +533,7 @@ export const CourseManagement: React.FC = () => {
           if (matchedSlots.length > 0) {
             await Promise.all(
               matchedSlots.map(slot => 
-                availabilityApi.replaceSlotServices(slot.slotId, editRuleServiceIds).catch(err => {
+                availabilityApi.replaceSlotServices(slot.slotId, [editRuleServiceId]).catch(err => {
                   console.error(`Failed to assign services to slot ${slot.slotId}:`, err);
                 })
               )
@@ -564,7 +605,7 @@ export const CourseManagement: React.FC = () => {
       await availabilityApi.createRule(payload);
 
       // Auto-assign course(s) selected in the repeating rule modal
-      if (ruleServiceIds.length > 0) {
+      if (ruleServiceId) {
         try {
           const updatedSlots = await mentorsApi.getAvailabilitySlots(
             myUserId, 
@@ -586,7 +627,7 @@ export const CourseManagement: React.FC = () => {
           if (matchedSlots.length > 0) {
             await Promise.all(
               matchedSlots.map(slot => 
-                availabilityApi.replaceSlotServices(slot.slotId, ruleServiceIds).catch(err => {
+                availabilityApi.replaceSlotServices(slot.slotId, [ruleServiceId]).catch(err => {
                   console.error(`Failed to assign services to slot ${slot.slotId}:`, err);
                 })
               )
@@ -603,7 +644,7 @@ export const CourseManagement: React.FC = () => {
       setRuleStartTime('09:00');
       setRuleEndTime('10:00');
       setRuleNoteField('');
-      setRuleServiceIds([]);
+      setRuleServiceId('');
       setRuleErrors({});
       await fetchRulesAndSlots();
     } catch (err: any) {
@@ -682,6 +723,16 @@ export const CourseManagement: React.FC = () => {
     if (!seenTitles.has(titleKey)) {
       seenTitles.add(titleKey);
       uniqueFilteredCourses.push(c);
+    }
+  }
+  // Keep only unique courses by clean title to prevent duplicate display in the dropdown
+  const uniqueCourses: MentorServiceItem[] = [];
+  const seenDropdownTitles = new Set<string>();
+  for (const c of courses) {
+    const titleKey = parseTitle(c.title).cleanTitle.trim().toLowerCase();
+    if (!seenDropdownTitles.has(titleKey)) {
+      seenDropdownTitles.add(titleKey);
+      uniqueCourses.push(c);
     }
   }
 
@@ -1453,47 +1504,30 @@ export const CourseManagement: React.FC = () => {
                 💡 Mentor có thể nhập bất cứ khung giờ dạy mong muốn nào (Ví dụ: 10:00 - 12:00, 14:00 - 16:00,...), miễn là nằm trong khoảng từ 09:00 sáng đến 21:00 tối.
               </div>
 
-              {/* Courses list checkbox group */}
+              {/* Courses select dropdown */}
               <div>
-                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">
                   Môn học áp dụng trong khung giờ này <span className="text-danger">*</span>
                 </label>
-                {courses.length === 0 ? (
+                {uniqueCourses.length === 0 ? (
                   <p className="text-meta text-fg-muted italic">Bạn chưa tạo lớp học nào. Hãy lưu lịch này sau khi đã tạo lớp học ở danh sách bên trái.</p>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto space-y-2 border border-line rounded-lg p-2.5 scrollbar-thin">
-                    {courses.map(srv => {
-                      const checked = editRuleServiceIds.includes(srv.serviceId);
+                  <select
+                    value={editRuleServiceId}
+                    onChange={(e) => setEditRuleServiceId(e.target.value)}
+                    required
+                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold cursor-pointer"
+                  >
+                    <option value="">-- Chọn môn học gán vào khung giờ --</option>
+                    {uniqueCourses.map(srv => {
                       const { subjectCode, cleanTitle } = parseTitle(srv.title);
                       return (
-                        <label 
-                          key={srv.serviceId}
-                          className={`flex items-center gap-2.5 p-2 rounded-md border cursor-pointer select-none transition-all ${
-                            checked 
-                              ? 'bg-primary-soft/30 border-primary text-fg font-bold' 
-                              : 'bg-surface border-line hover:bg-surface-muted/40 text-fg-muted font-bold'
-                          }`}
-                        >
-                          <input 
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => {
-                              setEditRuleServiceIds(prev => 
-                                prev.includes(srv.serviceId) 
-                                  ? prev.filter(id => id !== srv.serviceId) 
-                                  : [...prev, srv.serviceId]
-                              );
-                            }}
-                            className="w-4 h-4 rounded text-primary focus:ring-primary focus:ring-opacity-20 cursor-pointer shadow-xs"
-                          />
-                          <div className="text-left font-bold text-meta leading-tight">
-                            <span className="text-primary font-black uppercase mr-1">[{subjectCode}]</span>
-                            {cleanTitle}
-                          </div>
-                        </label>
+                        <option key={srv.serviceId} value={srv.serviceId}>
+                          [{subjectCode}] {cleanTitle}
+                        </option>
                       );
                     })}
-                  </div>
+                  </select>
                 )}
               </div>
 
@@ -1610,47 +1644,30 @@ export const CourseManagement: React.FC = () => {
                 💡 Mentor có thể nhập bất cứ khung giờ dạy mong muốn nào (Ví dụ: 10:00 - 12:00, 14:00 - 16:00,...), miễn là nằm trong khoảng từ 09:00 sáng đến 21:00 tối.
               </div>
 
-              {/* Courses list checkbox group */}
+              {/* Courses select dropdown */}
               <div>
-                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">
+                <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">
                   Môn học áp dụng trong khung giờ này <span className="text-danger">*</span>
                 </label>
-                {courses.length === 0 ? (
+                {uniqueCourses.length === 0 ? (
                   <p className="text-meta text-fg-muted italic">Bạn chưa tạo lớp học nào. Hãy lưu lịch này sau khi đã tạo lớp học ở danh sách bên trái.</p>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto space-y-2 border border-line rounded-lg p-2.5 scrollbar-thin">
-                    {courses.map(srv => {
-                      const checked = ruleServiceIds.includes(srv.serviceId);
+                  <select
+                    value={ruleServiceId}
+                    onChange={(e) => setRuleServiceId(e.target.value)}
+                    required
+                    className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold cursor-pointer"
+                  >
+                    <option value="">-- Chọn môn học gán vào khung giờ --</option>
+                    {uniqueCourses.map(srv => {
                       const { subjectCode, cleanTitle } = parseTitle(srv.title);
                       return (
-                        <label 
-                          key={srv.serviceId}
-                          className={`flex items-center gap-2.5 p-2 rounded-md border cursor-pointer select-none transition-all ${
-                            checked 
-                              ? 'bg-primary-soft/30 border-primary text-fg font-bold' 
-                              : 'bg-surface border-line hover:bg-surface-muted/40 text-fg-muted font-bold'
-                          }`}
-                        >
-                          <input 
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => {
-                              setRuleServiceIds(prev => 
-                                prev.includes(srv.serviceId) 
-                                  ? prev.filter(id => id !== srv.serviceId) 
-                                  : [...prev, srv.serviceId]
-                              );
-                            }}
-                            className="w-4 h-4 rounded text-primary focus:ring-primary focus:ring-opacity-20 cursor-pointer shadow-xs"
-                          />
-                          <div className="text-left font-bold text-meta leading-tight">
-                            <span className="text-primary font-black uppercase mr-1">[{subjectCode}]</span>
-                            {cleanTitle}
-                          </div>
-                        </label>
+                        <option key={srv.serviceId} value={srv.serviceId}>
+                          [{subjectCode}] {cleanTitle}
+                        </option>
                       );
                     })}
-                  </div>
+                  </select>
                 )}
               </div>
 
