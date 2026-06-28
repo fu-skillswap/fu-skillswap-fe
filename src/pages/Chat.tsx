@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Send, Search, ShieldAlert, Sparkles, Check, Clock, Loader2, MessagesSquare } from 'lucide-react';
 import { chatApi } from '../api/chat';
 import { chatSocket } from '../lib/chatSocket';
@@ -35,6 +36,8 @@ const fmtClock = (iso?: string) => {
 export const Chat: React.FC = () => {
   const { user } = useAuth();
   const myUserId = user?.publicId;
+  const [searchParams] = useSearchParams();
+  const convoIdParam = searchParams.get('conversationId') || searchParams.get('id');
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -96,10 +99,15 @@ export const Chat: React.FC = () => {
     }
   }, []);
 
-  // Tải inbox lần đầu.
+  // Tải inbox lần đầu hoặc khi convoIdParam thay đổi.
   useEffect(() => {
-    loadConversations(true);
-  }, [loadConversations]);
+    if (convoIdParam) {
+      setActiveId(convoIdParam);
+      loadConversations(false);
+    } else {
+      loadConversations(true);
+    }
+  }, [convoIdParam, loadConversations]);
 
   // Mở 1 hội thoại: chọn active + đánh dấu đã đọc (xoá badge unread cục bộ).
   const openConversation = useCallback((c: Conversation) => {
