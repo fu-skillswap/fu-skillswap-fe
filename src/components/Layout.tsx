@@ -36,6 +36,7 @@ export const Layout: React.FC = () => {
             {/* Right utilities */}
             <div className="flex items-center justify-end gap-5">
               <ThemeSwitcher />
+              <CreditWalletBadge variant="chip" />
               <Link to="/chat" title="Tin nhắn" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative">
                 <MessageSquare className="w-5 h-5" />
               </Link>
@@ -87,9 +88,10 @@ export const Layout: React.FC = () => {
           <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-field hover:bg-surface-muted text-fg-muted hover:text-fg">
             <Menu className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="SkillSwap Logo" className="w-8 h-8 object-contain" />
             <span className="text-title font-bold tracking-tight text-primary">SkillSwap</span>
+            <CreditWalletBadge variant="chip" />
           </div>
           <Link to="/chat" title="Tin nhắn" className="p-1.5 rounded-field text-fg-muted hover:text-fg relative">
             <MessageSquare className="w-6 h-6" />
