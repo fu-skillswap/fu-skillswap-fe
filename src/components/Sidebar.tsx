@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, type ActiveRole } from '../context/AuthContext';
 import {
-  UserCheck, X, Calendar, MessageSquare,
+  UserCheck, X,
   ListTodo, Bookmark, Send, Home, User, GraduationCap, BookOpen, Wallet
 } from 'lucide-react';
 

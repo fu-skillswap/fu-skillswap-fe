@@ -497,8 +497,8 @@ export const CourseManagement: React.FC = () => {
     return rules.filter(r => {
       const startRange = r.effectiveFrom;
       const endRange = r.effectiveTo;
-      const isWithinRange = dateStr >= startRange && dateStr <= endRange;
-      const isWeekdayMatch = r.daysOfWeek.includes(weekdayName);
+      const isWithinRange = dateStr >= startRange && (!endRange || dateStr <= endRange);
+      const isWeekdayMatch = !!(r.daysOfWeek && r.daysOfWeek.includes(weekdayName));
       return isWithinRange && isWeekdayMatch;
     });
   };
@@ -806,8 +806,8 @@ export const CourseManagement: React.FC = () => {
                                 return hours + minutes / 60;
                               };
 
-                              const startDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(rule.startTime)));
-                              const endDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(rule.endTime)));
+                              const startDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(rule.startTime || '')));
+                              const endDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(rule.endTime || '')));
                               
                               const top = (startDec - START_HOUR) * HOUR_HEIGHT;
                               const height = Math.max(25, (endDec - startDec) * HOUR_HEIGHT); // Min height 25px
