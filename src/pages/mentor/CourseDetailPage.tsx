@@ -191,6 +191,7 @@ export const CourseDetailPage: React.FC = () => {
     const payload = {
       title: fullTitle,
       description: fullDescription,
+      expectedOutcome: outcomes.length > 0 ? outcomes.join('\n') : description.trim(),
       durationMinutes: sessionDuration,
       isFree: isFree,
       priceScoin: isFree ? 0 : priceScoin,

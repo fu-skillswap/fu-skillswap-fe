@@ -127,7 +127,20 @@ export const Mentors: React.FC = () => {
     setActiveSlots([]);
     setBookingLoading(true);
     try {
-      const slots = await mentorsApi.getAvailabilitySlots(mentor.mentorUserId);
+      // Lấy cờ canRequestBooking (BE mới) song song với slots để gate sớm.
+      const [detail, slots] = await Promise.all([
+        mentorsApi.getDetail(mentor.mentorUserId).catch(() => null),
+        mentorsApi.getAvailabilitySlots(mentor.mentorUserId),
+      ]);
+      if (detail && detail.canRequestBooking === false) {
+        setActiveSlots([]);
+        setBookingError(
+          detail.hasActiveServices === false
+            ? 'Mentor này hiện chưa mở dịch vụ nào để đặt lịch.'
+            : 'Mentor này hiện chưa nhận yêu cầu đặt lịch. Vui lòng quay lại sau.',
+        );
+        return;
+      }
       setActiveSlots(slots);
       if (slots.length === 1) setSelectedSlotId(slots[0].slotId);
     } catch (err: any) {

@@ -281,6 +281,12 @@ export interface MentorDetail {
   githubUrl?: string;
   helpTopicTags: MentorTag[];
   services: MentorServiceItem[];
+  /** Cờ BE mới: mentee có thể gửi yêu cầu đặt lịch cho mentor này không. */
+  canRequestBooking?: boolean;
+  /** Mentor đã hoàn thiện đầy đủ hồ sơ chưa. */
+  hasCompletedProfile?: boolean;
+  /** Mentor có ít nhất 1 service đang active không. */
+  hasActiveServices?: boolean;
 }
 
 /** Đánh giá mentor — khớp MentorReviewResponse. */
@@ -514,6 +520,7 @@ export type NotificationType =
   | 'MEETING_LINK_UPDATED' | 'SESSION_COMPLETED' | 'FEEDBACK_RECEIVED'
   | 'BOOKING_RESCHEDULE_REQUESTED' | 'BOOKING_RESCHEDULE_ACCEPTED'
   | 'BOOKING_RESCHEDULE_REJECTED' | 'BOOKING_RESCHEDULE_EXPIRED'
+  | 'BOOKING_REQUEST_EXPIRED' | 'ACCOUNT_UNLOCKED'
   | 'FORUM_POST_COMMENTED' | 'FORUM_POST_HIDDEN' | 'FORUM_COMMENT_HIDDEN'
   | string;
 
@@ -525,6 +532,10 @@ export interface NotificationItem {
   message: string;
   relatedEntityType?: string;
   relatedEntityId?: string;
+  /** BE trả sẵn đường dẫn điều hướng (ưu tiên dùng thay cho suy luận ở FE). */
+  deepLink?: string;
+  /** Loại hành động FE nên hiển thị/thực hiện, vd VIEW_BOOKING. */
+  actionType?: string;
   read: boolean;
   readAt?: string;
   createdAt?: string;
@@ -550,6 +561,8 @@ export interface Conversation {
   otherUserAvatarUrl?: string;
   lastMessageContent?: string;
   lastMessageAt?: string;
+  /** Số tin chưa đọc của user hiện tại trong hội thoại này (BE mới). */
+  unreadCount?: number;
   createdAt?: string;
 }
 

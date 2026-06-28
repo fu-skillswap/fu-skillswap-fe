@@ -35,4 +35,16 @@ export const chatApi = {
   /** POST /api/me/conversations/{conversationId}/messages — gửi tin nhắn text. */
   sendMessage: (conversationId: string, content: string) =>
     http.post<ChatMessage>(`/api/me/conversations/${conversationId}/messages`, { content }),
+
+  /** GET /api/me/conversations/{conversationId} — chi tiết 1 hội thoại (BE mới). */
+  getConversation: (conversationId: string) =>
+    http.get<Conversation>(`/api/me/conversations/${conversationId}`),
+
+  /** GET /api/me/conversations/unread-count — tổng tin chưa đọc (BE mới). */
+  unreadCount: () =>
+    http.get<{ unreadCount: number }>('/api/me/conversations/unread-count', { params: { _t: Date.now() } }),
+
+  /** PATCH /api/me/conversations/{conversationId}/read — đánh dấu đã đọc (BE mới). */
+  markRead: (conversationId: string) =>
+    http.patch<void>(`/api/me/conversations/${conversationId}/read`),
 };
