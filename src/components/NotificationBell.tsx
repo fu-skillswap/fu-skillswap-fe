@@ -150,9 +150,13 @@ export const NotificationBell: React.FC = () => {
   const loadList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await notificationsApi.list({ size: 20 });
+      const [res, countRes] = await Promise.all([
+        notificationsApi.list({ size: 20 }),
+        notificationsApi.unreadCount(),
+      ]);
       const currentItems = res.content ?? [];
       setItems(currentItems);
+      setUnread(countRes?.unreadCount ?? currentItems.filter((n) => !n.read).length);
       // Đảm bảo đồng bộ hóa ID đã biết
       currentItems.forEach((n) => knownIdsRef.current.add(n.notificationId));
     } catch (e) {
