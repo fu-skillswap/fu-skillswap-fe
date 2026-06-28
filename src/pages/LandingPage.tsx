@@ -148,7 +148,7 @@ export const LandingPage: React.FC = () => {
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight">
               Kết nối, <span className="text-brand-secondary">Học hỏi</span>,<br />
-              <span className="text-brand-secondary">Phát triển</span>, Chia sẻ.
+              <span className="text-brand-secondary">Chia sẻ</span>, Phát triển.
             </h1>
 
             <p className="text-slate-200 text-body sm:text-body font-semibold max-w-xl leading-relaxed">
@@ -265,11 +265,11 @@ export const LandingPage: React.FC = () => {
           {/* Interactive Mockups / Match Visual Demo */}
           <div className="space-y-6">
             <div className="w-full bg-surface border border-line p-6 rounded-card shadow-[0_1px_3px_rgba(15,23,42,0.02)] relative space-y-5">
-              <div className="flex items-center justify-between border-b border-line-soft pb-3">
+              <div className="flex items-start sm:items-center justify-between gap-2 border-b border-line-soft pb-3">
                 <span className="text-body font-bold text-fg flex items-center gap-1.5">
-                  <Compass className="w-4 h-4 text-fg-muted animate-spin-slow" /> Mô phỏng gợi ý mentor phù hợp
+                  <Compass className="w-4 h-4 text-fg-muted animate-spin-slow shrink-0" /> Mô phỏng gợi ý mentor phù hợp
                 </span>
-                <span className="text-meta bg-green-50 text-green-700 font-extrabold border border-green-200 px-2 py-0.5 rounded-lg">
+                <span className="text-meta bg-green-50 text-green-700 font-extrabold border border-green-200 px-2 py-0.5 rounded-lg shrink-0 whitespace-nowrap">
                   98% Tương hợp
                 </span>
               </div>
