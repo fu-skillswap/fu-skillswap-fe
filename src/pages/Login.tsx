@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { useAuth, getPostLoginRedirect } from '../context/AuthContext';
-import { AlertCircle, Shield, User, HelpCircle, Terminal, Mail, Lock, EyeOff } from 'lucide-react';
+import { AlertCircle, Shield, User, HelpCircle, Terminal, Mail, Lock, EyeOff, ArrowLeft } from 'lucide-react';
 
 // Client ID dự án Google Cloud Console, cấu hình qua biến môi trường VITE_GOOGLE_CLIENT_ID.
 // Phải khớp với GOOGLE_CLIENT_ID đang cấu hình trên BE (dùng để verify audience của idToken).
@@ -147,6 +147,13 @@ export const Login: React.FC = () => {
       {/* ===== RIGHT: form đăng nhập ===== */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 bg-app">
         <div className="w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-card shadow-card p-8 sm:p-9">
+
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-1.5 text-meta font-bold text-brand-text-muted hover:text-brand-text mb-5 -ml-1 px-2 py-1 rounded-field hover:bg-surface-container-low transition-all cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" /> Về trang chủ
+          </button>
 
           <h1 className="text-2xl font-extrabold tracking-tight text-brand-text">Đăng nhập</h1>
           <p className="text-brand-text-muted text-body font-medium mt-1 mb-6">

@@ -55,7 +55,7 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-surface-muted text-brand-text font-sans selection:bg-brand-primary selection:text-white">
-      
+
       {/* Public Header */}
       <header className="sticky top-0 z-40 w-full bg-surface/90 backdrop-blur-md border-b border-line transition-all">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -139,18 +139,18 @@ export const LandingPage: React.FC = () => {
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.4px)', backgroundSize: '22px 22px' }}></div>
         <div className="absolute inset-0 bg-gradient-to-r from-[#051138]/90 via-[#051138]/40 to-transparent pointer-events-none"></div>
 
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content Left */}
-          <div className="max-w-2xl space-y-6">
+          <div className="space-y-6">
             <span className="inline-flex items-center gap-1.5 bg-brand-primary text-white text-meta font-extrabold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md shadow-brand-primary/25 animate-pulse">
-              <Sparkles className="w-3.5 h-3.5" /> Cộng đồng trao đổi kỹ năng học thuật
+              <Sparkles className="w-3.5 h-3.5" /> Kết nối hôm nay, vững bước ngày mai
             </span>
-            
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight">
-              Kiến thức của bạn,<br />
-              <span className="text-brand-secondary">Kỹ năng</span> của bạn học
+              Kết nối, <span className="text-brand-secondary">Trao đổi</span>,<br />
+              <span className="text-brand-secondary">Học tập</span>, Chia sẻ.
             </h1>
-            
+
             <p className="text-slate-200 text-body sm:text-body font-semibold max-w-xl leading-relaxed">
               SkillSwap là nền tảng trao đổi kỹ năng chéo học thuật dành cho sinh viên đại học.
               Bạn chia sẻ thế mạnh lập trình, đổi lấy sự trợ giúp về thiết kế UI/UX hay ngoại ngữ từ bạn cùng trường.
@@ -172,6 +172,11 @@ export const LandingPage: React.FC = () => {
               </a>
             </div>
           </div>
+
+          {/* Hero illustration (tranh vẽ) */}
+          <div className="hidden lg:flex justify-center items-center">
+            <img src="/illustration-hero.svg" alt="Cộng đồng trao đổi kỹ năng" className="w-full max-w-lg drop-shadow-2xl animate-fadeIn" />
+          </div>
         </div>
       </section>
 
@@ -179,7 +184,7 @@ export const LandingPage: React.FC = () => {
       <section id="stats" className="py-12 bg-surface border-b border-line-soft">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            
+
             <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
               <span className="text-3xl font-bold text-fg block">1,200+</span>
               <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Giờ học trao đổi</span>
@@ -207,7 +212,7 @@ export const LandingPage: React.FC = () => {
       {/* About Platform Mechanism */}
       <section id="about" className="py-20 bg-surface-muted/50 text-left">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          
+
           <div className="space-y-6">
             <span className="inline-block text-meta font-extrabold text-fg bg-surface-muted border border-line py-1 px-3.5 rounded-full uppercase tracking-wider">
               Cơ chế vận hành
@@ -324,7 +329,7 @@ export const LandingPage: React.FC = () => {
       {/* Main Core Features Grid */}
       <section id="features" className="py-20 bg-surface border-t border-line-soft text-left">
         <div className="max-w-7xl mx-auto px-6 space-y-12">
-          
+
           <div className="text-center space-y-3 max-w-xl mx-auto">
             <span className="inline-block text-meta font-extrabold text-fg-muted bg-surface-muted border border-line py-1 px-3.5 rounded-full uppercase tracking-wider">
               Môi trường phân quyền
@@ -336,7 +341,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 max-w-3xl mx-auto">
-            
+
             {/* Mentee card */}
             <div className="p-6 bg-surface border border-line rounded-card hover:border-brand-secondary hover:shadow-xs transition-all space-y-4">
               <div className="w-9 h-9 rounded-full bg-surface-muted text-brand-primary flex items-center justify-center font-bold">
@@ -372,7 +377,7 @@ export const LandingPage: React.FC = () => {
       {/* Top Mentors spotlight */}
       <section id="mentors" className="py-20 bg-surface-muted text-left">
         <div className="max-w-7xl mx-auto px-6 space-y-12">
-          
+
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div className="space-y-2">
               <span className="inline-block text-meta font-extrabold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 py-1 px-3.5 rounded-full uppercase tracking-wider">
@@ -383,7 +388,7 @@ export const LandingPage: React.FC = () => {
                 Các sinh viên khóa trên đạt kết quả GPA cao và có nhiều kinh nghiệm dự án thực tế.
               </p>
             </div>
-            
+
             <Link
               to="/login"
               className="text-body font-bold text-brand-primary hover:text-brand-primary-hover hover:underline inline-flex items-center gap-1 shrink-0"
@@ -434,7 +439,7 @@ export const LandingPage: React.FC = () => {
                   <span className="text-meta text-green-600 flex items-center gap-1 font-bold">
                     <Smile className="w-4 h-4 shrink-0" /> Sẵn sàng trao đổi
                   </span>
-                  
+
                   <Link
                     to="/login"
                     className="text-brand-primary hover:text-brand-primary-hover inline-flex items-center gap-1 cursor-pointer"
@@ -452,7 +457,7 @@ export const LandingPage: React.FC = () => {
       {/* CTA Bottom Section */}
       <section className="py-20 bg-gradient-to-br from-brand-primary to-[#051138] text-white text-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"></div>
-        
+
         <div className="max-w-4xl mx-auto px-6 space-y-6 relative">
           <h2 className="text-3xl font-bold tracking-tight leading-tight">
             Nâng cao năng lực học tập và kết nối hôm nay!
@@ -475,7 +480,7 @@ export const LandingPage: React.FC = () => {
       {/* Public Footer */}
       <footer className="bg-[#051138] text-fg-faint py-12 text-left text-body">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
-          
+
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
               <img src="/logo.svg" alt="SkillSwap Logo" className="w-10 h-10 object-contain brightness-0 invert" />

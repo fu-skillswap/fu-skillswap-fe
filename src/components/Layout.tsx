@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { ThemeSwitcher } from './ThemeSwitcher';
-import { Menu, MessageSquare, Search, User, LogOut, Settings } from 'lucide-react';
+import { Menu, MessageSquare, User, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from './NotificationBell';
 import { CreditWalletBadge } from './CreditWalletBadge';
@@ -10,11 +10,8 @@ import { CreditWalletBadge } from './CreditWalletBadge';
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,16 +24,6 @@ export const Layout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    if (location.pathname.startsWith('/forum')) {
-      navigate(`/forum?q=${encodeURIComponent(searchQuery)}`);
-    } else {
-      navigate(`/mentors?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-app text-fg font-sans">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -44,21 +31,9 @@ export const Layout: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full">
         {/* Desktop / tablet header */}
         <header className="hidden md:flex items-center bg-transparent h-18 px-6 lg:px-8 shrink-0">
-          <div className="max-w-7xl mx-auto w-full flex lg:grid lg:grid-cols-3 gap-6 items-center">
-            {/* Search aligns with the feed (center) column */}
-            <form onSubmit={handleSearchSubmit} className="relative flex-1 lg:col-span-2 text-left">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-faint" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={location.pathname.startsWith('/forum') ? 'Tìm kiếm chủ đề thảo luận...' : 'Tìm kiếm kỹ năng, mentor...'}
-                className="w-full bg-surface border border-line focus:border-primary/40 rounded-pill py-3 pl-12 pr-5 text-body font-semibold text-fg focus:outline-none transition-all placeholder-fg-faint shadow-card"
-              />
-            </form>
-
-            {/* Right utilities sits over the widgets column */}
-            <div className="flex items-center justify-end gap-5 lg:col-span-1">
+          <div className="max-w-7xl mx-auto w-full flex justify-end items-center">
+            {/* Right utilities */}
+            <div className="flex items-center justify-end gap-5">
               <ThemeSwitcher />
               <Link to="/chat" title="Tin nhắn" className="p-2.5 bg-surface border border-line text-fg-muted hover:text-fg rounded-full transition-all relative">
                 <MessageSquare className="w-5 h-5" />
