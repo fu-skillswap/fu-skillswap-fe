@@ -6,6 +6,7 @@ import { Menu, MessageSquare, User, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from './NotificationBell';
 import { CreditWalletBadge } from './CreditWalletBadge';
+import { MobileTabBar } from './MobileTabBar';
 
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -90,15 +91,19 @@ export const Layout: React.FC = () => {
             <img src="/logo.svg" alt="SkillSwap Logo" className="w-8 h-8 object-contain" />
             <span className="text-title font-bold tracking-tight text-primary">SkillSwap</span>
           </div>
-          {user && <img src={user.avatarUrl} alt={user.fullName} className="w-8 h-8 rounded-full object-cover border border-line" />}
+          <Link to="/chat" title="Tin nhắn" className="p-1.5 rounded-field text-fg-muted hover:text-fg relative">
+            <MessageSquare className="w-6 h-6" />
+          </Link>
         </header>
 
         {/* Body */}
-        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-6 md:py-7 lg:px-8 focus:outline-none">
+        <main className="flex-1 overflow-y-auto px-4 pt-6 pb-28 md:px-6 md:py-7 lg:px-8 focus:outline-none">
           <div className="max-w-7xl mx-auto w-full">
             <Outlet />
           </div>
         </main>
+
+        <MobileTabBar />
       </div>
     </div>
   );
