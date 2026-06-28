@@ -101,6 +101,15 @@ export const Chat: React.FC = () => {
     loadConversations(true);
   }, [loadConversations]);
 
+  // Mở 1 hội thoại: chọn active + đánh dấu đã đọc (xoá badge unread cục bộ).
+  const openConversation = useCallback((c: Conversation) => {
+    setActiveId(c.id);
+    if ((c.unreadCount ?? 0) > 0) {
+      setConversations((prev) => prev.map((x) => (x.id === c.id ? { ...x, unreadCount: 0 } : x)));
+      chatApi.markRead(c.id).catch(() => {});
+    }
+  }, []);
+
   // Đổi thread -> tải tin nhắn của thread đó.
   useEffect(() => {
     if (!activeId) {
@@ -269,7 +278,7 @@ export const Chat: React.FC = () => {
               return (
                 <button
                   key={c.id}
-                  onClick={() => setActiveId(c.id)}
+                  onClick={() => openConversation(c)}
                   className={`w-full p-4 flex gap-3 text-left transition-colors cursor-pointer ${
                     isActive
                       ? 'bg-brand-primary/10 border-l-4 border-brand-primary shadow-xs'
@@ -290,9 +299,16 @@ export const Chat: React.FC = () => {
                         {fmtTime(c.lastMessageAt)}
                       </span>
                     </div>
-                    <p className="text-meta truncate leading-tight font-medium text-brand-text-muted">
-                      {c.lastMessageContent || 'Bắt đầu cuộc trò chuyện...'}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`text-meta truncate leading-tight ${(c.unreadCount ?? 0) > 0 ? 'font-bold text-brand-text' : 'font-medium text-brand-text-muted'}`}>
+                        {c.lastMessageContent || 'Bắt đầu cuộc trò chuyện...'}
+                      </p>
+                      {(c.unreadCount ?? 0) > 0 && (
+                        <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-brand-primary text-white text-meta font-extrabold flex items-center justify-center">
+                          {c.unreadCount! > 99 ? '99+' : c.unreadCount}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </button>
               );

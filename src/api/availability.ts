@@ -25,3 +25,19 @@ export const availabilityApi = {
   updateRule: (ruleId: string, payload: AvailabilityRulePayload) =>
     http.put<AvailabilityRule>(`/api/me/availability-rules/${ruleId}`, payload),
 };
+
+export const availabilityRulesApi = {
+  /** GET /api/me/availability-rules — danh sách rule lịch rảnh của mentor. */
+  list: () => http.get<AvailabilityRule[]>('/api/me/availability-rules'),
+
+  /** POST /api/me/availability-rules — tạo rule (BE tự sinh slot từ rule). */
+  create: (payload: AvailabilityRulePayload) =>
+    http.post<AvailabilityRule>('/api/me/availability-rules', payload),
+
+  /** PUT /api/me/availability-rules/{ruleId} — cập nhật rule. */
+  update: (ruleId: string, payload: AvailabilityRulePayload) =>
+    http.put<AvailabilityRule>(`/api/me/availability-rules/${ruleId}`, payload),
+
+  /** DELETE /api/me/availability-rules/{ruleId} — xoá rule. */
+  remove: (ruleId: string) => http.del<void>(`/api/me/availability-rules/${ruleId}`),
+};

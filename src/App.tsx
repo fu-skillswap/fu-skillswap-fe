@@ -20,6 +20,7 @@ import AdminMentorVerificationQueuePage from './pages/admin/mentor-verification/
 import AdminMentorVerificationDetailPage from './pages/admin/mentor-verification/[requestId]/page';
 
 // Mentor Pages
+import { AvailabilitySlots } from './pages/mentor/AvailabilitySlots';
 import { CourseManagement } from './pages/mentor/CourseManagement';
 import { CourseDetailPage } from './pages/mentor/CourseDetailPage';
 import { MentorPayout } from './pages/mentor/MentorPayout';
@@ -30,8 +31,7 @@ import { PaymentReturn } from './pages/PaymentReturn';
 // Lịch của tôi (hợp nhất mentor + mentee)
 import { MyBookings } from './pages/MyBookings';
 
-// Forum & Chat Pages
-import { Forum } from './pages/Forum';
+// Chat Page (Diễn đàn đã gộp vào Trang chủ — Dashboard)
 import { Chat } from './pages/Chat';
 import { Settings } from './pages/Settings';
 
@@ -68,7 +68,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
 
             {/* Mentor Workspaces */}
-            <Route path="/mentor/slots" element={<Navigate to="/mentor/courses" replace />} />
+            <Route path="/mentor/slots" element={<AvailabilitySlots />} />
             <Route path="/mentor/courses" element={<CourseManagement />} />
             <Route path="/mentor/courses/:serviceId" element={<CourseDetailPage />} />
             <Route path="/mentor/payout" element={<MentorPayout />} />
@@ -85,8 +85,8 @@ function App() {
             <Route path="/mentor/bookings" element={<Navigate to="/bookings" replace />} />
             <Route path="/mentee/bookings" element={<Navigate to="/bookings" replace />} />
 
-            {/* Forum & Chat */}
-            <Route path="/forum" element={<Forum />} />
+            {/* Diễn đàn đã gộp vào Trang chủ; giữ /forum để deep-link ?post= từ notification vẫn chạy */}
+            <Route path="/forum" element={<Dashboard />} />
             <Route path="/chat" element={<Chat />} />
           </Route>
 

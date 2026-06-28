@@ -7,7 +7,8 @@ import type { MentorServiceItem } from './types';
 export interface MentorServicePayload {
   title: string;
   description: string;
-  expectedOutcome?: string;
+  /** Kết quả kỳ vọng — BE bắt buộc (@NotBlank), gửi riêng ngoài description. */
+  expectedOutcome: string;
   durationMinutes: number;
   isFree: boolean;
   free?: boolean;

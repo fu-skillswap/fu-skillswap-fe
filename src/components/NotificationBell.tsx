@@ -25,13 +25,24 @@ const timeAgo = (iso?: string) => {
 
 /** Suy ra đường dẫn deep-link từ loại thông báo / entity liên quan. */
 const linkFor = (n: NotificationItem): string | null => {
+  // Ưu tiên deepLink BE trả, nhưng chuẩn hoá về route FE thực có
+  // (FE chưa có /bookings/:id nên gộp về /bookings).
+  const dl = n.deepLink?.trim();
+  if (dl) {
+    if (dl.startsWith('/bookings')) return '/bookings';
+    if (dl.startsWith('/forum') || dl.startsWith('/profile') || dl.startsWith('/chat')
+        || dl.startsWith('/mentors') || dl.startsWith('/dashboard') || dl.startsWith('/admin')) {
+      return dl;
+    }
+    // Path lạ -> rơi xuống heuristic bên dưới.
+  }
   if (n.relatedEntityType === 'BOOKING') return '/bookings';
-  // Forum: mở thẳng bài viết liên quan nếu có postId.
+  // Forum: mở thẳng bài viết liên quan nếu có postId (/forum render Dashboard đã gộp).
   if (n.relatedEntityType === 'FORUM_POST' && n.relatedEntityId) return `/forum?post=${n.relatedEntityId}`;
   if (n.type?.startsWith('FORUM')) return '/forum';
-  if (n.type?.startsWith('MENTOR_VERIFICATION')) return '/profile';
+  if (n.type?.startsWith('MENTOR_VERIFICATION') || n.type === 'ACCOUNT_UNLOCKED') return '/profile';
   if (n.type === 'FEEDBACK_RECEIVED' || n.type === 'SESSION_COMPLETED') return '/bookings';
-  // Bao gồm cả BOOKING_RESCHEDULE_* (type bắt đầu bằng BOOKING).
+  // Bao gồm cả BOOKING_RESCHEDULE_* / BOOKING_REQUEST_EXPIRED (type bắt đầu bằng BOOKING).
   if (n.type?.startsWith('BOOKING')) return '/bookings';
   return null;
 };

@@ -2,8 +2,8 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, type ActiveRole } from '../context/AuthContext';
 import {
-  UserCheck, X,
-  ListTodo, Bookmark, MessageSquare, Send, Home, User, GraduationCap, BookOpen, Wallet
+  UserCheck, X, Calendar, MessageSquare,
+  ListTodo, Bookmark, Send, Home, User, GraduationCap, BookOpen, Wallet
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,7 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const mentorLinks = [
     { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
-    { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
     { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
     { path: '/bookings', label: 'Lịch của tôi', icon: <ListTodo className="w-5 h-5" /> },
     { path: '/mentor/courses', label: 'Quản lý lớp học', icon: <BookOpen className="w-5 h-5" /> },
@@ -42,7 +41,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const menteeLinks = [
     { path: '/dashboard', label: 'Trang chủ', icon: <Home className="w-5 h-5" /> },
     { path: '/mentors', label: 'Khám phá Mentor', icon: <UserCheck className="w-5 h-5" /> },
-    { path: '/forum', label: 'Diễn đàn học tập', icon: <MessageSquare className="w-5 h-5" /> },
     { path: '/chat', label: 'Trò chuyện', icon: <Send className="w-5 h-5" /> },
     { path: '/bookings', label: 'Lịch của tôi', icon: <Bookmark className="w-5 h-5" /> },
     { path: '/profile', label: 'Hồ sơ cá nhân', icon: <User className="w-5 h-5" /> },
