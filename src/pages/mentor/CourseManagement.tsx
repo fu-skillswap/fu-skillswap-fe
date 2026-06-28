@@ -322,7 +322,7 @@ export const CourseManagement: React.FC = () => {
         const endRange = new Date(startOfWeek);
         endRange.setDate(startOfWeek.getDate() + 30); // Active for 30 days
 
-        const formatTime = (t: string) => t.length === 5 ? `${t}:00` : t;
+        const formatTime = (t: string) => t.slice(0, 5);
         
         const rulePayload = {
           ruleType: 'OPEN' as const,
@@ -449,7 +449,7 @@ export const CourseManagement: React.FC = () => {
 
     setLoadingRules(true);
     try {
-      const formatTime = (t: string) => t.length === 5 ? `${t}:00` : t;
+      const formatTime = (t: string) => t.slice(0, 5);
 
       const payload = {
         ruleType: ruleToEdit.ruleType,
