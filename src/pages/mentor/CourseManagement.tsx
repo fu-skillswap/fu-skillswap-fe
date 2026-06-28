@@ -1053,8 +1053,8 @@ export const CourseManagement: React.FC = () => {
                       2. Cấu hình lịch rảnh khả dụng
                     </h4>
                     
-                    <p className="text-[11px] text-fg-muted font-medium">
-                      Tích chọn các thứ trong tuần mà bạn rảnh. Hệ thống sẽ tự động tạo các slot thời gian tương ứng từ hôm nay đến 2 tuần tiếp theo.
+                    <p className="text-[11px] text-fg-muted font-medium leading-relaxed">
+                      Tích chọn các thứ và <strong className="text-primary font-extrabold">nhập khung giờ bất kỳ bạn rảnh</strong> trong khoảng từ 09:00 đến 21:00 (Ví dụ: 11:00 - 13:00). Hệ thống sẽ tự động sinh các slot tương ứng từ hôm nay đến 2 tuần tiếp theo.
                     </p>
 
                     <div className="space-y-4">
@@ -1085,7 +1085,7 @@ export const CourseManagement: React.FC = () => {
                       {/* Time selection group */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (09:00 - 21:00) <span className="text-danger">*</span></label>
+                          <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu rảnh (từ 09:00) <span className="text-danger">*</span></label>
                           <input
                             type="time"
                             min="09:00"
@@ -1100,7 +1100,7 @@ export const CourseManagement: React.FC = () => {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (09:00 - 21:00) <span className="text-danger">*</span></label>
+                          <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc rảnh (đến 21:00) <span className="text-danger">*</span></label>
                           <input
                             type="time"
                             min="09:00"
@@ -1113,6 +1113,10 @@ export const CourseManagement: React.FC = () => {
                           />
                           {errors.endTime && <p className="text-meta text-danger font-semibold mt-1">{errors.endTime}</p>}
                         </div>
+                      </div>
+
+                      <div className="text-[10px] text-primary bg-primary-soft/50 border border-primary/20 rounded-field p-2.5 font-bold leading-normal">
+                        💡 Mentor có thể nhập bất cứ khung giờ dạy mong muốn nào (Ví dụ: 10:00 - 12:00, 14:00 - 16:00,...), miễn là nằm trong khoảng từ 09:00 sáng đến 21:00 tối.
                       </div>
 
                       <div>
@@ -1283,7 +1287,7 @@ export const CourseManagement: React.FC = () => {
               {/* Time selection group */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh bắt đầu (09:00 - 21:00) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu rảnh (từ 09:00) <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
@@ -1299,7 +1303,7 @@ export const CourseManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ rảnh kết thúc (09:00 - 21:00) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc rảnh (đến 21:00) <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
@@ -1313,6 +1317,10 @@ export const CourseManagement: React.FC = () => {
                   />
                   {editRuleErrors.endTime && <p className="text-meta text-danger font-semibold mt-1">{editRuleErrors.endTime}</p>}
                 </div>
+              </div>
+
+              <div className="text-[10px] text-primary bg-primary-soft/50 border border-primary/20 rounded-field p-2.5 font-bold leading-normal text-left">
+                💡 Mentor có thể nhập bất cứ khung giờ dạy mong muốn nào (Ví dụ: 10:00 - 12:00, 14:00 - 16:00,...), miễn là nằm trong khoảng từ 09:00 sáng đến 21:00 tối.
               </div>
 
               <div>
