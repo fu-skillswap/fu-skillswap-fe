@@ -173,6 +173,33 @@ export const Mentors: React.FC = () => {
     return matchesSpecialization && matchesStatus;
   });
 
+  const fetchSlots = async (mentorUserId: string, offset: number) => {
+    setBookingLoading(true);
+    try {
+      const weekDays = getWeekDays(offset);
+      const fromDate = formatDateISO(weekDays[0]);
+      const toDate = formatDateISO(weekDays[6]);
+      const slots = await mentorsApi.getAvailabilitySlots(mentorUserId, fromDate, toDate);
+      setActiveSlots(slots);
+      if (slots.length === 1) setSelectedSlotId(slots[0].slotId);
+    } catch (err: any) {
+      console.error('Lỗi tải slots:', err);
+      setBookingError('Không tải được thông tin lịch rảnh của mentor.');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const handleSwitchWeek = async (offset: number) => {
+    if (!activeMentor) return;
+    setBookingWeekOffset(offset);
+    setSelectedSlotId('');
+    setSelectedServiceId('');
+    setSelectedCandidateKey('');
+    setCandidates([]);
+    await fetchSlots(activeMentor.mentorUserId, offset);
+  };
+
   const handleOpenBooking = async (mentor: MentorVM) => {
     setActiveMentor(mentor);
     setShowBookingModal(true);
@@ -189,10 +216,7 @@ export const Mentors: React.FC = () => {
     setBookingWeekOffset(0);
     try {
       // Lấy cờ canRequestBooking (BE mới) song song với slots để gate sớm.
-      const [detail, slots] = await Promise.all([
-        mentorsApi.getDetail(mentor.mentorUserId).catch(() => null),
-        mentorsApi.getAvailabilitySlots(mentor.mentorUserId),
-      ]);
+      const detail = await mentorsApi.getDetail(mentor.mentorUserId).catch(() => null);
       if (detail && detail.canRequestBooking === false) {
         setActiveSlots([]);
         setBookingError(
@@ -202,8 +226,7 @@ export const Mentors: React.FC = () => {
         );
         return;
       }
-      setActiveSlots(slots);
-      if (slots.length === 1) setSelectedSlotId(slots[0].slotId);
+      await fetchSlots(mentor.mentorUserId, 0);
     } catch (err: any) {
       setBookingError(err?.response?.data?.message || 'Không tải được thông tin đặt lịch của mentor.');
     } finally {
@@ -681,14 +704,14 @@ export const Mentors: React.FC = () => {
                       <div className="flex bg-brand-bg border border-brand-border p-0.5 rounded-field gap-0.5 shrink-0">
                         <button
                           type="button"
-                          onClick={() => setBookingWeekOffset(0)}
+                          onClick={() => handleSwitchWeek(0)}
                           className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${bookingWeekOffset === 0 ? 'bg-surface text-brand-text shadow-xs border border-brand-border' : 'text-brand-text-muted hover:text-brand-text'}`}
                         >
                           Tuần này
                         </button>
                         <button
                           type="button"
-                          onClick={() => setBookingWeekOffset(1)}
+                          onClick={() => handleSwitchWeek(1)}
                           className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${bookingWeekOffset === 1 ? 'bg-surface text-brand-text shadow-xs border border-brand-border' : 'text-brand-text-muted hover:text-brand-text'}`}
                         >
                           Tuần sau
