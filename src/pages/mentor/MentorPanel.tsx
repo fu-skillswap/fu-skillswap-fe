@@ -119,7 +119,7 @@ const RequirementRow: React.FC<{ met: boolean; label: string; hint: string; opti
       {met ? <Check className="w-3.5 h-3.5" /> : optional ? <Plus className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3 h-3" />}
     </span>
     <div>
-      <p className="text-body font-bold text-fg leading-snug">{label}{optional && <span className="text-fg-faint font-semibold"> · tuỳ chọn</span>}</p>
+      <p className="text-body font-bold text-fg leading-snug">{label}</p>
       <p className="text-meta text-fg-muted font-medium mt-0.5">{hint}</p>
     </div>
   </div>
@@ -155,23 +155,27 @@ const WizardSteps: React.FC<{ step: 1 | 2 | 3 }> = ({ step }) => {
     { n: 3, label: 'Nộp hồ sơ' },
   ];
   return (
-    <div className="meetmind-card p-5 rounded-card">
+    <div className="meetmind-card p-4 sm:p-5 rounded-card">
       <div className="flex items-center">
         {items.map((it, i) => {
           const done = it.n < step, active = it.n === step;
           return (
             <React.Fragment key={it.n}>
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className={`w-8 h-8 rounded-full flex items-center justify-center text-meta font-extrabold shrink-0 ${done ? 'bg-primary text-on-action' : active ? 'bg-primary-soft text-primary ring-2 ring-primary/30' : 'bg-surface-muted text-fg-faint'}`}>
                   {done ? <Check className="w-4 h-4" /> : it.n}
                 </span>
-                <span className={`text-body font-bold truncate ${active || done ? 'text-fg' : 'text-fg-faint'}`}>{it.label}</span>
+                <span className={`text-body font-bold hidden sm:block truncate ${active || done ? 'text-fg' : 'text-fg-faint'}`}>{it.label}</span>
               </div>
-              {i < items.length - 1 && <div className={`flex-1 h-0.5 mx-3 rounded ${it.n < step ? 'bg-primary' : 'bg-surface-muted'}`} />}
+              {i < items.length - 1 && <div className={`flex-1 h-0.5 mx-2 sm:mx-3 rounded ${it.n < step ? 'bg-primary' : 'bg-surface-muted'}`} />}
             </React.Fragment>
           );
         })}
       </div>
+      {/* Label bước hiện tại — chỉ hiện trên mobile */}
+      <p className="sm:hidden text-meta font-bold text-primary mt-2 text-center">
+        Bước {step}: {items[step - 1].label}
+      </p>
     </div>
   );
 };

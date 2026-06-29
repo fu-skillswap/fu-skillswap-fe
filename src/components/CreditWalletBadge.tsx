@@ -9,8 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { walletApi } from '../api/payment';
 
 interface Props {
-  /** 'card' cho khối nổi bật (trang hồ sơ), 'row' cho dòng gọn (dropdown tài khoản). */
-  variant?: 'card' | 'row';
+  /** 'card' cho khối nổi bật (trang hồ sơ), 'row' cho dòng gọn (dropdown tài khoản), 'chip' cho header. */
+  variant?: 'card' | 'row' | 'chip';
 }
 
 export const CreditWalletBadge: React.FC<Props> = ({ variant = 'card' }) => {
@@ -29,6 +29,16 @@ export const CreditWalletBadge: React.FC<Props> = ({ variant = 'card' }) => {
 
   if (!isMentee || scoin == null) return null;
   const formatted = scoin.toLocaleString('vi-VN');
+
+  if (variant === 'chip') {
+    return (
+      <div className="flex items-center gap-1.5 bg-surface border border-line rounded-full px-3 py-1.5 text-meta font-bold text-fg-muted hover:text-fg transition-colors">
+        <Coins className="w-4 h-4 text-brand-terracotta shrink-0" />
+        <span className="font-extrabold text-fg">{formatted}</span>
+        <span className="hidden sm:inline text-fg-faint">SCoin</span>
+      </div>
+    );
+  }
 
   if (variant === 'row') {
     return (

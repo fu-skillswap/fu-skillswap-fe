@@ -358,7 +358,8 @@ export interface MentorSearchParams {
 
 // ---------- Bookings (luồng mới: candidates + lifecycle 2 phía) ----------
 export type BookingStatus =
-  | 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED'
+  | 'PENDING' | 'ACCEPTED' | 'ACCEPTED_AWAITING_PAYMENT' | 'PAYMENT_EXPIRED'
+  | 'REJECTED' | 'EXPIRED'
   | 'CANCELLED_BY_MENTEE' | 'CANCELLED_BY_MENTOR'
   | 'AWAITING_MENTOR_COMPLETION' | 'AWAITING_MENTEE_CONFIRMATION'
   | 'COMPLETED' | 'AUTO_CLOSED' | 'UNDER_REVIEW' | 'NO_SHOW';

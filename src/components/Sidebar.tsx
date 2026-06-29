@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       )}
 
       <aside
-        className="fixed inset-y-0 left-0 z-50 w-[260px] bg-surface md:bg-transparent flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen shrink-0 text-left"
+        className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-surface md:bg-transparent flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen shrink-0 text-left ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         <div className="flex flex-col flex-1 min-h-0">
           {/* Logo */}
