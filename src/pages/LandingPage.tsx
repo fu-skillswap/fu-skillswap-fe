@@ -173,12 +173,12 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Hero illustration */}
-          <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-[55%] pointer-events-none">
+          <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-[60%] pointer-events-none overflow-hidden">
             <img
               src="/hero-illustration.png"
               alt="SkillSwap mascot"
-              className="w-full h-full object-cover object-left animate-fadeIn"
-              style={{ maskImage: 'linear-gradient(to right, transparent 0%, black 30%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 30%)' }}
+              className="w-full h-full object-cover object-right animate-fadeIn"
+              style={{ maskImage: 'linear-gradient(to right, transparent 0%, black 48%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 48%)' }}
             />
           </div>
         </div>
