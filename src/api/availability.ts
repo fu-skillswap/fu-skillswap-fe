@@ -21,10 +21,9 @@ export const availabilityApi = {
     return { slotId, startTime: payload.startTime, endTime: payload.endTime, active: true, note: payload.note, services: [] };
   },
 
-  /** TODO: Nối API DELETE /api/me/availability-slots/{slotId} để xóa/hủy slot rảnh của mentor */
-  deleteSlot: async (slotId: string): Promise<void> => {
-    console.log('Mock DELETE /api/me/availability-slots/' + slotId);
-  },
+  /** DELETE /api/me/availability-slots/{slotId} để xóa/hủy slot rảnh của mentor */
+  deleteSlot: (slotId: string) =>
+    http.del<void>(`/api/me/availability-slots/${slotId}`),
 
   /** GET /api/me/availability-rules — lấy danh sách luật rảnh */
   listRules: () =>

@@ -178,6 +178,7 @@ export const CourseManagement: React.FC = () => {
   // Confirmation Delete Modals
   const [courseToDelete, setCourseToDelete] = useState<MentorServiceItem | null>(null);
   const [courseToHide, setCourseToHide] = useState<MentorServiceItem | null>(null);
+  const [slotToDelete, setSlotToDelete] = useState<MentorAvailabilitySlot | null>(null);
 
   const triggerToast = (message: string, type: 'success' | 'danger') => {
     window.dispatchEvent(new CustomEvent('push-toast', {
@@ -466,12 +467,17 @@ export const CourseManagement: React.FC = () => {
 
   const handleRemoveSlot = async () => {
     if (!slotToAssign) return;
-    if (!window.confirm('Bạn có chắc chắn muốn xóa khung giờ dạy này? Các yêu cầu đặt lịch đang chờ duyệt (PENDING) sẽ tự động bị hủy.')) return;
+    setSlotToDelete(slotToAssign);
+    setSlotToAssign(null);
+  };
+
+  const handleDeleteSlotConfirm = async () => {
+    if (!slotToDelete) return;
     setSavingSlotServices(true);
     try {
-      await availabilityApi.deleteSlot(slotToAssign.slotId);
+      await availabilityApi.deleteSlot(slotToDelete.slotId);
       triggerToast('Đã xóa khung giờ dạy thành công.', 'success');
-      setSlotToAssign(null);
+      setSlotToDelete(null);
       await fetchRulesAndSlots();
     } catch (err: any) {
       console.error(err);
@@ -1216,6 +1222,56 @@ export const CourseManagement: React.FC = () => {
                 className="bg-amber-500 hover:bg-amber-600 text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
               >
                 Xác nhận ẩn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Delete Slot Modal */}
+      {slotToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-surface border border-line rounded-card p-6 shadow-xl relative text-left">
+            <h3 className="text-title font-extrabold text-fg flex items-center gap-2">
+              <AlertCircle className="w-6 h-6 text-danger" /> Xác nhận xóa khung giờ dạy
+            </h3>
+            
+            <div className="py-4 space-y-4">
+              <div className="bg-surface-muted/50 rounded-lg p-3 text-meta font-bold text-fg border border-line-soft space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-fg-muted">Thời gian:</span>
+                  <span>
+                    {(() => {
+                      const dStart = new Date(slotToDelete.startTime);
+                      const dEnd = new Date(slotToDelete.endTime);
+                      const dateStr = dStart.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+                      const timeStr = `${dStart.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })} - ${dEnd.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+                      return `${dateStr} (${timeStr})`;
+                    })()}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-body text-fg-muted font-medium">
+                Bạn có chắc chắn muốn xóa khung giờ dạy này? Hãy kiểm tra kỹ xem khung giờ này đã có mentee đặt lịch (book) chưa. Nếu tiếp tục xóa, các yêu cầu đặt lịch đang chờ duyệt (PENDING) sẽ tự động bị hủy.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-line-soft">
+              <button
+                onClick={() => setSlotToDelete(null)}
+                className="bg-surface hover:bg-surface-muted text-fg border border-line text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all"
+                disabled={savingSlotServices}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDeleteSlotConfirm}
+                disabled={savingSlotServices}
+                className="bg-danger hover:bg-danger-hover text-white text-meta font-bold py-2.5 px-5 rounded-field cursor-pointer transition-all inline-flex items-center gap-1.5"
+              >
+                {savingSlotServices && <Loader2 className="w-4 h-4 animate-spin" />}
+                Xóa khung giờ
               </button>
             </div>
           </div>
