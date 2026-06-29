@@ -43,10 +43,10 @@ export const Profile: React.FC = () => {
   const [selectedCampus, setSelectedCampus] = useState('');
   const [selectedProgram, setSelectedProgram] = useState('');
   const [selectedSpecialization, setSelectedSpecialization] = useState('');
-  const [semester, setSemester] = useState(1);
-  const [intakeYear, setIntakeYear] = useState(2022);
+  const [semester, setSemester] = useState('1');
+  const [intakeYear, setIntakeYear] = useState('2022');
   const [isAlumni, setIsAlumni] = useState(false);
-  const [graduationYear, setGraduationYear] = useState(2026);
+  const [graduationYear, setGraduationYear] = useState('2026');
   const [bio, setBio] = useState('');
 
   // Dropdown lists
@@ -163,8 +163,8 @@ export const Profile: React.FC = () => {
           setSelectedCampus('c1');
           setSelectedProgram('p1');
           setSelectedSpecialization('s1');
-          setSemester(5);
-          setIntakeYear(2022);
+          setSemester('5');
+          setIntakeYear('2022');
           setIsAlumni(false);
           setBio('Mình là sinh viên SE năm 3, mạnh về React. Muốn học thêm Python.');
           setFetching(false);
@@ -182,10 +182,10 @@ export const Profile: React.FC = () => {
             setSelectedCampus(data.campus?.id || '');
             setSelectedProgram(data.program?.id || '');
             setSelectedSpecialization(data.specialization?.id || '');
-            setSemester(data.semester || 1);
-            setIntakeYear(data.intakeYear || 2022);
+            setSemester(String(data.semester || 1));
+            setIntakeYear(String(data.intakeYear || 2022));
             setIsAlumni(data.alumni || false);
-            setGraduationYear(data.graduationYear || 2026);
+            setGraduationYear(String(data.graduationYear || 2026));
             setBio(data.bio || '');
           }
         } catch (profileErr: any) {
@@ -243,6 +243,30 @@ export const Profile: React.FC = () => {
       return;
     }
 
+    const semesterNum = Number(semester);
+    const intakeYearNum = Number(intakeYear);
+    const graduationYearNum = isAlumni ? Number(graduationYear) : null;
+
+    if (!semesterNum || semesterNum < 1 || semesterNum > 12) {
+      setError('Học kỳ hiện tại phải từ 1 đến 12.');
+      return;
+    }
+    const currentYear = new Date().getFullYear();
+    if (!intakeYearNum || intakeYearNum < 2000 || intakeYearNum > currentYear) {
+      setError(`Năm nhập học phải từ 2000 đến ${currentYear}.`);
+      return;
+    }
+    if (isAlumni) {
+      if (!graduationYearNum || graduationYearNum < 2000 || graduationYearNum > currentYear + 10) {
+        setError('Năm tốt nghiệp không hợp lệ.');
+        return;
+      }
+      if (graduationYearNum <= intakeYearNum) {
+        setError('Năm tốt nghiệp phải lớn hơn năm nhập học.');
+        return;
+      }
+    }
+
     setSaving(true);
 
     const payload = {
@@ -252,10 +276,10 @@ export const Profile: React.FC = () => {
       campusId: selectedCampus,
       programId: selectedProgram,
       specializationId: selectedSpecialization,
-      semester: Number(semester),
-      intakeYear: Number(intakeYear),
+      semester: semesterNum,
+      intakeYear: intakeYearNum,
       isAlumni,
-      graduationYear: isAlumni ? Number(graduationYear) : null,
+      graduationYear: graduationYearNum,
       bio,
     };
 
@@ -407,7 +431,7 @@ export const Profile: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-body font-bold text-brand-text-muted mb-1.5">Tên hiển thị</label>
+                  <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Tên hiển thị</label>
                   <input
                     type="text"
                     required
@@ -419,7 +443,7 @@ export const Profile: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-body font-bold text-brand-text-muted mb-1.5">Mã số sinh viên (MSSV)</label>
+                  <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Mã số sinh viên (MSSV)</label>
                   <input
                     type="text"
                     required
@@ -432,7 +456,7 @@ export const Profile: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-body font-bold text-brand-text-muted mb-1.5">Cơ sở</label>
+                  <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Cơ sở</label>
                   <select
                     required
                     value={selectedCampus}
@@ -449,7 +473,7 @@ export const Profile: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-body font-bold text-brand-text-muted mb-1.5">Ngành học</label>
+                  <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Ngành học</label>
                   <select
                     required
                     value={selectedProgram}
@@ -466,7 +490,7 @@ export const Profile: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-body font-bold text-brand-text-muted mb-1.5">Chuyên ngành</label>
+                  <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Chuyên ngành</label>
                   <select
                     required
                     disabled={!selectedProgram}
@@ -486,25 +510,27 @@ export const Profile: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-body font-bold text-brand-text-muted mb-1.5">Học kỳ hiện tại</label>
+                  <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Học kỳ hiện tại</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    min={1}
-                    max={12}
+                    placeholder="1 – 12"
                     value={semester}
-                    onChange={(e) => setSemester(Number(e.target.value))}
+                    onChange={(e) => setSemester(e.target.value.replace(/\D/g, ''))}
                     className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-body font-bold text-brand-text-muted mb-1.5">Năm nhập học</label>
+                  <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Năm nhập học</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
+                    placeholder="VD: 2022"
                     value={intakeYear}
-                    onChange={(e) => setIntakeYear(Number(e.target.value))}
+                    onChange={(e) => setIntakeYear(e.target.value.replace(/\D/g, ''))}
                     className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
                   />
                 </div>
@@ -525,19 +551,21 @@ export const Profile: React.FC = () => {
 
               {isAlumni && (
                 <div>
-                  <label className="block text-body font-bold text-brand-text-muted mb-1.5">Năm tốt nghiệp</label>
+                  <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Năm tốt nghiệp</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required={isAlumni}
+                    placeholder="VD: 2026"
                     value={graduationYear}
-                    onChange={(e) => setGraduationYear(Number(e.target.value))}
+                    onChange={(e) => setGraduationYear(e.target.value.replace(/\D/g, ''))}
                     className="w-full bg-surface border border-brand-border focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta rounded-field py-2.5 px-4 text-body text-brand-text focus:outline-none transition-all"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-body font-bold text-brand-text-muted mb-1.5">Bio giới thiệu bản thân & kỹ năng trao đổi</label>
+                <label className="block text-sm font-bold text-brand-text-muted mb-1.5">Bio giới thiệu bản thân & kỹ năng trao đổi</label>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}

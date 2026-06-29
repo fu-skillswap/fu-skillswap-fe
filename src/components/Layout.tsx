@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { ThemeSwitcher } from './ThemeSwitcher';
-import { Menu, MessageSquare, User, LogOut, Settings, HelpCircle, Share2 } from 'lucide-react';
+import { Menu, MessageSquare, User, LogOut, Settings, HelpCircle, Share2, ScrollText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from './NotificationBell';
 import { CreditWalletBadge } from './CreditWalletBadge';
@@ -119,6 +119,13 @@ export const Layout: React.FC = () => {
                   className="flex items-center gap-3 px-4 py-3 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-fg transition-all"
                 >
                   <HelpCircle className="w-4.5 h-4.5 shrink-0" /><span>Trung tâm hỗ trợ</span>
+                </Link>
+                <Link
+                  to="/terms"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-body font-semibold text-fg-muted hover:bg-surface-muted hover:text-fg transition-all"
+                >
+                  <ScrollText className="w-4.5 h-4.5 shrink-0" /><span>Nội quy</span>
                 </Link>
                 <button
                   onClick={handleShare}

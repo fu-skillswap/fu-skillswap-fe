@@ -516,6 +516,9 @@ export const LandingPage: React.FC = () => {
               Đội ngũ SkillSwap — dự án học tập thực chiến.<br />
               Email: support@skillswap.asia
             </p>
+            <ul className="space-y-2 font-semibold mt-2">
+              <li><a href="/terms" className="hover:text-white transition-colors">Nội quy & Điều khoản</a></li>
+            </ul>
           </div>
 
         </div>
