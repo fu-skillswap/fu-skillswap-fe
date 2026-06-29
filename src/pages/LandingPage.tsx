@@ -136,7 +136,7 @@ export const LandingPage: React.FC = () => {
         style={{ backgroundImage: 'url(/hero-illustration.jpg)', backgroundSize: 'cover', backgroundPosition: 'center right' }}
       >
         {/* Overlay tối bên trái để text dễ đọc */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#051138] from-30% via-[#051138]/85 via-55% to-transparent pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#051138] from-35% via-[#051138]/40 via-60% to-transparent pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content Left */}
