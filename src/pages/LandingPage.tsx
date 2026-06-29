@@ -152,7 +152,7 @@ export const LandingPage: React.FC = () => {
             </h1>
 
             <p className="text-slate-200 text-body sm:text-body font-semibold max-w-xl leading-relaxed">
-              SkillSwap là nền tảng kết nối sinh viên đại học với các mentor có chuyên môn phù hợp. Bạn có thể tìm mentor để được hỗ trợ về lập trình, thiết kế UI/UX, ngoại ngữ hay bất kỳ lĩnh vực học thuật nào — mọi thứ trong cùng một cộng đồng sinh viên.
+              SkillSwap — nền tảng kết nối Alumni và Mentee dành riêng cho sinh viên FPTU HCM. Tìm mentor để được hỗ trợ về lập trình, thiết kế UI/UX, ngoại ngữ hay bất kỳ lĩnh vực nào — hoàn toàn miễn phí trong cùng một cộng đồng sinh viên.
             </p>
 
             <div className="flex flex-wrap gap-4 pt-2">
@@ -512,11 +512,19 @@ export const LandingPage: React.FC = () => {
 
           <div className="space-y-3">
             <span className="text-white font-bold block uppercase tracking-wider text-meta">Liên hệ & Hỗ trợ</span>
-            <p className="leading-relaxed font-semibold">
-              Đội ngũ SkillSwap — dự án học tập thực chiến.<br />
-              Email: support@skillswap.asia
-            </p>
-            <ul className="space-y-2 font-semibold mt-2">
+            <ul className="space-y-2 font-semibold">
+              <li className="flex items-center gap-2">
+                <span>📞</span>
+                <span>091 157 12 19</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span>✉️</span>
+                <a href="mailto:skillswapfptu@gmail.com" className="hover:text-white transition-colors">skillswapfptu@gmail.com</a>
+              </li>
+              <li className="flex items-center gap-2">
+                <span>💬</span>
+                <span>FPT SkillSwap Community</span>
+              </li>
               <li><a href="/terms" className="hover:text-white transition-colors">Nội quy & Điều khoản</a></li>
             </ul>
           </div>
