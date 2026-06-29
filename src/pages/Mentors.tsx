@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, Send, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart } from 'lucide-react';
+import { Sparkles, Send, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
 import type {
   MentorCard, MentorRecommendation, MentorReview,
@@ -367,73 +367,91 @@ export const Mentors: React.FC = () => {
 
     return (
       <div className="space-y-8 animate-fadeIn text-left">
+
         {/* Back Button */}
         <button
           onClick={() => {
             setSelectedMentorDetail(null);
             setActiveMentor(null);
           }}
-          className="flex items-center gap-2 text-body font-bold text-brand-text-muted hover:text-brand-text cursor-pointer transition-colors"
+          className="relative z-10 flex items-center gap-2 text-body font-bold text-slate-400 hover:text-primary cursor-pointer transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Quay lại danh sách mentor</span>
         </button>
 
         {/* Cover Banner & Main Header */}
-        <div className="bg-surface border border-brand-border rounded-card overflow-hidden shadow-xs relative">
-          {/* Colorful Gradient Cover */}
-          <div className="h-32 bg-gradient-to-r from-brand-terracotta/20 via-brand-blue/15 to-primary-soft/20" />
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100/80 shadow-md">
+          {/* Subtle brushed material texture / micro-mesh overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.03)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.03)_50%,rgba(255,255,255,0.03)_75%,transparent_75%,transparent)] bg-[length:4px_4px] opacity-60 pointer-events-none" />
 
-          {/* Info Area */}
-          <div className="p-6 pt-0 flex flex-col md:flex-row items-center gap-6 -mt-12 relative z-10 text-center md:text-left">
-            <img
-              src={selectedMentorDetail.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
-              onError={onAvatarError}
-              alt={selectedMentorDetail.displayName}
-              className="w-28 h-28 rounded-2xl bg-surface object-cover border-4 border-surface shadow-lg ring-1 ring-brand-border/10 transition-transform duration-300 hover:scale-[1.02]"
-            />
-            <div className="flex-1 space-y-1.5">
-              <div className="flex flex-col md:flex-row md:items-center gap-2.5 flex-wrap justify-center md:justify-start">
-                <h1 className="text-2xl font-black text-brand-text font-serif leading-tight">
+          {/* Cover gradient layer */}
+          <div
+            className="h-40 bg-cover bg-center bg-no-repeat relative"
+            style={{ backgroundImage: "url('/background-mentor-profile.jpg')" }}
+          >
+            {/* Soft overlay blend to keep it polished */}
+            <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 to-transparent pointer-events-none" />
+          </div>
+
+          {/* Info Area (Centered avatar & text) */}
+          <div className="p-8 pt-0 flex flex-col items-center justify-center -mt-20 relative z-10 text-center">
+            {/* Centered Avatar with thick borders, shadow, and ring */}
+            <div className="relative group mb-4">
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 pointer-events-none" />
+              <img
+                src={selectedMentorDetail.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                onError={onAvatarError}
+                alt={selectedMentorDetail.displayName}
+                className="relative w-32 h-32 rounded-full bg-white object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-[1.02]"
+              />
+            </div>
+
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <h1 className="text-3xl font-black text-slate-800 font-serif leading-tight tracking-tight">
                   {selectedMentorDetail.displayName}
                 </h1>
-                <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider self-center md:self-auto ${selectedMentorDetail.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm ${selectedMentorDetail.isAvailable
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200/50'
+                  : 'bg-rose-100 text-rose-800 border border-rose-200/50'
                   }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${selectedMentorDetail.isAvailable ? 'bg-green-500 dot-glow-green' : 'bg-red-500'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${selectedMentorDetail.isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                   {selectedMentorDetail.isAvailable ? 'Sẵn sàng' : 'Bận'}
                 </span>
               </div>
 
-              <div className="text-body font-bold text-brand-terracotta bg-brand-terracotta/5 border border-brand-terracotta/10 px-2.5 py-1 rounded-md inline-block">
+              <div className="text-body font-bold text-primary bg-primary-soft/80 border border-primary/20 px-4 py-1.5 rounded-full shadow-[inset_0_1px_2px_rgba(255,255,255,0.9)] inline-block">
                 {selectedMentorDetail.headline || 'Mentor chia sẻ kỹ năng'}
               </div>
 
-              <p className="text-meta text-brand-text-muted font-bold flex items-center justify-center md:justify-start gap-1.5 flex-wrap">
-                <span>{selectedMentorDetail.programName}</span>
-                <span className="text-brand-border">•</span>
-                <span>{selectedMentorDetail.specializationName}</span>
-                <span className="text-brand-border">•</span>
-                <span>Học kỳ {selectedMentorDetail.semester}</span>
+              <p className="text-meta text-slate-500 font-bold flex items-center justify-center gap-2 flex-wrap">
+                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">{selectedMentorDetail.programName}</span>
+                <span className="text-slate-300 font-normal">•</span>
+                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">{selectedMentorDetail.specializationName}</span>
+                <span className="text-slate-300 font-normal">•</span>
+                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">Học kỳ {selectedMentorDetail.semester}</span>
                 {selectedMentorDetail.alumni && (
                   <>
-                    <span className="text-brand-border">•</span>
-                    <span className="text-brand-terracotta font-black">[Cựu sinh viên]</span>
+                    <span className="text-slate-300 font-normal">•</span>
+                    <span className="text-brand-terracotta font-black bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200/50">[Cựu sinh viên]</span>
                   </>
                 )}
               </p>
             </div>
 
             {/* Social Links */}
-            <div className="flex gap-2.5 mt-4 md:mt-0 justify-center md:justify-end shrink-0">
+            <div className="flex gap-3 mt-6 justify-center shrink-0">
               {selectedMentorDetail.linkedinUrl && (
                 <a
                   href={selectedMentorDetail.linkedinUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-brand-bg hover:bg-brand-blue/10 border border-brand-border text-brand-text hover:text-brand-blue transition-all duration-200 shadow-xs"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-primary transition-all duration-200 shadow-sm"
                   title="LinkedIn"
                 >
-                  <Linkedin className="w-4.5 h-4.5" />
+                  <Linkedin className="w-5 h-5" />
                 </a>
               )}
               {selectedMentorDetail.githubUrl && (
@@ -441,10 +459,10 @@ export const Mentors: React.FC = () => {
                   href={selectedMentorDetail.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-brand-bg hover:bg-brand-terracotta/10 border border-brand-border text-brand-text hover:text-brand-terracotta transition-all duration-200 shadow-xs"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all duration-200 shadow-sm"
                   title="GitHub"
                 >
-                  <Github className="w-4.5 h-4.5" />
+                  <Github className="w-5 h-5" />
                 </a>
               )}
               {selectedMentorDetail.portfolioUrl && (
@@ -452,37 +470,50 @@ export const Mentors: React.FC = () => {
                   href={selectedMentorDetail.portfolioUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-brand-bg hover:bg-green-500/10 border border-brand-border text-brand-text hover:text-green-600 transition-all duration-200 shadow-xs"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-teal-600 transition-all duration-200 shadow-sm"
                   title="Portfolio Website"
                 >
-                  <Globe className="w-4.5 h-4.5" />
+                  <Globe className="w-5 h-5" />
                 </a>
               )}
             </div>
           </div>
 
           {/* Stats Row */}
-          <div className="border-t border-brand-border/60 bg-brand-bg/25 grid grid-cols-3 divide-x divide-brand-border/60 text-center py-5">
+          <div className="border-t border-slate-100 bg-slate-50/50 grid grid-cols-3 divide-x divide-slate-100 text-center py-6 shadow-[inset_0_4px_8px_rgba(0,0,0,0.015)]">
             <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-brand-text-muted uppercase tracking-widest block">Đánh giá trung bình</span>
-              <span className="text-xl font-black text-brand-text flex items-center justify-center gap-1.5 leading-none">
-                <Star className="w-4.5 h-4.5 fill-amber-500 text-amber-500" />
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Đánh giá trung bình</span>
+              <span className="text-xl font-black text-slate-800 flex items-center justify-center gap-1.5 leading-none">
+                <Star className="w-5 h-5 fill-amber-400 text-amber-500 drop-shadow-[0_1.5px_3px_rgba(245,158,11,0.4)] stroke-[1.8]" />
                 {(selectedMentorDetail.ratingAverage ?? 0).toFixed(1)}
               </span>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-brand-text-muted uppercase tracking-widest block">Số lượt đánh giá</span>
-              <span className="text-xl font-black text-brand-text leading-none">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Số lượt đánh giá</span>
+              <span className="text-xl font-black text-slate-800 leading-none">
                 {selectedMentorDetail.reviewCount || 0}
               </span>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-brand-text-muted uppercase tracking-widest block">Số buổi mentoring</span>
-              <span className="text-xl font-black text-brand-text leading-none">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Số buổi mentoring</span>
+              <span className="text-xl font-black text-slate-800 leading-none">
                 {selectedMentorDetail.completedSessions || 0}
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Scroll down indicator */}
+        <div className="flex flex-col items-center justify-center py-2.5">
+          <button
+            onClick={() => {
+              bookingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="flex flex-col items-center gap-1.5 text-xs font-black text-primary hover:text-primary-hover animate-bounce cursor-pointer group transition-all duration-300"
+          >
+            <span>Đặt lịch học phía dưới</span>
+            <ChevronDown className="w-5 h-5 group-hover:scale-110 transition-transform stroke-[3.5]" />
+          </button>
         </div>
 
         {/* Main 2-column details & courses layout */}
@@ -491,12 +522,12 @@ export const Mentors: React.FC = () => {
           <div className="lg:col-span-7 space-y-6">
             {/* Bio Box */}
             {selectedMentorDetail.bio && (
-              <div className="bg-surface border border-brand-border p-6 rounded-card space-y-3 shadow-xs">
-                <h3 className="text-base font-extrabold text-brand-text flex items-center gap-2 border-b border-brand-border/60 pb-2">
-                  <Award className="w-4.5 h-4.5 text-brand-terracotta" />
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <Award className="w-5 h-5 text-teal-600" />
                   <span>Giới thiệu bản thân</span>
                 </h3>
-                <p className="text-body text-brand-text leading-relaxed font-medium whitespace-pre-line text-justify">
+                <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
                   {selectedMentorDetail.bio}
                 </p>
               </div>
@@ -504,55 +535,61 @@ export const Mentors: React.FC = () => {
 
             {/* Expertise box */}
             {selectedMentorDetail.expertiseDescription && (
-              <div className="bg-surface border border-brand-border p-6 rounded-card space-y-3 shadow-xs">
-                <h3 className="text-base font-extrabold text-brand-text flex items-center gap-2 border-b border-brand-border/60 pb-2">
-                  <BookOpen className="w-4.5 h-4.5 text-brand-terracotta" />
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <BookOpen className="w-5 h-5 text-teal-600" />
                   <span>Kinh nghiệm & Chuyên môn</span>
                 </h3>
-                <p className="text-body text-brand-text leading-relaxed font-medium whitespace-pre-line text-justify">
+                <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
                   {selectedMentorDetail.expertiseDescription}
                 </p>
               </div>
             )}
 
             {/* Academic Information */}
-            <div className="bg-surface border border-brand-border p-6 rounded-card space-y-3 shadow-xs">
-              <h3 className="text-base font-extrabold text-brand-text flex items-center gap-2 border-b border-brand-border/60 pb-2">
-                <Globe className="w-4.5 h-4.5 text-brand-terracotta" />
+            <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <Globe className="w-5 h-5 text-teal-600" />
                 <span>Thông tin đào tạo & Hỗ trợ</span>
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-body font-semibold">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-meta text-brand-text-muted">Cơ sở giảng dạy</span>
-                  <span className="text-brand-text">{selectedMentorDetail.campusName}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-body font-semibold">
+                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                  <span className="text-meta text-slate-400">Cơ sở giảng dạy</span>
+                  <span className="text-slate-800">{selectedMentorDetail.campusName}</span>
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-meta text-brand-text-muted">Chuyên ngành chính</span>
-                  <span className="text-brand-text">{selectedMentorDetail.specializationName}</span>
+                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                  <span className="text-meta text-slate-400">Chuyên ngành chính</span>
+                  <span className="text-slate-800">{selectedMentorDetail.specializationName}</span>
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-meta text-brand-text-muted">Hình thức dạy học</span>
-                  <span className="text-brand-text">{selectedMentorDetail.teachingMode === 'ONLINE' ? 'Trực tuyến (Online)' : selectedMentorDetail.teachingMode === 'OFFLINE' ? 'Trực tiếp (Offline)' : 'Hỗn hợp (Hybrid)'}</span>
+                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                  <span className="text-meta text-slate-400">Hình thức dạy học</span>
+                  <span className="text-slate-800">
+                    {selectedMentorDetail.teachingMode === 'ONLINE'
+                      ? 'Trực tuyến (Online)'
+                      : selectedMentorDetail.teachingMode === 'OFFLINE'
+                        ? 'Trực tiếp (Offline)'
+                        : 'Hỗn hợp (Hybrid)'}
+                  </span>
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-meta text-brand-text-muted">Thời lượng chuẩn 1 phiên</span>
-                  <span className="text-brand-text">{selectedMentorDetail.defaultSessionDuration || 60} phút</span>
+                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                  <span className="text-meta text-slate-400">Thời lượng chuẩn 1 phiên</span>
+                  <span className="text-slate-800">{selectedMentorDetail.defaultSessionDuration || 60} phút</span>
                 </div>
               </div>
             </div>
 
             {/* Lĩnh vực hỗ trợ */}
             {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 && (
-              <div className="bg-surface border border-brand-border p-6 rounded-card space-y-3 shadow-xs">
-                <h3 className="text-base font-extrabold text-brand-text flex items-center gap-2 border-b border-brand-border/60 pb-2">
-                  <Heart className="w-4.5 h-4.5 text-brand-terracotta" />
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <Heart className="w-5 h-5 text-teal-600" />
                   <span>Lĩnh vực hỗ trợ chủ đạo</span>
                 </h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2.5">
                   {selectedMentorDetail.helpTopicTags.map((tag) => (
                     <span
                       key={tag.id}
-                      className="px-3 py-1 rounded-field text-body font-bold bg-brand-bg border border-brand-border text-brand-text"
+                      className="px-4 py-1.5 rounded-full text-body font-bold bg-slate-50 border border-slate-200/60 text-slate-700 shadow-sm shadow-slate-100 hover:border-teal-500/40 hover:text-teal-600 transition-colors"
                     >
                       {tag.nameVi}
                     </span>
@@ -564,27 +601,30 @@ export const Mentors: React.FC = () => {
 
           {/* Right Column: Active Services / Courses List (col-span-5) */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="bg-surface border border-brand-border p-6 rounded-card space-y-4 shadow-xs">
-              <h3 className="text-base font-extrabold text-brand-text flex items-center gap-2 border-b border-brand-border/60 pb-2">
-                <BookOpen className="w-4.5 h-4.5 text-brand-terracotta" />
+            <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <BookOpen className="w-5 h-5 text-teal-600" />
                 <span>Danh sách lớp học của Mentor</span>
               </h3>
 
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
                 {!selectedMentorDetail.services || selectedMentorDetail.services.length === 0 ? (
-                  <p className="text-body text-brand-text-muted italic text-center py-6">Mentor chưa đăng ký lớp học nào.</p>
+                  <p className="text-body text-slate-400 italic text-center py-8">Mentor chưa đăng ký lớp học nào.</p>
                 ) : (
                   selectedMentorDetail.services.map((srv) => (
-                    <div key={srv.serviceId} className="p-4 border border-brand-border rounded-card bg-brand-bg/20 space-y-2 hover:shadow-xs transition-shadow text-left">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-body font-black text-brand-text leading-snug">{srv.title}</span>
-                        <span className="text-meta font-black text-brand-terracotta whitespace-nowrap bg-brand-terracotta/10 border border-brand-terracotta/20 px-2 py-0.5 rounded-lg shrink-0">
+                    <div key={srv.serviceId} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 space-y-3 hover:shadow-sm hover:border-slate-200/80 transition-all text-left relative overflow-hidden group">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="text-body font-black text-slate-800 leading-snug group-hover:text-primary transition-colors">{srv.title}</span>
+                        <span className="text-meta font-black text-teal-700 whitespace-nowrap bg-teal-50 border border-teal-200/50 px-3 py-1 rounded-full shrink-0 shadow-2xs">
                           {srv.free ? 'Miễn phí' : `${srv.priceScoin?.toLocaleString('en-US')} P`}
                         </span>
                       </div>
-                      <p className="text-meta text-brand-text-muted leading-relaxed font-semibold line-clamp-2">{srv.description}</p>
-                      <div className="flex items-center justify-between text-[11px] font-extrabold text-brand-text-muted pt-1 border-t border-brand-border/40">
-                        <span>Thời gian: {srv.durationMinutes} phút</span>
+                      <p className="text-meta text-slate-500 leading-relaxed font-semibold line-clamp-2">{srv.description}</p>
+                      <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-400 pt-2 border-t border-slate-100">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-slate-300" />
+                          Thời gian: {srv.durationMinutes} phút
+                        </span>
                       </div>
                     </div>
                   ))
@@ -597,53 +637,59 @@ export const Mentors: React.FC = () => {
         {/* Inline Booking Grid (Scrolled to when clicking schedule) */}
         <div
           ref={bookingSectionRef}
-          className="bg-surface border border-brand-border p-6 rounded-card space-y-6 shadow-xs mt-8 text-left"
+          className="bg-white border border-slate-100 p-8 rounded-3xl shadow-[0_15px_35px_rgba(0,0,0,0.03),inset_0_2px_4px_rgba(255,255,255,0.95)] mt-8 text-left relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.01)_1px,transparent_1px)] [background-size:12px_12px]"
         >
           {bookingSuccess ? (
-            <div className="py-12 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto border border-green-200 shadow-md">
+            <div className="py-12 text-center space-y-4 animate-fadeIn">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-md">
                 <Check className="w-8 h-8 stroke-[3]" />
               </div>
-              <h3 className="text-brand-text font-bold text-lg font-serif">Gửi yêu cầu đặt lịch thành công!</h3>
-              <p className="text-brand-text-muted text-body font-semibold max-w-md mx-auto">Hệ thống đã gửi yêu cầu tới {activeMentor?.displayName}. Đang chuyển hướng quay lại danh sách mentor...</p>
+              <h3 className="text-slate-800 font-bold text-lg font-serif">Gửi yêu cầu đặt lịch thành công!</h3>
+              <p className="text-slate-500 text-body font-semibold max-w-md mx-auto">Hệ thống đã gửi yêu cầu tới {activeMentor?.displayName}. Đang chuyển hướng quay lại danh sách mentor...</p>
             </div>
           ) : (
             <>
-              <div className="border-b border-brand-border pb-4">
-                <h3 className="text-lg font-extrabold text-brand-text font-serif">Đặt lịch học cùng {selectedMentorDetail.displayName}</h3>
-                <p className="text-body text-brand-text-muted font-medium mt-1">Chọn khung giờ trống trên lịch → Chọn môn học hỗ trợ → Điền mục tiêu học tập</p>
+              <div className="border-b border-slate-100 pb-4 mb-6">
+                <h3 className="text-lg font-black text-slate-800 font-serif">Đặt lịch học cùng {selectedMentorDetail.displayName}</h3>
+                <p className="text-body text-slate-500 font-medium mt-1">Chọn khung giờ trống trên lịch → Chọn môn học hỗ trợ → Điền mục tiêu học tập</p>
               </div>
 
               {bookingError && (
-                <div className="flex items-start gap-2 bg-red-500/5 border border-red-200 text-red-600 p-3.5 rounded-field text-meta font-semibold text-left">
+                <div className="flex items-start gap-2 bg-rose-500/5 border border-rose-200 text-rose-600 p-3.5 rounded-xl text-meta font-semibold text-left mb-4">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{bookingError}</span>
                 </div>
               )}
 
               {/* Booking 2-Column Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Calendar Grid (col-span-8) */}
                 <div className="lg:col-span-8 space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-brand-border/60 pb-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-brand-terracotta" />
-                      <h4 className="text-body font-extrabold text-brand-text">Chọn khung lịch rảnh của mentor</h4>
+                      <Calendar className="w-5 h-5 text-teal-600" />
+                      <h4 className="text-body font-extrabold text-slate-800">Chọn khung lịch rảnh của mentor</h4>
                     </div>
 
                     {/* Week switcher */}
-                    <div className="flex bg-brand-bg border border-brand-border p-0.5 rounded-field gap-0.5 shrink-0">
+                    <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-full gap-1 shrink-0 shadow-inner-soft">
                       <button
                         type="button"
                         onClick={() => handleSwitchWeek(0)}
-                        className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${bookingWeekOffset === 0 ? 'bg-surface text-brand-text shadow-xs border border-brand-border' : 'text-brand-text-muted hover:text-brand-text'}`}
+                        className={`px-4 py-1.5 rounded-full text-[11px] font-extrabold transition-all cursor-pointer ${bookingWeekOffset === 0
+                          ? 'bg-white text-primary shadow-sm border border-slate-200/50'
+                          : 'text-slate-500 hover:text-slate-800'
+                          }`}
                       >
                         Tuần này
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSwitchWeek(1)}
-                        className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${bookingWeekOffset === 1 ? 'bg-surface text-brand-text shadow-xs border border-brand-border' : 'text-brand-text-muted hover:text-brand-text'}`}
+                        className={`px-4 py-1.5 rounded-full text-[11px] font-extrabold transition-all cursor-pointer ${bookingWeekOffset === 1
+                          ? 'bg-white text-primary shadow-sm border border-slate-200/50'
+                          : 'text-slate-500 hover:text-slate-800'
+                          }`}
                       >
                         Tuần sau
                       </button>
@@ -653,8 +699,8 @@ export const Mentors: React.FC = () => {
                   {/* Week calendar grid */}
                   {bookingLoading ? (
                     <div className="py-24 flex flex-col items-center gap-4">
-                      <Loader2 className="w-10 h-10 animate-spin text-brand-terracotta" />
-                      <p className="text-brand-text-muted text-body font-semibold animate-pulse">Đang tải lịch trống của mentor...</p>
+                      <Loader2 className="w-10 h-10 animate-spin text-teal-600" />
+                      <p className="text-slate-400 text-body font-semibold animate-pulse">Đang tải lịch trống của mentor...</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-7 gap-2 pt-1.5">
@@ -665,22 +711,22 @@ export const Mentors: React.FC = () => {
                         const daySlots = getBookingDaySlots(dayDate);
 
                         return (
-                          <div key={idx} className={`rounded-xl border p-2 flex flex-col text-left min-h-[260px] transition-all ${isToday ? 'bg-brand-terracotta/5 border-brand-terracotta/30' : 'bg-surface/30 border-brand-border'}`}>
+                          <div key={idx} className={`rounded-2xl border p-3 flex flex-col text-left min-h-[270px] transition-all shadow-[inset_0_2px_4px_rgba(255,255,255,0.8)] ${isToday ? 'bg-teal-50/20 border-teal-500/30 ring-1 ring-teal-500/10' : 'bg-slate-50/30 border-slate-100/80 hover:bg-slate-50/50'}`}>
                             {/* Day Header */}
-                            <div className="text-center pb-1.5 border-b border-brand-border mb-2 shrink-0">
-                              <span className={`text-[10px] font-extrabold block tracking-wide uppercase ${isToday ? 'text-brand-terracotta' : 'text-brand-text-muted'}`}>
+                            <div className="text-center pb-2 border-b border-slate-100 mb-3 shrink-0">
+                              <span className={`text-[10px] font-extrabold block tracking-wide uppercase ${isToday ? 'text-teal-600' : 'text-slate-400'}`}>
                                 {dayName}
                               </span>
-                              <span className={`text-meta font-extrabold inline-flex items-center justify-center w-6 h-6 rounded-full mt-0.5 ${isToday ? 'bg-brand-terracotta text-white shadow-xs' : 'text-brand-text'}`}>
+                              <span className={`text-meta font-black inline-flex items-center justify-center w-7 h-7 rounded-full mt-1 transition-all ${isToday ? 'bg-teal-600 text-white shadow-md shadow-teal-500/15' : 'text-slate-700 bg-slate-100/50 border border-slate-200/30'}`}>
                                 {dayDate.getDate()}
                               </span>
                             </div>
 
                             {/* Day Slots List */}
-                            <div className="flex-1 space-y-1.5 overflow-y-auto scrollbar-none pr-0.5">
+                            <div className="flex-1 space-y-2 overflow-y-auto scrollbar-none pr-0.5">
                               {daySlots.length === 0 ? (
                                 <div className="h-full flex items-center justify-center py-8">
-                                  <span className="text-[10px] text-brand-text-muted/50 italic font-semibold text-center leading-tight">
+                                  <span className="text-[10px] text-slate-400/60 italic font-semibold text-center leading-tight">
                                     Không có lịch
                                   </span>
                                 </div>
@@ -697,11 +743,11 @@ export const Mentors: React.FC = () => {
                                           handleSelectSlot(slot.slotId);
                                         }
                                       }}
-                                      className={`p-2 rounded-lg border text-left shadow-2xs group/item relative cursor-pointer transition-all hover:-translate-y-[1px] ${selected
-                                        ? 'bg-brand-terracotta/15 border-brand-terracotta hover:bg-brand-terracotta/20 text-brand-terracotta'
+                                      className={`p-2.5 rounded-xl border text-left shadow-[0_2px_4px_rgba(0,0,0,0.01),inset_0_2px_3px_rgba(255,255,255,0.9)] group/item relative cursor-pointer transition-all duration-200 hover:-translate-y-[1.5px] ${selected
+                                        ? 'bg-primary border-primary text-white shadow-md shadow-primary/20 ring-2 ring-primary/30 scale-[1.02]'
                                         : hasServices
-                                          ? 'bg-green-50/70 border-green-200 hover:bg-green-100/70 text-green-800'
-                                          : 'bg-brand-bg/40 border-brand-border text-brand-text-muted/60 opacity-50 cursor-not-allowed'
+                                          ? 'bg-emerald-50/60 border-emerald-200/80 hover:bg-emerald-50/90 text-emerald-800 hover:border-emerald-300'
+                                          : 'bg-slate-100/40 border-slate-200/30 text-slate-400/50 opacity-40 cursor-not-allowed'
                                         }`}
                                     >
                                       <div className="text-[9px] font-extrabold flex items-center justify-between">
@@ -718,7 +764,7 @@ export const Mentors: React.FC = () => {
                                             return (
                                               <span
                                                 key={sv.serviceId}
-                                                className="block text-[8px] font-black tracking-wide truncate bg-white/70 border border-brand-border/30 px-1 py-0.5 rounded text-center leading-normal"
+                                                className={`block text-[8px] font-black tracking-wide truncate border px-1.5 py-0.5 rounded text-center leading-normal ${selected ? 'bg-white/15 border-white/20 text-white' : 'bg-white/80 border-slate-200/50 text-slate-700'}`}
                                                 title={sv.title}
                                               >
                                                 {code ? code : sv.title}
@@ -740,22 +786,22 @@ export const Mentors: React.FC = () => {
                 </div>
 
                 {/* Right Column: Booking Configuration Form (col-span-4) */}
-                <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-brand-border pt-4 lg:pt-0 lg:pl-6 text-left">
+                <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6 text-left">
                   {!selectedSlotId ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-brand-bg/30 border border-brand-border border-dashed rounded-card">
-                      <Calendar className="w-10 h-10 text-brand-text-muted opacity-50 mb-2.5" />
-                      <h4 className="text-body font-extrabold text-brand-text">Cấu hình Đăng ký</h4>
-                      <p className="text-meta text-brand-text-muted font-medium mt-1">Vui lòng chọn một khung lịch rảnh (màu xanh lá) trên lịch để bắt đầu điền thông tin đặt lịch học.</p>
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-slate-50/50 border border-dashed border-slate-200 rounded-3xl min-h-[300px] shadow-[inset_0_4px_10px_rgba(0,0,0,0.01)] bg-[radial-gradient(rgba(0,0,0,0.015)_1px,transparent_1px)] [background-size:10px_10px]">
+                      <Calendar className="w-12 h-12 text-slate-300 mb-3.5" />
+                      <h4 className="text-body font-black text-slate-700">Cấu hình Đăng ký</h4>
+                      <p className="text-meta text-slate-400 font-medium mt-1.5 max-w-[240px] leading-relaxed">Vui lòng chọn một khung lịch rảnh (màu xanh lá) trên lịch để bắt đầu điền thông tin đặt lịch học.</p>
                     </div>
                   ) : (
-                    <form onSubmit={handleBookingSubmit} className="space-y-4">
-                      <div className="border-b border-brand-border/60 pb-3">
-                        <span className="text-[10px] font-extrabold text-brand-text-muted uppercase tracking-wider block">Khung giờ đã chọn</span>
-                        <span className="text-body font-extrabold text-brand-text block mt-1">
+                    <form onSubmit={handleBookingSubmit} className="space-y-5">
+                      <div className="border-b border-slate-100 pb-3.5 mb-4">
+                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Khung giờ đã chọn</span>
+                        <span className="text-body font-black text-slate-800 block mt-1.5 p-3 rounded-2xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
                           {selectedSlot ? (
                             <>
                               {getDayNameLong(new Date(selectedSlot.startTime))}, {formatDateDisplay(new Date(selectedSlot.startTime))}
-                              <span className="text-brand-terracotta ml-1.5 font-black">
+                              <span className="text-primary ml-1.5 font-black block sm:inline mt-0.5 sm:mt-0">
                                 ({fmtTime(selectedSlot.startTime)} - {fmtTime(selectedSlot.endTime)})
                               </span>
                             </>
@@ -764,14 +810,14 @@ export const Mentors: React.FC = () => {
                       </div>
 
                       {/* Service selector */}
-                      <div>
-                        <label className="block text-meta font-extrabold text-brand-text-muted uppercase mb-1.5">Môn học / Dịch vụ</label>
+                      <div className="space-y-1.5">
+                        <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Môn học / Dịch vụ</label>
                         {slotServices.length === 0 ? (
-                          <p className="text-meta text-red-600 font-semibold">Khung lịch này chưa được gán dịch vụ nào.</p>
+                          <p className="text-meta text-rose-600 font-semibold">Khung lịch này chưa được gán dịch vụ nào.</p>
                         ) : slotServices.length === 1 ? (
-                          <div className="p-3 bg-brand-bg border border-brand-border rounded-field text-body font-bold text-brand-text flex items-center justify-between">
+                          <div className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl text-body font-bold text-slate-800 flex items-center justify-between shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
                             <span>{slotServices[0].title}</span>
-                            <span className="text-meta font-black text-brand-terracotta">{slotServices[0].isFree ? 'Miễn phí' : `${slotServices[0].priceScoin?.toLocaleString('en-US') || 0} Point`}</span>
+                            <span className="text-meta font-black text-teal-700 bg-teal-50 border border-teal-200/50 px-2 py-0.5 rounded-full">{slotServices[0].isFree ? 'Miễn phí' : `${slotServices[0].priceScoin?.toLocaleString('en-US') || 0} Point`}</span>
                           </div>
                         ) : (
                           <div className="space-y-1.5">
@@ -785,13 +831,13 @@ export const Mentors: React.FC = () => {
                                     setSelectedServiceId(s.serviceId);
                                     setBookingError(null);
                                   }}
-                                  className={`w-full p-2.5 rounded-field border flex items-center justify-between text-left transition-all ${selected
-                                    ? 'bg-brand-terracotta/10 border-brand-terracotta text-brand-terracotta'
-                                    : 'bg-brand-bg border-brand-border text-brand-text hover:bg-brand-bg/85 cursor-pointer'
+                                  className={`w-full p-3 rounded-xl border flex items-center justify-between text-left transition-all duration-200 ${selected
+                                    ? 'bg-primary/10 border-primary text-primary font-bold shadow-2xs shadow-primary/5'
+                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer'
                                     }`}
                                 >
                                   <span className="text-meta font-bold">{s.title}</span>
-                                  <span className="text-[10px] font-black">{s.isFree ? 'FREE' : `${s.priceScoin?.toLocaleString('en-US')} P`}</span>
+                                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${selected ? 'bg-primary text-white border-primary/20' : 'bg-slate-50 text-slate-500 border-slate-200/50'}`}>{s.isFree ? 'FREE' : `${s.priceScoin?.toLocaleString('en-US')} P`}</span>
                                 </button>
                               );
                             })}
@@ -801,27 +847,27 @@ export const Mentors: React.FC = () => {
 
                       {/* Precise segment candidate selector */}
                       {selectedSlotId && selectedServiceId && (
-                        <div>
-                          <label className="block text-meta font-extrabold text-brand-text-muted uppercase mb-1.5">Giờ học cụ thể</label>
+                        <div className="space-y-1.5">
+                          <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Giờ học cụ thể</label>
                           {candidatesLoading ? (
-                            <div className="flex items-center gap-2 text-meta text-brand-text-muted font-semibold py-1">
-                              <Loader2 className="w-4 h-4 animate-spin text-brand-terracotta" /> Đang kiểm tra slot trống...
+                            <div className="flex items-center gap-2 text-meta text-slate-400 font-semibold py-1">
+                              <Loader2 className="w-4 h-4 animate-spin text-teal-600" /> Đang kiểm tra slot trống...
                             </div>
                           ) : candidates.length === 0 ? (
-                            <p className="text-meta text-red-600 font-semibold">Hiện tại khung giờ này đã không còn trống, vui lòng chọn lại khung giờ khác.</p>
+                            <p className="text-meta text-rose-600 font-semibold">Hiện tại khung giờ này đã không còn trống, vui lòng chọn lại khung giờ khác.</p>
                           ) : (
                             <select
                               value={selectedCandidateKey}
                               onChange={(e) => setSelectedCandidateKey(e.target.value)}
-                              className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3.5 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold cursor-pointer"
+                              className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-body text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer shadow-sm shadow-slate-100"
                             >
-                              <option value="" disabled className="text-brand-text-muted">-- Chọn giờ học --</option>
+                              <option value="" disabled className="text-slate-400">-- Chọn giờ học --</option>
                               {candidates.map((c) => {
                                 const key = `${c.startTime}|${c.endTime}`;
                                 const dateObj = parseCandidateTime(c.startTime);
                                 const timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                                 return (
-                                  <option key={key} value={key} className="text-brand-text font-semibold">
+                                  <option key={key} value={key} className="text-slate-800 font-semibold">
                                     {timeStr}
                                   </option>
                                 );
@@ -832,35 +878,35 @@ export const Mentors: React.FC = () => {
                       )}
 
                       {/* Goal Title */}
-                      <div>
-                        <label className="block text-meta font-extrabold text-brand-text-muted uppercase mb-1">Mục tiêu (tiêu đề ngắn)</label>
+                      <div className="space-y-1.5">
+                        <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Mục tiêu (tiêu đề ngắn)</label>
                         <input
                           type="text"
                           required
                           value={goalTitle}
                           onChange={(e) => setGoalTitle(e.target.value)}
                           placeholder="Ví dụ: Cần support bài Lab 3 Java Web"
-                          className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta font-semibold"
+                          className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-body text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold placeholder-slate-400/60 shadow-sm shadow-slate-100 transition-all"
                         />
                       </div>
 
                       {/* Goal Description */}
-                      <div>
-                        <label className="block text-meta font-extrabold text-brand-text-muted uppercase mb-1">Mô tả chi tiết</label>
+                      <div className="space-y-1.5">
+                        <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Mô tả chi tiết</label>
                         <textarea
                           required
                           rows={3}
                           value={goalDescription}
                           onChange={(e) => setGoalDescription(e.target.value)}
                           placeholder="Mô tả rõ lỗi gặp phải hoặc phần kiến thức cần mentor hỗ trợ..."
-                          className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta resize-none placeholder-brand-grey font-medium"
+                          className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-body text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 resize-none placeholder-slate-400/60 font-medium shadow-sm shadow-slate-100 transition-all"
                         />
                       </div>
 
                       <button
                         type="submit"
                         disabled={bookingSubmitting || !selectedSlotId || !selectedServiceId || !selectedCandidateKey}
-                        className="w-full flex items-center justify-center gap-2 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-3 px-4 rounded-field cursor-pointer hover:opacity-90 transition-all active:scale-[0.98] shadow-md shadow-brand-terracotta/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-600 text-white text-body font-black py-3 px-4 rounded-xl cursor-pointer hover:opacity-95 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {bookingSubmitting ? (
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
