@@ -172,9 +172,14 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Hero illustration (tranh vẽ) */}
-          <div className="hidden lg:flex justify-center items-center">
-            <img src="/illustration-hero.svg" alt="Cộng đồng trao đổi kỹ năng" className="w-full max-w-lg drop-shadow-2xl animate-fadeIn" />
+          {/* Hero illustration */}
+          <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-[55%] pointer-events-none">
+            <img
+              src="/hero-illustration.png"
+              alt="SkillSwap mascot"
+              className="w-full h-full object-cover object-left animate-fadeIn"
+              style={{ maskImage: 'linear-gradient(to right, transparent 0%, black 30%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 30%)' }}
+            />
           </div>
         </div>
       </section>
