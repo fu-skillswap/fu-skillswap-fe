@@ -85,7 +85,7 @@ const getErrorMessage = (err: any): string => {
 
   const lowerMsg = msg.toLowerCase();
   if (lowerMsg.includes('overlap') || lowerMsg.includes('conflict') || lowerMsg.includes('trùng lặp') || lowerMsg.includes('500') || lowerMsg.includes('hệ thống lưu trữ')) {
-    return 'Khung giờ dạy này bị trùng lặp với lịch dạy sẵn có của bạn. Hãy chọn Thứ khác hoặc thay đổi khoảng giờ dạy từ 09:00 đến 21:00.';
+    return 'Khung giờ dạy này bị trùng lặp với lịch dạy sẵn có của bạn. Hãy chọn Thứ khác hoặc thay đổi khoảng giờ dạy khác.';
   }
   if (lowerMsg.includes('effectivefrom') || lowerMsg.includes('quá khứ') || lowerMsg.includes('past')) {
     return 'Ngày bắt đầu hiệu lực không được ở quá khứ. Hãy đảm bảo bạn thiết lập bắt đầu từ ngày hôm nay trở đi.';
@@ -399,14 +399,10 @@ export const CourseManagement: React.FC = () => {
     const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     if (!ruleStartTime || !timeRegex.test(ruleStartTime)) {
       newErrors.startTime = 'Giờ bắt đầu không đúng định dạng HH:mm';
-    } else if (ruleStartTime < '09:00' || ruleStartTime > '21:00') {
-      newErrors.startTime = 'Giờ bắt đầu làm việc chỉ cho phép từ 09:00 đến 21:00';
     }
 
     if (!ruleEndTime || !timeRegex.test(ruleEndTime)) {
       newErrors.endTime = 'Giờ kết thúc không đúng định dạng HH:mm';
-    } else if (ruleEndTime < '09:00' || ruleEndTime > '21:00') {
-      newErrors.endTime = 'Giờ kết thúc làm việc chỉ cho phép từ 09:00 đến 21:00';
     }
 
     if (ruleStartTime && ruleEndTime && ruleStartTime >= ruleEndTime) {
@@ -1260,12 +1256,10 @@ export const CourseManagement: React.FC = () => {
               {/* Time selection group */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu dạy (từ 09:00) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ bắt đầu dạy <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
-                    min="09:00"
-                    max="21:00"
                     value={ruleStartTime}
                     onChange={(e) => { setRuleStartTime(e.target.value); if (ruleErrors.startTime) setRuleErrors({ ...ruleErrors, startTime: '' }); }}
                     className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${ruleErrors.startTime ? 'border-danger/60 focus:border-danger' : 'border-line'
@@ -1275,12 +1269,10 @@ export const CourseManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc dạy (đến 21:00) <span className="text-danger">*</span></label>
+                  <label className="block text-[11px] font-bold text-fg-muted uppercase mb-1.5">Giờ kết thúc dạy <span className="text-danger">*</span></label>
                   <input
                     type="time"
                     required
-                    min="09:00"
-                    max="21:00"
                     value={ruleEndTime}
                     onChange={(e) => { setRuleEndTime(e.target.value); if (ruleErrors.endTime) setRuleErrors({ ...ruleErrors, endTime: '' }); }}
                     className={`w-full bg-surface border rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-bold ${ruleErrors.endTime ? 'border-danger/60 focus:border-danger' : 'border-line'
@@ -1290,8 +1282,8 @@ export const CourseManagement: React.FC = () => {
                 </div>
               </div>
 
-              <div className="text-[10px] text-primary bg-primary-soft/50 border border-primary/20 rounded-field p-2.5 font-bold leading-normal text-left">
-                💡 Mentor có thể nhập bất cứ khung giờ dạy mong muốn nào (Ví dụ: 10:00 - 12:00, 14:00 - 16:00,...), miễn là nằm trong khoảng từ 09:00 sáng đến 21:00 tối.
+              <div className="text-[12px] text-primary bg-primary-soft/50 border border-primary/20 rounded-field p-2.5 font-bold leading-normal text-left">
+                Hãy chọn khung giờ thuận tiện với bạn để chia sẻ các lớp kỹ năng của mình.
               </div>
 
 
@@ -1299,7 +1291,7 @@ export const CourseManagement: React.FC = () => {
               {/* Courses select dropdown (Multi-select) */}
               <div>
                 <label className="block text-[11px] font-bold text-fg-muted uppercase mb-2">
-                  Môn học áp dụng trong khung giờ này <span className="text-danger">*</span>
+                  Môn học bạn mong muốn áp dụng trong khung giờ này <span className="text-danger">*</span>
                 </label>
                 {courses.filter(c => c.active).length === 0 ? (
                   <p className="text-meta text-danger font-semibold bg-danger-soft border border-danger/10 p-2.5 rounded-field">
@@ -1325,8 +1317,8 @@ export const CourseManagement: React.FC = () => {
                             }
                           }}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-field text-[11px] font-bold border transition-all cursor-pointer ${isChecked
-                              ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
-                              : 'bg-surface text-fg-muted border-line hover:border-primary hover:text-fg'
+                            ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
+                            : 'bg-surface text-fg-muted border-line hover:border-primary hover:text-fg'
                             }`}
                         >
                           {isChecked && <Check className="w-3 h-3" />}
