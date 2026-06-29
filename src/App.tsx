@@ -33,6 +33,7 @@ import { MyBookings } from './pages/MyBookings';
 // Chat Page (Diễn đàn đã gộp vào Trang chủ — Dashboard)
 import { Chat } from './pages/Chat';
 import { Settings } from './pages/Settings';
+import { Terms } from './pages/Terms';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/login" element={<Login />} />
 
           {/* Protected Profile Setup (forces login, redirects if already completed) */}

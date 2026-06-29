@@ -28,7 +28,7 @@ export const ThemeSwitcher: React.FC = () => {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 mt-2 w-52 bg-surface border border-line rounded-card shadow-xl p-2 z-50 animate-fadeIn">
-            <p className="text-meta font-bold text-fg-faint uppercase tracking-wider px-2.5 py-1.5">Giao diện</p>
+            <p className="text-xs font-bold text-fg-muted uppercase tracking-wider px-2.5 py-1.5">Giao diện</p>
             {THEMES.map((t) => (
               <button
                 key={t.id}
@@ -36,7 +36,7 @@ export const ThemeSwitcher: React.FC = () => {
                 className="w-full flex items-center gap-3 px-2.5 py-2 rounded-field hover:bg-surface-muted transition-colors text-left cursor-pointer"
               >
                 <span className="w-5 h-5 rounded-full border border-line shrink-0" style={{ background: t.swatch }} />
-                <span className="text-body font-semibold text-fg flex-1">{t.label}</span>
+                <span className="text-sm font-semibold text-fg flex-1">{t.label}</span>
                 {active === t.id && <Check className="w-4 h-4 text-primary" />}
               </button>
             ))}

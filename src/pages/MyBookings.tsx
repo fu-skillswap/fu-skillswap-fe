@@ -81,6 +81,8 @@ const statusBadge = (status: BookingStatus) => {
   switch (status) {
     case 'PENDING': return 'bg-amber-50 text-amber-700 border-amber-200';
     case 'ACCEPTED': return 'bg-green-50 text-green-700 border-green-200';
+    case 'ACCEPTED_AWAITING_PAYMENT': return 'bg-orange-50 text-orange-700 border-orange-200';
+    case 'PAYMENT_EXPIRED': return 'bg-red-50 text-red-600 border-red-200';
     case 'AWAITING_MENTOR_COMPLETION':
     case 'AWAITING_MENTEE_CONFIRMATION': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
     case 'COMPLETED':
@@ -94,6 +96,8 @@ const statusLabel = (status: BookingStatus, completedLabel = 'Hoàn thành') => 
   switch (status) {
     case 'PENDING': return 'Chờ duyệt';
     case 'ACCEPTED': return 'Đã nhận';
+    case 'ACCEPTED_AWAITING_PAYMENT': return 'Chờ thanh toán';
+    case 'PAYMENT_EXPIRED': return 'Hết hạn thanh toán';
     case 'AWAITING_MENTOR_COMPLETION': return 'Chờ mentor xác nhận';
     case 'AWAITING_MENTEE_CONFIRMATION': return 'Chờ mentee xác nhận';
     case 'COMPLETED': return completedLabel;
@@ -817,13 +821,18 @@ export const MyBookings: React.FC = () => {
                             </span>
                           )}
 
-                          {b.status === 'ACCEPTED' && isPaidBooking(b) && (
+                          {(b.status === 'ACCEPTED' || b.status === 'ACCEPTED_AWAITING_PAYMENT') && isPaidBooking(b) && (
                             <button
                               onClick={() => setPayBooking(b)}
-                              className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95"
+                              className="flex items-center gap-1.5 bg-brand-terracotta hover:bg-brand-terracotta-hover text-white text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-brand-terracotta/20 transition-all active:scale-95 animate-pulse"
                             >
-                              <Coins className="w-3.5 h-3.5" /> Thanh toán {(b.servicePriceScoinSnapshot ?? 0).toLocaleString('en-US')} SCoin
+                              <Coins className="w-3.5 h-3.5" /> Thanh toán ngay — {(b.servicePriceScoinSnapshot ?? 0).toLocaleString('en-US')} SCoin
                             </button>
+                          )}
+                          {b.status === 'PAYMENT_EXPIRED' && (
+                            <span className="text-meta text-red-600 font-bold bg-red-50 border border-red-200 px-3.5 py-2 rounded-field">
+                              Đã hết hạn thanh toán (2h)
+                            </span>
                           )}
 
                           {b.meetingLink && b.status === 'ACCEPTED' && (
