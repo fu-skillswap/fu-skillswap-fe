@@ -133,11 +133,10 @@ export const LandingPage: React.FC = () => {
       {/* Hero Section — nền gradient (bỏ ảnh campus để tránh dấu vết thương hiệu trường) */}
       <section
         className="relative overflow-hidden text-white py-28 lg:py-36 text-left"
-        style={{ background: 'linear-gradient(120deg, #051138 0%, #0a2a6e 55%, #1e3a8a 105%)' }}
+        style={{ backgroundImage: 'url(/hero-illustration.jpg)', backgroundSize: 'cover', backgroundPosition: 'center right' }}
       >
-        {/* Hoạ tiết chấm + overlay cho chiều sâu */}
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.4px)', backgroundSize: '22px 22px' }}></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#051138]/90 via-[#051138]/40 to-transparent pointer-events-none"></div>
+        {/* Overlay tối bên trái để text dễ đọc */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#051138] from-30% via-[#051138]/85 via-55% to-transparent pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content Left */}
@@ -172,15 +171,8 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Hero illustration */}
-          <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-[60%] pointer-events-none overflow-hidden">
-            <img
-              src="/hero-illustration.png"
-              alt="SkillSwap mascot"
-              className="w-full h-full object-cover object-right animate-fadeIn"
-              style={{ maskImage: 'linear-gradient(to right, transparent 0%, black 48%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 48%)' }}
-            />
-          </div>
+          {/* empty right col — image is bg */}
+          <div className="hidden lg:block" />
         </div>
       </section>
 
