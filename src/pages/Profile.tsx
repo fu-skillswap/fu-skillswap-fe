@@ -247,8 +247,8 @@ export const Profile: React.FC = () => {
     const intakeYearNum = Number(intakeYear);
     const graduationYearNum = isAlumni ? Number(graduationYear) : null;
 
-    if (!semesterNum || semesterNum < 1 || semesterNum > 12) {
-      setError('Học kỳ hiện tại phải từ 1 đến 12.');
+    if (semesterNum < 0 || semesterNum > 9) {
+      setError('Học kỳ hiện tại phải từ 0 đến 9 (0 = tiếng Anh dự bị).');
       return;
     }
     const currentYear = new Date().getFullYear();
