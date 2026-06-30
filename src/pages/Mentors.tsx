@@ -163,7 +163,11 @@ export const Mentors: React.FC = () => {
       const cards = paged?.content ?? [];
       const merged: MentorVM[] = cards.map((c) => {
         const rec = recMapRef.current.get(c.mentorUserId);
-        return { ...c, matchScore: rec?.matchScore, matchReasons: rec?.matchReasons };
+        return {
+          ...c,
+          matchScore: c.matchScore ?? rec?.matchScore,
+          matchReasons: c.matchReasons ?? rec?.matchReasons
+        };
       });
       setMentors(merged);
     } catch (err: any) {
@@ -1074,7 +1078,7 @@ export const Mentors: React.FC = () => {
                           <>
                             <span className="text-brand-border font-normal">|</span>
                             <span className="text-brand-text-muted font-semibold">
-                              Tương hợp:{' '}
+                              Độ hợp gu:{' '}
                               <span className="text-brand-terracotta font-extrabold">{Math.round(m.matchScore)}%</span>
                             </span>
                           </>
@@ -1084,7 +1088,7 @@ export const Mentors: React.FC = () => {
                       {/* Match Rationale reasons */}
                       {m.matchReasons && m.matchReasons.length > 0 && (
                         <div className="bg-brand-bg/50 border border-brand-border/60 p-3 rounded-card text-left space-y-1">
-                          <span className="text-meta font-bold text-brand-terracotta uppercase tracking-wider block">Gợi ý tương hợp</span>
+                          <span className="text-meta font-bold text-brand-terracotta uppercase tracking-wider block">Gợi ý hợp gu</span>
                           <ul className="space-y-1">
                             {m.matchReasons.map((reason, idx) => (
                               <li key={idx} className="text-meta text-brand-text font-medium flex items-start gap-1">

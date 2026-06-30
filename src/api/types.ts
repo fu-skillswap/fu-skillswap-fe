@@ -226,6 +226,8 @@ export interface MentorCard {
   specializationId?: string;
   specializationName?: string;
   helpTopicTags: MentorTag[];
+  matchScore?: number;
+  matchReasons?: string[];
 }
 
 /** Phần tử recommendations — khớp MentorRecommendationResponse. */

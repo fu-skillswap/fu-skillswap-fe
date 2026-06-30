@@ -510,7 +510,6 @@ export const CourseDetailPage: React.FC = () => {
                   >
                     <option value={15}>15 phút</option>
                     <option value={30}>30 phút</option>
-                    <option value={45}>45 phút</option>
                     <option value={60}>60 phút</option>
                     <option value={90}>90 phút</option>
                     <option value={120}>120 phút</option>
