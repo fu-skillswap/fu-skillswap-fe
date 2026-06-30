@@ -72,7 +72,7 @@ const CHECKLIST_ROWS: { key: 'academicProfileCompleted' | 'mentorProfileComplete
   { key: 'academicProfileCompleted', label: 'Hoàn thiện hồ sơ học vấn', hint: 'Cập nhật thông tin học thuật ở tab "Hồ sơ cá nhân".' },
   { key: 'mentorProfileCompleted', label: 'Hoàn thiện hồ sơ mentor', hint: 'Headline, mô tả chuyên môn, chủ đề hỗ trợ ở bên dưới.' },
   { key: 'hasAffiliationProof', label: 'Minh chứng liên kết FPTU', hint: 'Thẻ sinh viên, bảng điểm hoặc email FPTU — bắt buộc.' },
-  { key: 'hasExpertiseProof', label: 'Minh chứng chuyên môn', hint: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — giúp duyệt nhanh hơn.', optional: true },
+  { key: 'hasExpertiseProof', label: 'Minh chứng chuyên môn', hint: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — bắt buộc.' },
 ];
 
 const SESSION_DURATIONS: SessionDuration[] = [15, 30, 60, 90];
@@ -1041,8 +1041,8 @@ const DocumentsCard: React.FC<{
     {
       type: 'EXPERTISE_PROOF',
       title: 'Minh chứng chuyên môn',
-      desc: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — giúp duyệt nhanh hơn.',
-      required: false,
+      desc: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — bắt buộc.',
+      required: true,
     },
   ];
 

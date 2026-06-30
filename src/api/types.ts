@@ -775,6 +775,21 @@ export interface MentorWallet {
   recentTransactions: WalletTransaction[];
 }
 
+/**
+ * Kết quả tạo phiên nạp SCoin vào ví — FE redirect sang PayOS để thanh toán.
+ * (Contract dự kiến: POST /api/me/credit-wallet/top-up — chờ BE hiện thực.)
+ */
+export interface WalletTopUp {
+  /** Số SCoin sẽ được cộng vào ví sau khi thanh toán thành công. */
+  amountScoin: number;
+  /** Số tiền VND cần thanh toán qua PayOS (1 SCoin = 1 VND). */
+  amountVnd?: number;
+  orderCode?: string;
+  status?: PaymentOrderStatus;
+  /** URL PayOS để redirect người dùng sang thanh toán. */
+  checkoutUrl?: string;
+}
+
 // =====================================================================
 // Forum (diễn đàn thảo luận) — module BE mới /api/forum
 // =====================================================================

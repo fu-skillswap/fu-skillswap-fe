@@ -130,12 +130,10 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Hero Section — nền gradient (bỏ ảnh campus để tránh dấu vết thương hiệu trường) */}
-      <section
-        className="relative overflow-hidden text-white py-28 lg:py-36 text-left"
-        style={{ backgroundImage: 'url(/hero-illustration.jpg)', backgroundSize: 'cover', backgroundPosition: 'center right' }}
-      >
-        {/* Overlay tối bên trái để text dễ đọc */}
+      {/* Hero Section — mobile: nền gradient (ẩn ảnh vì chỉ khớp desktop); desktop (lg+): giữ ảnh illustration như cũ */}
+      <section className="relative overflow-hidden text-white py-20 sm:py-24 lg:py-36 text-left bg-gradient-to-br from-brand-primary via-brand-primary to-[#051138] lg:bg-[url('/hero-illustration.jpg')] lg:bg-cover lg:bg-right">
+        {/* Hoạ tiết chấm mờ chỉ hiện trên mobile (desktop đã có ảnh nền) */}
+        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none lg:hidden"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content Left */}

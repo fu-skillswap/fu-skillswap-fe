@@ -11,6 +11,7 @@ import type {
   PayoutRequestPayload,
   CreditWallet,
   MentorWallet,
+  WalletTopUp,
 } from './types';
 
 export const paymentApi = {
@@ -38,6 +39,15 @@ export const walletApi = {
 
   /** GET /api/me/mentor-wallet — settlement earnings của mentor + 15 giao dịch gần nhất. */
   getMentorWallet: () => http.get<MentorWallet>('/api/me/mentor-wallet'),
+
+  /**
+   * POST /api/me/credit-wallet/top-up — tạo phiên nạp SCoin vào ví qua PayOS.
+   * BE tạo Hosted Payment Link, trả `checkoutUrl` để FE redirect; webhook PayOS
+   * cộng SCoin vào ví khi thanh toán thành công. (1 SCoin = 1 VND)
+   * Lưu ý: endpoint này là contract FE — chờ BE hiện thực.
+   */
+  topUp: (amountScoin: number) =>
+    http.post<WalletTopUp>('/api/me/credit-wallet/top-up', { amountScoin }),
 };
 
 export const payoutProfileApi = {

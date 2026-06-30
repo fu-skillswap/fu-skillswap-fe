@@ -4,9 +4,10 @@
 // đã thanh toán khi credit/campaign phủ hết.
 // =====================================================================
 import React, { useEffect, useState } from 'react';
-import { X, Coins, Ticket, Loader2, CheckCircle2, AlertTriangle, ExternalLink, Wallet } from 'lucide-react';
+import { X, Coins, Ticket, Loader2, CheckCircle2, AlertTriangle, ExternalLink, Wallet, PlusCircle } from 'lucide-react';
 import { paymentApi, walletApi } from '../api/payment';
 import type { PaymentCheckout } from '../api/types';
+import { TopUpModal } from './TopUpModal';
 
 interface PaymentModalProps {
   bookingId: string;
@@ -30,6 +31,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showTopUp, setShowTopUp] = useState(false);
 
   // Nạp trạng thái order hiện tại (nếu đã từng checkout) + số dư ví credit.
   useEffect(() => {
@@ -81,6 +83,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const remainingScoin = order?.remainingPayableScoin ?? base;
   const remainingVnd = order?.remainingPayableVnd;
   const isPaid = order?.status === 'PAID';
+  // Số dư ví không đủ trả phần còn lại → gợi ý nạp thêm cho vừa đủ.
+  const shortfallScoin = Math.max(0, remainingScoin - (walletScoin ?? 0));
+  const insufficient = walletScoin != null && shortfallScoin > 0;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -167,6 +172,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 />
                 <p className="text-meta text-fg-faint mt-1">Coupon sẽ được áp khi tạo phiên thanh toán.</p>
               </div>
+
+              {/* Ví không đủ → gợi ý nạp thêm SCoin */}
+              {insufficient && (
+                <div className="space-y-2 bg-amber-500/8 border border-amber-500/25 rounded-card p-3.5">
+                  <p className="text-meta font-bold text-amber-700 flex items-start gap-1.5">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    Ví của bạn còn thiếu <span className="font-extrabold">{fmtScoin(shortfallScoin)} SCoin</span> so với số cần trả. Bạn có thể nạp thêm để thanh toán bằng ví.
+                  </p>
+                  <button
+                    onClick={() => setShowTopUp(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-muted border border-amber-500/40 text-amber-700 text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all active:scale-95"
+                  >
+                    <PlusCircle className="w-4 h-4" /> Nạp tiền vào ví
+                  </button>
+                </div>
+              )}
             </>
           )}
 
@@ -207,6 +228,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           )}
         </div>
       </div>
+
+      {showTopUp && (
+        <TopUpModal
+          currentScoin={walletScoin}
+          suggestedScoin={shortfallScoin}
+          onClose={() => setShowTopUp(false)}
+        />
+      )}
     </div>
   );
 };
