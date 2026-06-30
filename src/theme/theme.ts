@@ -5,11 +5,11 @@
    ===================================================================== */
 
 export const THEMES = [
-  { id: 'royal',   label: 'Royal Blue', swatch: '#0038e0' },
-  { id: 'navy',    label: 'Navy CTA',   swatch: '#1e293b' },
-  { id: 'violet',  label: 'Violet',     swatch: '#6d28d9' },
-  { id: 'emerald', label: 'Emerald',    swatch: '#0d9f6e' },
-  { id: 'dark',    label: 'Dark',       swatch: '#131c2e' },
+  { id: 'royal',   label: 'Royal Blue',  swatch: '#0038e0' },
+  { id: 'navy',    label: 'Midnight',    swatch: '#0e1e32' },
+  { id: 'violet',  label: 'Aurora',      swatch: '#7c3aed' },
+  { id: 'emerald', label: 'Forest',      swatch: '#059669' },
+  { id: 'dark',    label: 'Dark',        swatch: '#111827' },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]['id'];
