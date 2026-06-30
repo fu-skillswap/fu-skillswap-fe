@@ -625,6 +625,19 @@ export interface ChatMessageEvent {
   createdAt?: string;
 }
 
+/**
+ * Payload realtime khi trạng thái booking thay đổi — khớp BookingStatusUpdatedEvent
+ * (BE đẩy qua WS type BOOKING_STATUS_UPDATED cho cả mentee và mentor).
+ */
+export interface BookingStatusEvent {
+  bookingId: string;
+  menteeUserId?: string;
+  mentorUserId?: string;
+  status: BookingStatus;
+  message?: string;
+  updatedAt?: string;
+}
+
 /** Khớp MessageResponse của BE. */
 export interface ChatMessage {
   id: string;
