@@ -72,7 +72,7 @@ const CHECKLIST_ROWS: { key: 'academicProfileCompleted' | 'mentorProfileComplete
   { key: 'academicProfileCompleted', label: 'Hoàn thiện hồ sơ học vấn', hint: 'Cập nhật thông tin học thuật ở tab "Hồ sơ cá nhân".' },
   { key: 'mentorProfileCompleted', label: 'Hoàn thiện hồ sơ mentor', hint: 'Headline, mô tả chuyên môn, chủ đề hỗ trợ ở bên dưới.' },
   { key: 'hasAffiliationProof', label: 'Minh chứng liên kết FPTU', hint: 'Thẻ sinh viên, bảng điểm hoặc email FPTU — bắt buộc.' },
-  { key: 'hasExpertiseProof', label: 'Minh chứng chuyên môn', hint: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — giúp duyệt nhanh hơn.', optional: true },
+  { key: 'hasExpertiseProof', label: 'Minh chứng chuyên môn', hint: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — bắt buộc.' },
 ];
 
 const SESSION_DURATIONS: SessionDuration[] = [15, 30, 60, 90];
@@ -480,20 +480,47 @@ export const MentorPanel: React.FC = () => {
     setUploadError(null);
 
     // Kiểm tra ngay phía client để báo đúng nguyên nhân (định dạng / dung lượng).
-    const okType = ['image/jpeg', 'image/png', 'application/pdf'].includes(file.type) || /\.(jpe?g|png|pdf)$/i.test(file.name);
+    const isImage = ['image/jpeg', 'image/png'].includes(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+    const okType = isImage || file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
     if (!okType) {
       setUploadError('Định dạng không được hỗ trợ. Chỉ nhận tệp JPG, PNG hoặc PDF.');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError(`Tệp ${(file.size / 1024 / 1024).toFixed(1)}MB vượt quá giới hạn 5MB.`);
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError(`Tệp ${(file.size / 1024 / 1024).toFixed(1)}MB vượt quá giới hạn 10MB.`);
       return;
+    }
+
+    // Resize ảnh xuống tối đa 1920px và nén trước khi upload
+    let fileToUpload = file;
+    if (isImage) {
+      fileToUpload = await new Promise<File>((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const MAX = 1920;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+            else { width = Math.round(width * MAX / height); height = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            resolve(blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file);
+          }, 'image/jpeg', 0.85);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+      });
     }
 
     setUploading(true);
     setUploadingType(type);
     try {
-      const doc = await mentorVerificationApi.uploadDocument({ documentType: type, file });
+      const doc = await mentorVerificationApi.uploadDocument({ documentType: type, file: fileToUpload });
       // cập nhật lạc quan + làm mới ngầm (giữ nguyên vị trí cuộn, không remount panel)
       setReq((prev) => (prev ? { ...prev, documents: [...prev.documents, doc] } : prev));
       flash('Đã tải lên minh chứng.');
@@ -1014,8 +1041,8 @@ const DocumentsCard: React.FC<{
     {
       type: 'EXPERTISE_PROOF',
       title: 'Minh chứng chuyên môn',
-      desc: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — giúp duyệt nhanh hơn.',
-      required: false,
+      desc: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — bắt buộc.',
+      required: true,
     },
   ];
 
@@ -1160,7 +1187,7 @@ const DocumentsCard: React.FC<{
                         <span className="text-meta font-bold text-fg">
                           Kéo thả hoặc <span className="text-primary">chọn tệp</span>
                         </span>
-                        <span className="text-[10px] text-fg-faint font-medium">Tối đa 5MB</span>
+                        <span className="text-[10px] text-fg-faint font-medium">Tối đa 10MB (ảnh tự nén)</span>
                       </>
                     )}
                     <input
