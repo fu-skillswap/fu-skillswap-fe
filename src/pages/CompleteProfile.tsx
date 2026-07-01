@@ -238,17 +238,17 @@ export const CompleteProfile: React.FC = () => {
 
       {/* ===== LEFT: panel minh hoạ (ẩn trên mobile) ===== */}
       <div
-        className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 text-white sticky top-0 h-screen overflow-hidden"
-        style={{ background: 'linear-gradient(140deg, #c1654f 0%, #c97b63 42%, #3b6ea5 120%)' }}
+        className="hidden lg:flex lg:w-1/2 relative flex-col justify-end p-12 text-white sticky top-0 h-screen overflow-hidden"
+        style={{ backgroundImage: 'url(/complete-profile-illustration.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.10) 1px, transparent 1.4px)', backgroundSize: '20px 20px' }} />
+        {/* Lớp gradient tối phía dưới để chữ nổi rõ trên ảnh */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#051138]/85 via-[#051138]/25 to-transparent pointer-events-none" />
         <span className="absolute top-8 right-8 inline-flex items-center gap-1.5 bg-white/15 backdrop-blur text-white text-meta font-bold py-1 px-3 rounded-full border border-white/25">
           <Sparkles className="w-3.5 h-3.5" /> Bước cuối để bắt đầu
         </span>
-        <div className="relative z-10 flex flex-col items-center text-center max-w-md">
-          <img src="/complete-profile-illustration.jpg" alt="Hồ sơ học thuật" className="w-[360px] max-w-full rounded-2xl shadow-2xl ring-1 ring-white/20" />
-          <h2 className="text-3xl font-extrabold tracking-tight mt-6">Hoàn thiện hồ sơ học thuật</h2>
-          <p className="text-white/85 text-body font-medium mt-3 leading-relaxed">
+        <div className="relative z-10 max-w-md">
+          <h2 className="text-3xl font-extrabold tracking-tight drop-shadow-lg">Hoàn thiện hồ sơ học thuật</h2>
+          <p className="text-white/90 text-body font-medium mt-3 leading-relaxed drop-shadow">
             Cung cấp thông tin học tập để hệ thống gợi ý trao đổi kỹ năng phù hợp với bạn.
           </p>
         </div>
