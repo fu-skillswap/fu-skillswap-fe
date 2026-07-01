@@ -246,7 +246,7 @@ export const CompleteProfile: React.FC = () => {
           <Sparkles className="w-3.5 h-3.5" /> Bước cuối để bắt đầu
         </span>
         <div className="relative z-10 flex flex-col items-center text-center max-w-md">
-          <img src="/illustration-profile.svg" alt="Hồ sơ học thuật" className="w-[420px] max-w-full drop-shadow-xl" />
+          <img src="/complete-profile-illustration.jpg" alt="Hồ sơ học thuật" className="w-[360px] max-w-full rounded-2xl shadow-2xl ring-1 ring-white/20" />
           <h2 className="text-3xl font-extrabold tracking-tight mt-6">Hoàn thiện hồ sơ học thuật</h2>
           <p className="text-white/85 text-body font-medium mt-3 leading-relaxed">
             Cung cấp thông tin học tập để hệ thống gợi ý trao đổi kỹ năng phù hợp với bạn.
