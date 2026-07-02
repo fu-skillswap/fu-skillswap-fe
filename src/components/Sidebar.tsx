@@ -73,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2.5 group text-left">
               <img src="/logo.svg" alt="SkillSwap Logo" className="w-11 h-11 object-contain" />
               <div className="flex flex-col">
-                <span className="text-head font-extrabold tracking-tight text-primary leading-none">SkillSwap</span>
+                <span className="text-head font-extrabold tracking-tight text-fg leading-none">SkillSwap</span>
               </div>
             </Link>
             <button

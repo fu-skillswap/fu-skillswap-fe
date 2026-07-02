@@ -2,14 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Check, Palette, Monitor } from 'lucide-react';
 import { THEMES, applyTheme, initTheme, getTheme, type ThemeId } from '../theme/theme';
 
-/* Màu preview cho từng theme (khớp giá trị trong index.css).
-   Chỉ dùng để vẽ thumbnail — không phải logic màu của app. */
 const PREVIEW: Record<ThemeId, { bg: string; surface: string; primary: string; accent: string; action: string }> = {
   royal:   { bg: '#eef2f7', surface: '#ffffff', primary: '#0038e0', accent: '#00a2ff', action: '#0038e0' },
-  navy:    { bg: '#eef2f7', surface: '#ffffff', primary: '#0038e0', accent: '#00a2ff', action: '#1e293b' },
-  violet:  { bg: '#eef2f7', surface: '#ffffff', primary: '#6d28d9', accent: '#a855f7', action: '#6d28d9' },
-  emerald: { bg: '#eef2f7', surface: '#ffffff', primary: '#0d9f6e', accent: '#34d399', action: '#0d9f6e' },
-  dark:    { bg: '#0b1220', surface: '#131c2e', primary: '#5b8cff', accent: '#38bdf8', action: '#5b8cff' },
+  violet:  { bg: '#0d0714', surface: '#160f22', primary: '#a78bfa', accent: '#ec4899', action: '#8b5cf6' },
 };
 
 export const Settings: React.FC = () => {
