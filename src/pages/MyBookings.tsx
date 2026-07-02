@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bookmark, Calendar, Clock, Video, Check, X, Star, MessageSquare, Smile, Loader2, AlertCircle, Coins,
 } from 'lucide-react';
 import { bookingsApi } from '../api/bookings';
+import { paymentApi } from '../api/payment';
 import { onAvatarError } from '../lib/img';
 import { chatSocket } from '../lib/chatSocket';
 import { PaymentModal } from '../components/PaymentModal';
@@ -208,6 +209,32 @@ export const MyBookings: React.FC = () => {
     const unsubscribe = chatSocket.onBookingStatus(() => { load(true); });
     return () => { unsubscribe(); };
   }, [load]);
+
+  // Self-heal: nếu webhook PayOS về trễ/miss, booking mentee kẹt ở "chờ thanh toán".
+  // Gọi getByBooking để BE đồng bộ trạng thái từ PayOS + finalize; nếu đã PAID thì
+  // refresh danh sách. Mỗi booking chỉ sync 1 lần/lần mount để tránh gọi lặp.
+  const syncedPaymentsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const pending = menteeBookings.filter(
+      (b) => b.status === 'ACCEPTED_AWAITING_PAYMENT' && !syncedPaymentsRef.current.has(b.bookingId),
+    );
+    if (pending.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      let anyPaid = false;
+      await Promise.all(pending.map(async (b) => {
+        syncedPaymentsRef.current.add(b.bookingId);
+        try {
+          const order = await paymentApi.getByBooking(b.bookingId);
+          if (order?.status === 'PAID') anyPaid = true;
+        } catch {
+          // 404 = booking chưa từng checkout; bỏ qua.
+        }
+      }));
+      if (!cancelled && anyPaid) load(true);
+    })();
+    return () => { cancelled = true; };
+  }, [menteeBookings, load]);
 
   const handleOpenAccept = (booking: Booking) => {
     setActiveMentorBooking(booking);
