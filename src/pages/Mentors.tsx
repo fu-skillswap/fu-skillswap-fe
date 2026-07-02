@@ -558,7 +558,7 @@ export const Mentors: React.FC = () => {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-body font-semibold">
                 <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Cơ sở giảng dạy</span>
+                  <span className="text-meta text-slate-400">Cơ sở học tập</span>
                   <span className="text-slate-800">{selectedMentorDetail.campusName}</span>
                 </div>
                 <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
@@ -566,7 +566,7 @@ export const Mentors: React.FC = () => {
                   <span className="text-slate-800">{selectedMentorDetail.specializationName}</span>
                 </div>
                 <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Hình thức dạy học</span>
+                  <span className="text-meta text-slate-400">Hình thức hỗ trợ</span>
                   <span className="text-slate-800">
                     {selectedMentorDetail.teachingMode === 'ONLINE'
                       ? 'Trực tuyến (Online)'
@@ -608,12 +608,12 @@ export const Mentors: React.FC = () => {
             <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
               <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
                 <BookOpen className="w-5 h-5 text-teal-600" />
-                <span>Danh sách lớp học của Mentor</span>
+                <span>Các môn hỗ trợ của Mentor</span>
               </h3>
 
               <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
                 {!selectedMentorDetail.services || selectedMentorDetail.services.length === 0 ? (
-                  <p className="text-body text-slate-400 italic text-center py-8">Mentor chưa đăng ký lớp học nào.</p>
+                  <p className="text-body text-slate-400 italic text-center py-8">Mentor chưa cập nhật môn học hỗ trợ nào.</p>
                 ) : (
                   selectedMentorDetail.services.map((srv) => (
                     <div key={srv.serviceId} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 space-y-3 hover:shadow-sm hover:border-slate-200/80 transition-all text-left relative overflow-hidden group">
@@ -654,7 +654,7 @@ export const Mentors: React.FC = () => {
           ) : (
             <>
               <div className="border-b border-slate-100 pb-4 mb-6">
-                <h3 className="text-lg font-black text-slate-800 font-serif">Đặt lịch học cùng {selectedMentorDetail.displayName}</h3>
+                <h3 className="text-lg font-black text-slate-800 font-serif">Đặt lịch hẹn hỗ trợ cùng {selectedMentorDetail.displayName}</h3>
                 <p className="text-body text-slate-500 font-medium mt-1">Chọn khung giờ trống trên lịch → Chọn môn học hỗ trợ → Điền mục tiêu học tập</p>
               </div>
 
@@ -757,7 +757,7 @@ export const Mentors: React.FC = () => {
                                       <div className="text-[9px] font-extrabold flex items-center justify-between">
                                         <span className="flex items-center gap-0.5">
                                           <Clock className="w-2.5 h-2.5 shrink-0" />
-                                          {fmtTime(slot.startTime)}
+                                          {fmtTime(slot.startTime)} - {fmtTime(slot.endTime)}
                                         </span>
                                       </div>
 
@@ -789,13 +789,14 @@ export const Mentors: React.FC = () => {
                   )}
                 </div>
 
-                {/* Right Column: Booking Configuration Form (col-span-4) */}
                 <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6 text-left">
                   {!selectedSlotId ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-slate-50/50 border border-dashed border-slate-200 rounded-3xl min-h-[300px] shadow-[inset_0_4px_10px_rgba(0,0,0,0.01)] bg-[radial-gradient(rgba(0,0,0,0.015)_1px,transparent_1px)] [background-size:10px_10px]">
                       <Calendar className="w-12 h-12 text-slate-300 mb-3.5" />
                       <h4 className="text-body font-black text-slate-700">Cấu hình Đăng ký</h4>
-                      <p className="text-meta text-slate-400 font-medium mt-1.5 max-w-[240px] leading-relaxed">Vui lòng chọn một khung lịch rảnh (màu xanh lá) trên lịch để bắt đầu điền thông tin đặt lịch học.</p>
+                      <p className="text-meta text-slate-400 font-bold mt-2.5 max-w-[260px] leading-relaxed">
+                        👉 <span className="text-primary font-black">Hướng dẫn:</span> Bạn cần <span className="text-slate-800 font-extrabold">bấm chọn một khung lịch rảnh (màu xanh lá)</span> ở bảng lịch bên trái, hệ thống mới tải các giờ cụ thể tại đây để bạn chọn.
+                      </p>
                     </div>
                   ) : (
                     <form onSubmit={handleBookingSubmit} className="space-y-5">
@@ -826,13 +827,14 @@ export const Mentors: React.FC = () => {
                         ) : (
                           <div className="space-y-1.5">
                             {slotServices.map(s => {
-                              const selected = selectedServiceId === s.serviceId;
+                              const sId = s.serviceId || (s as any).id;
+                              const selected = selectedServiceId === sId;
                               return (
                                 <button
-                                  key={s.serviceId}
+                                  key={sId}
                                   type="button"
                                   onClick={() => {
-                                    setSelectedServiceId(s.serviceId);
+                                    setSelectedServiceId(sId);
                                     setBookingError(null);
                                   }}
                                   className={`w-full p-3 rounded-xl border flex items-center justify-between text-left transition-all duration-200 ${selected
@@ -850,36 +852,38 @@ export const Mentors: React.FC = () => {
                       </div>
 
                       {/* Precise segment candidate selector */}
-                      {selectedSlotId && selectedServiceId && (
-                        <div className="space-y-1.5">
-                          <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Giờ học cụ thể</label>
-                          {candidatesLoading ? (
-                            <div className="flex items-center gap-2 text-meta text-slate-400 font-semibold py-1">
-                              <Loader2 className="w-4 h-4 animate-spin text-teal-600" /> Đang kiểm tra slot trống...
-                            </div>
-                          ) : candidates.length === 0 ? (
-                            <p className="text-meta text-rose-600 font-semibold">Hiện tại khung giờ này đã không còn trống, vui lòng chọn lại khung giờ khác.</p>
-                          ) : (
-                            <select
-                              value={selectedCandidateKey}
-                              onChange={(e) => setSelectedCandidateKey(e.target.value)}
-                              className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-body text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer shadow-sm shadow-slate-100"
-                            >
-                              <option value="" disabled className="text-slate-400">-- Chọn giờ học --</option>
-                              {candidates.map((c) => {
-                                const key = `${c.startTime}|${c.endTime}`;
-                                const dateObj = parseCandidateTime(c.startTime);
-                                const timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                                return (
-                                  <option key={key} value={key} className="text-slate-800 font-semibold">
-                                    {timeStr}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          )}
-                        </div>
-                      )}
+                      <div className="space-y-1.5">
+                        <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Giờ học cụ thể</label>
+                        {!selectedServiceId ? (
+                          <p className="text-meta text-slate-400 italic py-1">Vui lòng bấm chọn khung lịch rảnh (màu xanh lá) ở bên trái để tải giờ học.</p>
+                        ) : candidatesLoading ? (
+                          <div className="flex items-center gap-2 text-meta text-slate-400 font-semibold py-1">
+                            <Loader2 className="w-4 h-4 animate-spin text-teal-600" /> Đang kiểm tra slot trống...
+                          </div>
+                        ) : candidates.length === 0 ? (
+                          <p className="text-meta text-rose-600 font-semibold">Hiện tại khung giờ này đã không còn trống, vui lòng chọn lại khung giờ khác.</p>
+                        ) : (
+                          <select
+                            value={selectedCandidateKey}
+                            onChange={(e) => setSelectedCandidateKey(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-body text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer shadow-sm shadow-slate-100"
+                          >
+                            <option value="" disabled className="text-slate-400">-- Chọn giờ học --</option>
+                            {candidates.map((c) => {
+                              const key = `${c.startTime}|${c.endTime}`;
+                              const dateObj = parseCandidateTime(c.startTime);
+                              const endObj = parseCandidateTime(c.endTime);
+                              const startStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                              const endStr = endObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                              return (
+                                <option key={key} value={key} className="text-slate-800 font-semibold">
+                                  {startStr} - {endStr}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        )}
+                      </div>
 
                       {/* Goal Title */}
                       <div className="space-y-1.5">
