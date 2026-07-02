@@ -83,6 +83,7 @@ const statusBadge = (status: BookingStatus) => {
   switch (status) {
     case 'PENDING': return 'bg-amber-50 text-amber-700 border-amber-200';
     case 'ACCEPTED': return 'bg-green-50 text-green-700 border-green-200';
+    case 'PAID': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     case 'ACCEPTED_AWAITING_PAYMENT': return 'bg-orange-50 text-orange-700 border-orange-200';
     case 'PAYMENT_EXPIRED': return 'bg-red-50 text-red-600 border-red-200';
     case 'AWAITING_MENTOR_COMPLETION':
@@ -98,6 +99,7 @@ const statusLabel = (status: BookingStatus, completedLabel = 'Hoàn thành') => 
   switch (status) {
     case 'PENDING': return 'Chờ duyệt';
     case 'ACCEPTED': return 'Đã nhận';
+    case 'PAID': return 'Đã thanh toán';
     case 'ACCEPTED_AWAITING_PAYMENT': return 'Chờ thanh toán';
     case 'PAYMENT_EXPIRED': return 'Hết hạn thanh toán';
     case 'AWAITING_MENTOR_COMPLETION': return 'Chờ mentor xác nhận';
@@ -433,7 +435,7 @@ export const MyBookings: React.FC = () => {
   const pendingList = mentorBookings.filter((b) => b.status === 'PENDING');
   const awaitingPaymentList = mentorBookings.filter((b) => b.status === 'ACCEPTED_AWAITING_PAYMENT');
   // "Đã xác nhận" gồm các lịch dạy đã được mentor đồng ý và đã thanh toán (hoặc miễn phí).
-  const confirmedList = mentorBookings.filter((b) => b.status === 'ACCEPTED');
+  const confirmedList = mentorBookings.filter((b) => ['ACCEPTED', 'PAID'].includes(b.status));
   // "Đã hoàn thành" gồm các lịch hẹn đã học xong (đang chờ xác nhận hoàn thành, tự đóng, đang xem xét, hoặc đã hoàn tất).
   const completedList = mentorBookings.filter((b) =>
     ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
@@ -443,7 +445,7 @@ export const MyBookings: React.FC = () => {
   const menteePendingList = menteeBookings.filter((b) => b.status === 'PENDING');
   const menteeAwaitingPaymentList = menteeBookings.filter((b) => b.status === 'ACCEPTED_AWAITING_PAYMENT');
   const menteeConfirmedList = menteeBookings.filter((b) =>
-    ['ACCEPTED', 'PAYMENT_EXPIRED', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
+    ['ACCEPTED', 'PAID', 'PAYMENT_EXPIRED', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
   );
   const menteeCompletedList = menteeBookings.filter((b) =>
     ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW', 'REJECTED', 'CANCELLED'].includes(b.status),
