@@ -66,7 +66,7 @@ const isPaidBooking = (b: Booking) =>
  *  4. Đã hoàn thành      -> mình dạy, status COMPLETED
  * ------------------------------------------------------------------------- */
 
-type TabKey = 'confirmed' | 'pending' | 'mine' | 'completed';
+type TabKey = 'confirmed' | 'pending' | 'mine' | 'completed' | 'awaiting_payment';
 
 const MEETING_PLATFORMS: { value: MeetingPlatform; label: string }[] = [
   { value: 'GOOGLE_MEET', label: 'Google Meet' },
@@ -395,16 +395,17 @@ export const MyBookings: React.FC = () => {
   };
 
   const pendingList = mentorBookings.filter((b) => b.status === 'PENDING');
-  // "Đã xác nhận" gồm cả các trạng thái đang diễn ra / chờ hoàn tất.
-  const confirmedList = mentorBookings.filter((b) =>
-    ['ACCEPTED', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
-  );
+  const awaitingPaymentList = mentorBookings.filter((b) => b.status === 'ACCEPTED_AWAITING_PAYMENT');
+  // "Đã xác nhận" gồm các lịch dạy đã được mentor đồng ý và đã thanh toán (hoặc miễn phí).
+  const confirmedList = mentorBookings.filter((b) => b.status === 'ACCEPTED');
+  // "Đã hoàn thành" gồm các lịch hẹn đã học xong (đang chờ xác nhận hoàn thành, tự đóng, đang xem xét, hoặc đã hoàn tất).
   const completedList = mentorBookings.filter((b) =>
-    ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW'].includes(b.status),
+    ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
   );
 
   const tabs: { key: TabKey; label: string; count: number }[] = [
     { key: 'pending', label: 'Cần xác nhận', count: pendingList.length },
+    { key: 'awaiting_payment', label: 'Chờ thanh toán', count: awaitingPaymentList.length },
     { key: 'confirmed', label: 'Đã xác nhận', count: confirmedList.length },
     { key: 'mine', label: 'Lịch hẹn mentor khác', count: menteeBookings.length },
     { key: 'completed', label: 'Đã hoàn thành', count: completedList.length },
@@ -603,17 +604,34 @@ export const MyBookings: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* --- Tab: Cần xác nhận / Đã xác nhận / Đã hoàn thành (lịch mình dạy) --- */}
-          {(tab === 'pending' || tab === 'confirmed' || tab === 'completed') && (
+          {/* --- Tab: Cần xác nhận / Chờ thanh toán / Đã xác nhận / Đã hoàn thành (lịch mình dạy) --- */}
+          {(tab === 'pending' || tab === 'awaiting_payment' || tab === 'confirmed' || tab === 'completed') && (
             <div className="space-y-4">
-              {(tab === 'pending' ? pendingList : tab === 'confirmed' ? confirmedList : completedList).length === 0 ? (
+              {(
+                tab === 'pending'
+                  ? pendingList
+                  : tab === 'awaiting_payment'
+                  ? awaitingPaymentList
+                  : tab === 'confirmed'
+                  ? confirmedList
+                  : completedList
+              ).length === 0 ? (
                 <div className="meetmind-card py-16 text-center text-brand-text-muted text-body font-semibold rounded-card">
                   {tab === 'pending' && 'Không có yêu cầu nào đang chờ bạn xác nhận.'}
+                  {tab === 'awaiting_payment' && 'Không có lịch hẹn nào đang chờ học viên thanh toán.'}
                   {tab === 'confirmed' && 'Bạn chưa có lịch dạy nào được xác nhận.'}
                   {tab === 'completed' && 'Chưa có buổi dạy nào hoàn thành.'}
                 </div>
               ) : (
-                (tab === 'pending' ? pendingList : tab === 'confirmed' ? confirmedList : completedList).map((b) => (
+                (
+                  tab === 'pending'
+                    ? pendingList
+                    : tab === 'awaiting_payment'
+                    ? awaitingPaymentList
+                    : tab === 'confirmed'
+                    ? confirmedList
+                    : completedList
+                ).map((b) => (
                   <div
                     key={b.bookingId}
                     className="meetmind-card p-6 rounded-card relative overflow-hidden flex flex-col md:flex-row justify-between gap-6"
