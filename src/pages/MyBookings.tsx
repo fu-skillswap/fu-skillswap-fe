@@ -66,7 +66,7 @@ const isPaidBooking = (b: Booking) =>
  *  4. Đã hoàn thành      -> mình dạy, status COMPLETED
  * ------------------------------------------------------------------------- */
 
-type TabKey = 'confirmed' | 'pending' | 'mine' | 'completed' | 'awaiting_payment';
+type TabKey = 'confirmed' | 'pending' | 'completed' | 'awaiting_payment';
 
 const MEETING_PLATFORMS: { value: MeetingPlatform; label: string }[] = [
   { value: 'GOOGLE_MEET', label: 'Google Meet' },
@@ -403,12 +403,21 @@ export const MyBookings: React.FC = () => {
     ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
   );
 
+  // Mentee bookings gộp vào tab theo trạng thái
+  const menteePendingList = menteeBookings.filter((b) => b.status === 'PENDING');
+  const menteeAwaitingPaymentList = menteeBookings.filter((b) => b.status === 'ACCEPTED_AWAITING_PAYMENT');
+  const menteeConfirmedList = menteeBookings.filter((b) =>
+    ['ACCEPTED', 'PAYMENT_EXPIRED', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
+  );
+  const menteeCompletedList = menteeBookings.filter((b) =>
+    ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW', 'REJECTED', 'CANCELLED'].includes(b.status),
+  );
+
   const tabs: { key: TabKey; label: string; count: number }[] = [
-    { key: 'pending', label: 'Cần xác nhận', count: pendingList.length },
-    { key: 'awaiting_payment', label: 'Chờ thanh toán', count: awaitingPaymentList.length },
-    { key: 'confirmed', label: 'Đã xác nhận', count: confirmedList.length },
-    { key: 'mine', label: 'Lịch hẹn mentor khác', count: menteeBookings.length },
-    { key: 'completed', label: 'Đã hoàn thành', count: completedList.length },
+    { key: 'pending', label: 'Cần xác nhận', count: pendingList.length + menteePendingList.length },
+    { key: 'awaiting_payment', label: 'Chờ thanh toán', count: awaitingPaymentList.length + menteeAwaitingPaymentList.length },
+    { key: 'confirmed', label: 'Đã xác nhận', count: confirmedList.length + menteeConfirmedList.length },
+    { key: 'completed', label: 'Đã hoàn thành', count: completedList.length + menteeCompletedList.length },
   ];
 
   return (
@@ -604,34 +613,37 @@ export const MyBookings: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* --- Tab: Cần xác nhận / Chờ thanh toán / Đã xác nhận / Đã hoàn thành (lịch mình dạy) --- */}
-          {(tab === 'pending' || tab === 'awaiting_payment' || tab === 'confirmed' || tab === 'completed') && (
+          {/* --- Tab: Cần xác nhận / Chờ thanh toán / Đã xác nhận / Đã hoàn thành --- */}
+          {(tab === 'pending' || tab === 'awaiting_payment' || tab === 'confirmed' || tab === 'completed') && (() => {
+            const mentorList =
+              tab === 'pending'
+                ? pendingList
+                : tab === 'awaiting_payment'
+                ? awaitingPaymentList
+                : tab === 'confirmed'
+                ? confirmedList
+                : completedList;
+            const menteeList =
+              tab === 'pending'
+                ? menteePendingList
+                : tab === 'awaiting_payment'
+                ? menteeAwaitingPaymentList
+                : tab === 'confirmed'
+                ? menteeConfirmedList
+                : menteeCompletedList;
+            const totalEmpty = mentorList.length === 0 && menteeList.length === 0;
+            return (
             <div className="space-y-4">
-              {(
-                tab === 'pending'
-                  ? pendingList
-                  : tab === 'awaiting_payment'
-                  ? awaitingPaymentList
-                  : tab === 'confirmed'
-                  ? confirmedList
-                  : completedList
-              ).length === 0 ? (
+              {totalEmpty ? (
                 <div className="meetmind-card py-16 text-center text-brand-text-muted text-body font-semibold rounded-card">
-                  {tab === 'pending' && 'Không có yêu cầu nào đang chờ bạn xác nhận.'}
-                  {tab === 'awaiting_payment' && 'Không có lịch hẹn nào đang chờ học viên thanh toán.'}
-                  {tab === 'confirmed' && 'Bạn chưa có lịch dạy nào được xác nhận.'}
-                  {tab === 'completed' && 'Chưa có buổi dạy nào hoàn thành.'}
+                  {tab === 'pending' && 'Không có yêu cầu nào đang chờ xác nhận.'}
+                  {tab === 'awaiting_payment' && 'Không có lịch hẹn nào đang chờ thanh toán.'}
+                  {tab === 'confirmed' && 'Bạn chưa có lịch nào được xác nhận.'}
+                  {tab === 'completed' && 'Chưa có buổi nào hoàn thành.'}
                 </div>
               ) : (
-                (
-                  tab === 'pending'
-                    ? pendingList
-                    : tab === 'awaiting_payment'
-                    ? awaitingPaymentList
-                    : tab === 'confirmed'
-                    ? confirmedList
-                    : completedList
-                ).map((b) => (
+                <>
+                {mentorList.map((b) => (
                   <div
                     key={b.bookingId}
                     className="meetmind-card p-6 rounded-card relative overflow-hidden flex flex-col md:flex-row justify-between gap-6"
@@ -758,20 +770,8 @@ export const MyBookings: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* --- Tab: Lịch hẹn mentor khác (lịch mình đặt làm mentee) --- */}
-          {tab === 'mine' && (
-            <div className="space-y-4">
-              {menteeBookings.length === 0 ? (
-                <div className="meetmind-card py-16 text-center text-brand-text-muted text-body font-semibold rounded-card">
-                  Bạn chưa gửi yêu cầu đặt lịch nào.
-                </div>
-              ) : (
-                menteeBookings.map((b) => {
+                ))}
+                {menteeList.map((b) => {
                   const reviewed = reviewedIds.has(b.bookingId);
                   return (
                     <div
@@ -927,10 +927,12 @@ export const MyBookings: React.FC = () => {
                       </div>
                     </div>
                   );
-                })
+                })}
+                </>
               )}
             </div>
-          )}
+            );
+          })()}
         </>
       )}
 

@@ -130,14 +130,10 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Hero Section — nền gradient (bỏ ảnh campus để tránh dấu vết thương hiệu trường) */}
-      <section
-        className="relative overflow-hidden text-white py-28 lg:py-36 text-left"
-        style={{ background: 'linear-gradient(120deg, #051138 0%, #0a2a6e 55%, #1e3a8a 105%)' }}
-      >
-        {/* Hoạ tiết chấm + overlay cho chiều sâu */}
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.4px)', backgroundSize: '22px 22px' }}></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#051138]/90 via-[#051138]/40 to-transparent pointer-events-none"></div>
+      {/* Hero Section — mobile: nền gradient (ẩn ảnh vì chỉ khớp desktop); desktop (lg+): giữ ảnh illustration như cũ */}
+      <section className="relative overflow-hidden text-white py-20 sm:py-24 lg:py-36 text-left bg-gradient-to-br from-brand-primary via-brand-primary to-[#051138] lg:bg-[url('/hero-illustration.jpg')] lg:bg-cover lg:bg-right">
+        {/* Hoạ tiết chấm mờ chỉ hiện trên mobile (desktop đã có ảnh nền) */}
+        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none lg:hidden"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content Left */}
@@ -152,7 +148,7 @@ export const LandingPage: React.FC = () => {
             </h1>
 
             <p className="text-slate-200 text-body sm:text-body font-semibold max-w-xl leading-relaxed">
-              SkillSwap là nền tảng kết nối sinh viên đại học với các mentor có chuyên môn phù hợp. Bạn có thể tìm mentor để được hỗ trợ về lập trình, thiết kế UI/UX, ngoại ngữ hay bất kỳ lĩnh vực học thuật nào — mọi thứ trong cùng một cộng đồng sinh viên.
+              SkillSwap — nền tảng kết nối Alumni và Mentee dành riêng cho sinh viên FPTU HCM. Tìm mentor để được hỗ trợ về lập trình, thiết kế UI/UX, ngoại ngữ hay bất kỳ lĩnh vực nào — hoàn toàn miễn phí trong cùng một cộng đồng sinh viên.
             </p>
 
             <div className="flex flex-wrap gap-4 pt-2">
@@ -172,10 +168,8 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Hero illustration (tranh vẽ) */}
-          <div className="hidden lg:flex justify-center items-center">
-            <img src="/illustration-hero.svg" alt="Cộng đồng trao đổi kỹ năng" className="w-full max-w-lg drop-shadow-2xl animate-fadeIn" />
-          </div>
+          {/* empty right col — image is bg */}
+          <div className="hidden lg:block" />
         </div>
       </section>
 
@@ -512,11 +506,19 @@ export const LandingPage: React.FC = () => {
 
           <div className="space-y-3">
             <span className="text-white font-bold block uppercase tracking-wider text-meta">Liên hệ & Hỗ trợ</span>
-            <p className="leading-relaxed font-semibold">
-              Đội ngũ SkillSwap — dự án học tập thực chiến.<br />
-              Email: support@skillswap.asia
-            </p>
-            <ul className="space-y-2 font-semibold mt-2">
+            <ul className="space-y-2 font-semibold">
+              <li className="flex items-center gap-2">
+                <span>📞</span>
+                <span>091 157 12 19</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span>✉️</span>
+                <a href="mailto:skillswapfptu@gmail.com" className="hover:text-white transition-colors">skillswapfptu@gmail.com</a>
+              </li>
+              <li className="flex items-center gap-2">
+                <span>💬</span>
+                <span>FPT SkillSwap Community</span>
+              </li>
               <li><a href="/terms" className="hover:text-white transition-colors">Nội quy & Điều khoản</a></li>
             </ul>
           </div>

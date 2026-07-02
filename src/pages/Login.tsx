@@ -131,17 +131,10 @@ export const Login: React.FC = () => {
 
       {/* ===== LEFT: panel minh hoạ (ẩn trên mobile) ===== */}
       <div
-        className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 overflow-hidden text-white"
-        style={{ background: 'linear-gradient(140deg, #10b981 0%, #1d6fd6 58%, #1e3a8a 112%)' }}
+        className="hidden lg:flex lg:w-1/2 relative flex-col items-end justify-end overflow-hidden text-white"
+        style={{ backgroundImage: 'url(/login-illustration.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
-        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.07) 1px, transparent 1.4px)', backgroundSize: '22px 22px' }} />
-        <div className="relative z-10 flex flex-col items-center text-center max-w-md">
-          <img src="/illustration-connect.svg" alt="Trao đổi kỹ năng" className="w-[420px] max-w-full drop-shadow-xl" />
-          <h2 className="text-3xl font-extrabold tracking-tight mt-6">Chào mừng đến SkillSwap</h2>
-          <p className="text-white/85 text-body font-medium mt-3 leading-relaxed">
-            Trao đổi kỹ năng học thuật, kết nối với mentor và cùng nhau phát triển.
-          </p>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#051138]/70 via-transparent to-transparent pointer-events-none" />
       </div>
 
       {/* ===== RIGHT: form đăng nhập ===== */}
@@ -284,72 +277,72 @@ export const Login: React.FC = () => {
             Bằng cách đăng nhập, bạn đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật của chúng tôi.
           </p>
 
-        {/* Dev Bypass Section — chỉ hiển thị khi chạy ở môi trường dev, không xuất hiện trên bản production */}
-        {import.meta.env.DEV && (
-        <>
-        {/* Divider */}
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-brand-border"></div>
-          </div>
-          <div className="relative flex justify-center text-body">
-            <span className="bg-surface-container-lowest px-3 text-brand-text-muted uppercase tracking-widest font-bold text-meta">
-              Hoặc thử nghiệm
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-4 text-left">
-          <button
-            onClick={() => setShowDevBypass(!showDevBypass)}
-            className="w-full flex items-center justify-between py-2.5 px-4 rounded-field bg-brand-bg/50 hover:bg-brand-bg text-brand-text-muted hover:text-brand-text border border-brand-border transition-all text-body font-semibold cursor-pointer"
-          >
-            <span className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-brand-terracotta" />
-              Chế độ nhà phát triển (Bypass)
-            </span>
-            <span className="text-brand-text-muted text-meta bg-surface border border-brand-border px-2 py-0.5 rounded-md font-bold">
-              {showDevBypass ? 'Đóng' : 'Mở'}
-            </span>
-          </button>
-
-          {showDevBypass && (
-            <div className="mt-3 bg-brand-bg/30 border border-brand-border rounded-card p-4 space-y-3">
-              <div className="flex items-start gap-2 text-meta text-brand-text-muted">
-                <HelpCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-brand-terracotta" />
-                <span>Chọn vai trò demo bên dưới để đăng nhập trực tiếp mà không cần ID Google Token thực tế. Bạn sẽ được chuyển tới trang thiết lập hồ sơ học thuật.</span>
+          {/* Dev Bypass Section — chỉ hiển thị khi chạy ở môi trường dev, không xuất hiện trên bản production */}
+          {import.meta.env.DEV && (
+            <>
+              {/* Divider */}
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-brand-border"></div>
+                </div>
+                <div className="relative flex justify-center text-body">
+                  <span className="bg-surface-container-lowest px-3 text-brand-text-muted uppercase tracking-widest font-bold text-meta">
+                    Hoặc thử nghiệm
+                  </span>
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+
+              <div className="mt-4 text-left">
                 <button
-                  onClick={() => handleDevLogin('MENTEE')}
-                  className="flex flex-col items-center gap-1.5 bg-brand-blue/10 hover:bg-brand-blue/20 border border-brand-blue/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-blue transition-all cursor-pointer"
+                  onClick={() => setShowDevBypass(!showDevBypass)}
+                  className="w-full flex items-center justify-between py-2.5 px-4 rounded-field bg-brand-bg/50 hover:bg-brand-bg text-brand-text-muted hover:text-brand-text border border-brand-border transition-all text-body font-semibold cursor-pointer"
                 >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Sinh viên</span>
+                  <span className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-brand-terracotta" />
+                    Chế độ nhà phát triển (Bypass)
+                  </span>
+                  <span className="text-brand-text-muted text-meta bg-surface border border-brand-border px-2 py-0.5 rounded-md font-bold">
+                    {showDevBypass ? 'Đóng' : 'Mở'}
+                  </span>
                 </button>
-                <button
-                  onClick={() => handleDevLogin('MENTOR')}
-                  className="flex flex-col items-center gap-1.5 bg-brand-terracotta/10 hover:bg-brand-terracotta/20 border border-brand-terracotta/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-terracotta transition-all cursor-pointer"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Mentor</span>
-                </button>
-                <button
-                  onClick={() => handleDevLogin('ADMIN')}
-                  className="flex flex-col items-center gap-1.5 bg-brand-sidebar/10 hover:bg-brand-sidebar/20 border border-brand-sidebar/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-sidebar/80 transition-all cursor-pointer"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Admin</span>
-                </button>
+
+                {showDevBypass && (
+                  <div className="mt-3 bg-brand-bg/30 border border-brand-border rounded-card p-4 space-y-3">
+                    <div className="flex items-start gap-2 text-meta text-brand-text-muted">
+                      <HelpCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-brand-terracotta" />
+                      <span>Chọn vai trò demo bên dưới để đăng nhập trực tiếp mà không cần ID Google Token thực tế. Bạn sẽ được chuyển tới trang thiết lập hồ sơ học thuật.</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => handleDevLogin('MENTEE')}
+                        className="flex flex-col items-center gap-1.5 bg-brand-blue/10 hover:bg-brand-blue/20 border border-brand-blue/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-blue transition-all cursor-pointer"
+                      >
+                        <User className="w-3.5 h-3.5" />
+                        <span>Sinh viên</span>
+                      </button>
+                      <button
+                        onClick={() => handleDevLogin('MENTOR')}
+                        className="flex flex-col items-center gap-1.5 bg-brand-terracotta/10 hover:bg-brand-terracotta/20 border border-brand-terracotta/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-terracotta transition-all cursor-pointer"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Mentor</span>
+                      </button>
+                      <button
+                        onClick={() => handleDevLogin('ADMIN')}
+                        className="flex flex-col items-center gap-1.5 bg-brand-sidebar/10 hover:bg-brand-sidebar/20 border border-brand-sidebar/20 py-2.5 px-2 rounded-field text-meta font-bold text-brand-sidebar/80 transition-all cursor-pointer"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Admin</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            </>
           )}
-        </div>
-        </>
-        )}
 
-          </div>
         </div>
       </div>
+    </div>
   );
 };
