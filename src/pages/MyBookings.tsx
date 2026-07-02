@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
+import { chatSocket } from '../lib/chatSocket';
 import { PaymentModal } from '../components/PaymentModal';
 import type { Booking, BookingStatus, MeetingPlatform } from '../api/types';
 
@@ -180,8 +181,8 @@ export const MyBookings: React.FC = () => {
     window.dispatchEvent(new Event('refresh-notifications'));
   };
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setLoadError(null);
     try {
       const [asMentor, asMentee] = await Promise.all([
@@ -192,13 +193,21 @@ export const MyBookings: React.FC = () => {
       setMenteeBookings(asMentee?.content ?? []);
     } catch (err: any) {
       console.error('Không tải được danh sách booking', err);
-      setLoadError(err?.response?.data?.message || 'Không tải được lịch hẹn. Vui lòng thử lại.');
+      if (!silent) setLoadError(err?.response?.data?.message || 'Không tải được lịch hẹn. Vui lòng thử lại.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Realtime: BE đẩy BOOKING_STATUS_UPDATED khi trạng thái booking đổi (vd thanh
+  // toán PayOS xong → PAID). Refresh ngầm để danh sách cập nhật không cần F5.
+  useEffect(() => {
+    chatSocket.connect();
+    const unsubscribe = chatSocket.onBookingStatus(() => { load(true); });
+    return () => { unsubscribe(); };
+  }, [load]);
 
   const handleOpenAccept = (booking: Booking) => {
     setActiveMentorBooking(booking);

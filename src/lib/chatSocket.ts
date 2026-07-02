@@ -2,10 +2,10 @@
 // src/lib/chatSocket.ts — Raw WebSocket realtime client.
 // BE (mới) bỏ STOMP/SockJS, dùng raw WS tại /ws?token=<accessToken>.
 // Server đẩy envelope JSON { type, payload, timestamp } với type:
-//   AUTH_OK | CHAT_MESSAGE_CREATED | NEW_NOTIFICATION | PONG | ERROR
+//   AUTH_OK | CHAT_MESSAGE_CREATED | NEW_NOTIFICATION | BOOKING_STATUS_UPDATED | PONG | ERROR
 // Client gửi { type: "PING" } để giữ kết nối.
 // =====================================================================
-import type { ChatMessageEvent, NotificationItem } from '../api/types';
+import type { ChatMessageEvent, NotificationItem, BookingStatusEvent } from '../api/types';
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'https://api.skillswap.asia';
@@ -18,6 +18,7 @@ const RECONNECT_DELAY_MS = 5_000;
 
 type MessageHandler = (event: ChatMessageEvent) => void;
 type NotificationHandler = (notification: NotificationItem) => void;
+type BookingStatusHandler = (event: BookingStatusEvent) => void;
 type StatusHandler = (connected: boolean) => void;
 
 interface RealtimeEnvelope {
@@ -29,6 +30,7 @@ class ChatSocket {
   private ws: WebSocket | null = null;
   private messageHandlers = new Set<MessageHandler>();
   private notificationHandlers = new Set<NotificationHandler>();
+  private bookingStatusHandlers = new Set<BookingStatusHandler>();
   private statusHandlers = new Set<StatusHandler>();
   private connected = false;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
@@ -79,6 +81,9 @@ class ChatSocket {
         break;
       case 'NEW_NOTIFICATION':
         this.notificationHandlers.forEach((h) => h(envelope.payload as NotificationItem));
+        break;
+      case 'BOOKING_STATUS_UPDATED':
+        this.bookingStatusHandlers.forEach((h) => h(envelope.payload as BookingStatusEvent));
         break;
       case 'PONG':
         break;
@@ -133,6 +138,12 @@ class ChatSocket {
     return () => this.notificationHandlers.delete(handler);
   }
 
+  /** Đăng ký nhận cập nhật trạng thái booking realtime. Trả về hàm hủy đăng ký. */
+  onBookingStatus(handler: BookingStatusHandler): () => void {
+    this.bookingStatusHandlers.add(handler);
+    return () => this.bookingStatusHandlers.delete(handler);
+  }
+
   /** Đăng ký theo dõi trạng thái kết nối. Trả về hàm hủy đăng ký. */
   onStatus(handler: StatusHandler): () => void {
     this.statusHandlers.add(handler);
@@ -145,6 +156,7 @@ class ChatSocket {
     this.intentionalClose = true;
     this.messageHandlers.clear();
     this.notificationHandlers.clear();
+    this.bookingStatusHandlers.clear();
     this.statusHandlers.clear();
     this.stopPing();
     if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
