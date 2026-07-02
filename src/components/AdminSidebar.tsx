@@ -52,7 +52,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
             <Link to="/admin/mentor-verification" onClick={onClose} className="flex items-center gap-2.5 group text-left">
               <img src="/logo.svg" alt="SkillSwap Logo" className="w-11 h-11 object-contain" />
               <div className="flex flex-col">
-                <span className="text-head font-extrabold tracking-tight text-primary leading-none">SkillSwap</span>
+                <span className="text-head font-extrabold tracking-tight text-fg leading-none">SkillSwap</span>
                 <span className="text-[10px] text-text-muted mt-1 font-semibold tracking-wide">Admin Control Panel</span>
               </div>
             </Link>

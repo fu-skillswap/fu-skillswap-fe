@@ -88,72 +88,24 @@
   --shadow-card: 0 1px 3px rgba(15,23,42,.03), 0 8px 26px rgba(15,23,42,.045);
 }
 
-/* ── Midnight (dark navy premium) ──────────────────────────────────── */
-[data-theme="navy"] {
-  --app-bg:        #07111f;
-  --surface:       #0e1e32;
-  --surface-muted: #172840;
-  --line:          rgba(148,163,184,.12);
-  --line-soft:     rgba(148,163,184,.08);
-  --fg:            #e8f0fe;
-  --fg-muted:      #8ba3c7;
-  --fg-faint:      #4e6a8d;
-  --primary:       #4d8cff; --primary-hover: #7aaaff; --primary-soft: rgba(77,140,255,.18);
-  --action:        #4d8cff; --action-hover:  #7aaaff;
-  --accent:        #2dd4bf;
-  --on-action:     #ffffff;
-  --shadow-card: 0 1px 4px rgba(0,0,0,.5), 0 10px 30px rgba(0,0,0,.45);
-}
-
-/* ── Aurora (violet purple) ─────────────────────────────────────────── */
+/* ── Aurora (violet purple - Chế độ tối/ban đêm) ────────────────────── */
 [data-theme="violet"] {
-  --app-bg:        #faf5ff;
-  --surface:       #ffffff;
-  --surface-muted: #f3eeff;
-  --line:          rgba(167,139,250,.2);
-  --line-soft:     #ede9fe;
-  --fg:            #1e1133;
-  --fg-muted:      #6b4fa0;
-  --fg-faint:      #a78bfa;
-  --primary:       #7c3aed; --primary-hover: #6d28d9; --primary-soft: rgba(124,58,237,.1);
-  --action:        #7c3aed; --action-hover:  #6d28d9;
-  --accent:        #ec4899;
+  --app-bg:        #0c0a15; /* Nền tối sâu thẳm, tạo độ sâu không gian */
+  --surface:       #19152a; /* Card màu tím than đậm sang trọng, tương phản đẹp mắt */
+  --surface-muted: #242038; /* Vùng nhập liệu & chip sáng vừa phải */
+  --line:          rgba(167, 139, 250, 0.22); /* Viền card ánh tím nổi bật biên giới card */
+  --line-soft:     rgba(167, 139, 250, 0.08);
+  --fg:            #ffffff; /* Chữ chính trắng tinh khiết, sắc nét */
+  --fg-muted:      #cbd5e1; /* Chữ phụ màu xám Slate sáng, cực kỳ dễ đọc, không bị chìm vào nền tím */
+  --fg-faint:      #94a3b8; /* Chữ phụ nhỏ màu xám nhạt */
+  --primary:       #a78bfa; /* Tím oải hương làm màu thương hiệu chính */
+  --primary-hover: #c084fc;
+  --primary-soft:  rgba(167, 139, 250, 0.12);
+  --action:        #8b5cf6; /* Nút hành động màu tím violet */
+  --action-hover:  #a78bfa;
+  --accent:        #f472b6; /* Hồng neon làm điểm nhấn nổi bật */
   --on-action:     #ffffff;
-  --shadow-card: 0 1px 3px rgba(109,40,217,.06), 0 8px 26px rgba(109,40,217,.08);
-}
-
-/* ── Forest (deep emerald) ──────────────────────────────────────────── */
-[data-theme="emerald"] {
-  --app-bg:        #f0fdf7;
-  --surface:       #ffffff;
-  --surface-muted: #e6faf2;
-  --line:          rgba(16,185,129,.18);
-  --line-soft:     #d1fae5;
-  --fg:            #042f1e;
-  --fg-muted:      #1e6c4a;
-  --fg-faint:      #6ee7b7;
-  --primary:       #059669; --primary-hover: #047857; --primary-soft: rgba(5,150,105,.1);
-  --action:        #059669; --action-hover:  #047857;
-  --accent:        #f59e0b;
-  --on-action:     #ffffff;
-  --shadow-card: 0 1px 3px rgba(5,150,105,.06), 0 8px 26px rgba(5,150,105,.08);
-}
-
-/* ── Midnight Black ─────────────────────────────────────────────────── */
-[data-theme="dark"] {
-  --app-bg:        #0b0f1a;
-  --surface:       #111827;
-  --surface-muted: #1f2937;
-  --line:          rgba(148,163,184,.13);
-  --line-soft:     rgba(148,163,184,.09);
-  --fg:            #f9fafb;
-  --fg-muted:      #9ca3af;
-  --fg-faint:      #4b5563;
-  --primary:       #818cf8; --primary-hover: #a5b4fc; --primary-soft: rgba(129,140,248,.15);
-  --action:        #6366f1; --action-hover:  #818cf8;
-  --accent:        #34d399;
-  --on-action:     #ffffff;
-  --shadow-card: 0 1px 3px rgba(0,0,0,.5), 0 10px 30px rgba(0,0,0,.4);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 /* =====================================================================
@@ -284,6 +236,12 @@ body {
 .meetmind-sidebar-item:hover { background: var(--surface-muted); color: var(--fg); }
 .meetmind-sidebar-item-active { background: var(--surface-muted); color: var(--fg) !important; font-weight: 700; }
 .font-serif { font-family: var(--font-brand) !important; }
+
+/* Nổi bật tiêu đề và đầu mục */
+h1, h2, h3, h4, h5, h6, .text-head, .text-title, .text-display {
+  color: var(--fg);
+  font-weight: 800;
+}
 
 /* Scrollbar tiện ích */
 .scrollbar-none { scrollbar-width: none; }

@@ -140,7 +140,7 @@ export const Layout: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="SkillSwap Logo" className="w-8 h-8 object-contain" />
-            <span className="text-title font-bold tracking-tight text-primary">SkillSwap</span>
+            <span className="text-title font-bold tracking-tight text-fg">SkillSwap</span>
           </div>
 
           {/* Avatar → dropdown */}

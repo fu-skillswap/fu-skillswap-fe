@@ -67,7 +67,7 @@ const isPaidBooking = (b: Booking) =>
  *  4. Đã hoàn thành      -> mình dạy, status COMPLETED
  * ------------------------------------------------------------------------- */
 
-type TabKey = 'confirmed' | 'pending' | 'completed';
+type TabKey = 'confirmed' | 'pending' | 'completed' | 'awaiting_payment';
 
 const MEETING_PLATFORMS: { value: MeetingPlatform; label: string }[] = [
   { value: 'GOOGLE_MEET', label: 'Google Meet' },
@@ -404,18 +404,19 @@ export const MyBookings: React.FC = () => {
   };
 
   const pendingList = mentorBookings.filter((b) => b.status === 'PENDING');
-  // "Đã xác nhận" gồm cả các trạng thái đang diễn ra / chờ hoàn tất.
-  const confirmedList = mentorBookings.filter((b) =>
-    ['ACCEPTED', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
-  );
+  const awaitingPaymentList = mentorBookings.filter((b) => b.status === 'ACCEPTED_AWAITING_PAYMENT');
+  // "Đã xác nhận" gồm các lịch dạy đã được mentor đồng ý và đã thanh toán (hoặc miễn phí).
+  const confirmedList = mentorBookings.filter((b) => b.status === 'ACCEPTED');
+  // "Đã hoàn thành" gồm các lịch hẹn đã học xong (đang chờ xác nhận hoàn thành, tự đóng, đang xem xét, hoặc đã hoàn tất).
   const completedList = mentorBookings.filter((b) =>
-    ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW'].includes(b.status),
+    ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
   );
 
   // Mentee bookings gộp vào tab theo trạng thái
   const menteePendingList = menteeBookings.filter((b) => b.status === 'PENDING');
+  const menteeAwaitingPaymentList = menteeBookings.filter((b) => b.status === 'ACCEPTED_AWAITING_PAYMENT');
   const menteeConfirmedList = menteeBookings.filter((b) =>
-    ['ACCEPTED', 'ACCEPTED_AWAITING_PAYMENT', 'PAYMENT_EXPIRED', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
+    ['ACCEPTED', 'PAYMENT_EXPIRED', 'AWAITING_MENTOR_COMPLETION', 'AWAITING_MENTEE_CONFIRMATION'].includes(b.status),
   );
   const menteeCompletedList = menteeBookings.filter((b) =>
     ['COMPLETED', 'AUTO_CLOSED', 'UNDER_REVIEW', 'REJECTED', 'CANCELLED'].includes(b.status),
@@ -423,6 +424,7 @@ export const MyBookings: React.FC = () => {
 
   const tabs: { key: TabKey; label: string; count: number }[] = [
     { key: 'pending', label: 'Cần xác nhận', count: pendingList.length + menteePendingList.length },
+    { key: 'awaiting_payment', label: 'Chờ thanh toán', count: awaitingPaymentList.length + menteeAwaitingPaymentList.length },
     { key: 'confirmed', label: 'Đã xác nhận', count: confirmedList.length + menteeConfirmedList.length },
     { key: 'completed', label: 'Đã hoàn thành', count: completedList.length + menteeCompletedList.length },
   ];
@@ -620,16 +622,31 @@ export const MyBookings: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* --- Tab: Cần xác nhận / Đã xác nhận / Đã hoàn thành --- */}
-          {(tab === 'pending' || tab === 'confirmed' || tab === 'completed') && (() => {
-            const mentorList = tab === 'pending' ? pendingList : tab === 'confirmed' ? confirmedList : completedList;
-            const menteeList = tab === 'pending' ? menteePendingList : tab === 'confirmed' ? menteeConfirmedList : menteeCompletedList;
+          {/* --- Tab: Cần xác nhận / Chờ thanh toán / Đã xác nhận / Đã hoàn thành --- */}
+          {(tab === 'pending' || tab === 'awaiting_payment' || tab === 'confirmed' || tab === 'completed') && (() => {
+            const mentorList =
+              tab === 'pending'
+                ? pendingList
+                : tab === 'awaiting_payment'
+                ? awaitingPaymentList
+                : tab === 'confirmed'
+                ? confirmedList
+                : completedList;
+            const menteeList =
+              tab === 'pending'
+                ? menteePendingList
+                : tab === 'awaiting_payment'
+                ? menteeAwaitingPaymentList
+                : tab === 'confirmed'
+                ? menteeConfirmedList
+                : menteeCompletedList;
             const totalEmpty = mentorList.length === 0 && menteeList.length === 0;
             return (
             <div className="space-y-4">
               {totalEmpty ? (
                 <div className="meetmind-card py-16 text-center text-brand-text-muted text-body font-semibold rounded-card">
                   {tab === 'pending' && 'Không có yêu cầu nào đang chờ xác nhận.'}
+                  {tab === 'awaiting_payment' && 'Không có lịch hẹn nào đang chờ thanh toán.'}
                   {tab === 'confirmed' && 'Bạn chưa có lịch nào được xác nhận.'}
                   {tab === 'completed' && 'Chưa có buổi nào hoàn thành.'}
                 </div>

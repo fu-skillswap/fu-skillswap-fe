@@ -81,7 +81,7 @@ export const AdminLayout: React.FC = () => {
           </button>
           <div className="flex items-center gap-2.5">
             <img src="/logo.svg" alt="SkillSwap Logo" className="w-8 h-8 object-contain" />
-            <span className="text-title font-bold tracking-tight text-primary">SkillSwap</span>
+            <span className="text-title font-bold tracking-tight text-fg">SkillSwap</span>
           </div>
           {user && <img src={user.avatarUrl} alt={user.fullName} className="w-8 h-8 rounded-full object-cover border border-line" />}
         </header>

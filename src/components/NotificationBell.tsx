@@ -146,7 +146,7 @@ export const NotificationBell: React.FC = () => {
     };
   }, [pollNotifications, handleIncomingNotification]);
 
-  // Tải lại toàn bộ danh sách khi mở quả chuông
+  // Tải lại toàn bộ danh sách khi mở quả chuông và tự động đánh dấu tất cả là đã đọc
   const loadList = useCallback(async () => {
     setLoading(true);
     try {
@@ -155,8 +155,21 @@ export const NotificationBell: React.FC = () => {
         notificationsApi.unreadCount(),
       ]);
       const currentItems = res.content ?? [];
-      setItems(currentItems);
-      setUnread(countRes?.unreadCount ?? currentItems.filter((n) => !n.read).length);
+      const hasUnread = (countRes?.unreadCount ?? 0) > 0 || currentItems.some((n) => !n.read);
+
+      if (hasUnread) {
+        // Tự động đánh dấu tất cả là đã đọc trong giao diện
+        setItems(currentItems.map((n) => ({ ...n, read: true })));
+        setUnread(0);
+        // Gọi API đánh dấu tất cả đã đọc dưới background
+        notificationsApi.markAllAsRead().catch((err) => {
+          console.error('Lỗi tự động đánh dấu đọc tất cả:', err);
+        });
+      } else {
+        setItems(currentItems);
+        setUnread(0);
+      }
+      
       // Đảm bảo đồng bộ hóa ID đã biết
       currentItems.forEach((n) => knownIdsRef.current.add(n.notificationId));
     } catch (e) {
