@@ -290,6 +290,25 @@ export interface MentorDetail {
   hasCompletedProfile?: boolean;
   /** Mentor có ít nhất 1 service đang active không. */
   hasActiveServices?: boolean;
+  // Các trường mở rộng theo phản hồi UI/UX
+  yearsOfExperience?: number;
+  company?: string;
+  projectsCount?: number;
+  achievements?: string[];
+  portfolios?: MentorPortfolioItem[];
+}
+
+export interface MentorPortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  role: string;
+  outcome?: string;
+  imageUrl?: string;
+  behanceUrl?: string;
+  githubUrl?: string;
+  figmaUrl?: string;
+  dribbbleUrl?: string;
 }
 
 /** Đánh giá mentor — khớp MentorReviewResponse. */

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Award, Star, Check, Compass, Sparkles, Smile, LogOut, ChevronDown } from 'lucide-react';
+import { ArrowRight, Award, Star, Check, Compass, Sparkles, Smile, LogOut, ChevronDown, UserCheck, Calendar, Video, Quote } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { onAvatarError } from '../lib/img';
 
@@ -139,32 +139,51 @@ export const LandingPage: React.FC = () => {
           {/* Hero Content Left */}
           <div className="space-y-6">
             <span className="inline-flex items-center gap-1.5 bg-brand-primary text-white text-meta font-extrabold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md shadow-brand-primary/25 animate-pulse">
-              <Sparkles className="w-3.5 h-3.5" /> Kết nối hôm nay, vững bước ngày mai
+              <Sparkles className="w-3.5 h-3.5" /> Kết nối tri thức, nâng tầm tương lai
             </span>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight">
-              Kết nối, <span className="text-brand-secondary">Học hỏi</span>,<br />
-              <span className="text-brand-secondary">Chia sẻ</span>, Phát triển.
+              <span className="text-white">Kết nối,</span> <span className="text-brand-secondary">Học hỏi</span><span className="text-white">,</span><br />
+              <span className="text-brand-secondary">Chia sẻ</span><span className="text-white">,</span> <span className="text-white">Phát triển.</span>
             </h1>
 
-            <p className="text-slate-200 text-body sm:text-body font-semibold max-w-xl leading-relaxed">
-              SkillSwap — nền tảng kết nối Alumni và Mentee dành riêng cho sinh viên FPTU HCM. Tìm mentor để được hỗ trợ về lập trình, thiết kế UI/UX, ngoại ngữ hay bất kỳ lĩnh vực nào — hoàn toàn miễn phí trong cùng một cộng đồng sinh viên.
-            </p>
+            <div className="space-y-4">
+              <p className="text-slate-100 text-lg sm:text-xl font-medium max-w-2xl leading-relaxed">
+                SkillSwap là nền tảng kết nối <strong className="text-white font-extrabold">Alumni (Cựu sinh viên)</strong> và <strong className="text-white font-extrabold">Sinh viên FPT University</strong>. Chia sẻ kiến thức và kinh nghiệm thực tế hoàn toàn miễn phí.
+              </p>
+              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl max-w-2xl text-base text-slate-200 font-medium space-y-3 backdrop-blur-xs">
+                <p className="text-lg font-bold text-brand-secondary flex items-center gap-2">
+                  <span>🎯</span> DÀNH CHO AI &amp; LỢI ÍCH GÌ?
+                </p>
+                <div className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-brand-secondary shrink-0 mt-0.5" />
+                  <span className="text-slate-200 text-base leading-relaxed">
+                    <strong className="text-white font-extrabold">Sinh viên (Mentee):</strong> Được hỗ trợ đồ án, ôn thi, sửa CV và chia sẻ kinh nghiệm phỏng vấn thực tế.
+                  </span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-brand-secondary shrink-0 mt-0.5" />
+                  <span className="text-slate-200 text-base leading-relaxed">
+                    <strong className="text-white font-extrabold">Cựu sinh viên (Mentor):</strong> Chia sẻ chuyên môn, xây dựng uy tín cá nhân và kết nối nhân tài tiềm năng cho doanh nghiệp.
+                  </span>
+                </div>
+              </div>
+            </div>
 
             <div className="flex flex-wrap gap-4 pt-2">
               <Link
-                to="/login"
+                to={isAuthenticated ? "/mentors" : "/login"}
                 className="flex items-center gap-1.5 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-95 text-white text-body font-bold py-3.5 px-7 rounded-full shadow-lg shadow-brand-primary/20 active:scale-95 transition-all cursor-pointer"
               >
                 <span>Tìm mentor ngay</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <a
-                href="#features"
-                className="flex items-center justify-center bg-surface/10 hover:bg-surface/20 border border-white/20 text-white text-body font-bold py-3.5 px-7 rounded-full active:scale-95 transition-all backdrop-blur-xs"
+              <Link
+                to={isAuthenticated ? "/profile" : "/login"}
+                className="flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/20 text-white text-body font-bold py-3.5 px-7 rounded-full active:scale-95 transition-all backdrop-blur-xs"
               >
-                Tìm hiểu cơ chế
-              </a>
+                Trở thành Mentor
+              </Link>
             </div>
           </div>
 
@@ -178,24 +197,24 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
 
-            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
-              <span className="text-3xl font-bold text-fg block">1,200+</span>
-              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Giờ học với mentor</span>
+            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5 hover:shadow-md transition-shadow">
+              <span className="text-3xl font-black text-brand-primary block">500+</span>
+              <span className="text-meta font-extrabold text-fg-muted uppercase tracking-wider block">Mentor hoạt động</span>
             </div>
 
-            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
-              <span className="text-3xl font-bold text-fg block">450+</span>
-              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Thành viên cộng đồng</span>
+            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5 hover:shadow-md transition-shadow">
+              <span className="text-3xl font-black text-brand-primary block">10,000+</span>
+              <span className="text-meta font-extrabold text-fg-muted uppercase tracking-wider block">Phiên học hoàn thành</span>
             </div>
 
-            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
-              <span className="text-3xl font-bold text-fg block">80+</span>
-              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Mentor được duyệt</span>
+            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5 hover:shadow-md transition-shadow">
+              <span className="text-3xl font-black text-brand-primary block">95%</span>
+              <span className="text-meta font-extrabold text-fg-muted uppercase tracking-wider block">Tỷ lệ hài lòng</span>
             </div>
 
-            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5">
-              <span className="text-3xl font-bold text-fg block">4.85 / 5</span>
-              <span className="text-meta font-bold text-fg-faint uppercase tracking-wider block">Điểm hài lòng</span>
+            <div className="bg-surface border border-line rounded-card p-6 shadow-[0_1px_3px_rgba(15,23,42,0.02)] text-center space-y-1.5 hover:shadow-md transition-shadow">
+              <span className="text-3xl font-black text-brand-primary block">80+</span>
+              <span className="text-meta font-extrabold text-fg-muted uppercase tracking-wider block">Chủ đề chuyên môn</span>
             </div>
 
           </div>
@@ -207,49 +226,88 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
           <div className="space-y-6">
-            <span className="inline-block text-meta font-extrabold text-fg bg-surface-muted border border-line py-1 px-3.5 rounded-full uppercase tracking-wider">
-              Cơ chế vận hành
+            <span className="inline-block text-meta font-extrabold text-brand-primary bg-primary-soft/80 border border-primary/20 py-1 px-3.5 rounded-full uppercase tracking-wider shadow-[0_1px_2px_rgba(0,56,224,0.02)]">
+              Quy trình dẫn dắt trải nghiệm
             </span>
             <h2 className="text-3xl font-bold text-fg tracking-tight leading-tight">
-              Nền tảng kết nối Mentor – Mentee hoạt động như thế nào?
+              5 bước đồng hành dễ dàng cùng SkillSwap
             </h2>
             <p className="text-fg-muted text-body font-semibold leading-relaxed">
-              SkillSwap giúp sinh viên tiếp cận mentor có chuyên môn phù hợp một cách nhanh chóng, miễn phí và minh bạch:
+              Từ lúc tham gia đến khi kết thúc buổi học, chúng tôi tối ưu quy trình để bạn có trải nghiệm kết nối chuyên nghiệp nhất:
             </p>
 
-            <div className="space-y-4">
-              <div className="flex gap-4 items-start">
-                <div className="w-8 h-8 rounded-full bg-surface-muted border border-line text-fg flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-body font-bold">1</span>
+            <div className="relative border-l border-line-soft pl-6 ml-4 space-y-8">
+              {/* Step 1 */}
+              <div className="relative">
+                <div className="absolute -left-[38px] top-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-body shadow-md">
+                  1
                 </div>
                 <div>
-                  <span className="text-body font-bold text-fg block">Tìm mentor phù hợp</span>
+                  <span className="text-body font-bold text-fg block flex items-center gap-1.5">
+                    <Compass className="w-4 h-4 text-primary" /> Tìm kiếm Mentor phù hợp
+                  </span>
                   <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
-                    Bạn tìm kiếm và lọc danh sách mentor theo lĩnh vực, kỹ năng hoặc độ tương hợp. Xem hồ sơ, đánh giá từ các học viên trước để đưa ra lựa chọn phù hợp nhất.
+                    Sử dụng các bộ lọc chuyên sâu để tìm kiếm mentor theo ngành học, kỹ năng cụ thể (React, Figma, Python) hoặc dựa trên tỷ lệ gợi ý hợp gu (%) của hệ thống.
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-4 items-start">
-                <div className="w-8 h-8 rounded-full bg-surface-muted border border-line text-fg flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-body font-bold">2</span>
+              {/* Step 2 */}
+              <div className="relative">
+                <div className="absolute -left-[38px] top-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-body shadow-md">
+                  2
                 </div>
                 <div>
-                  <span className="text-body font-bold text-fg block">Đặt lịch học</span>
+                  <span className="text-body font-bold text-fg block flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-primary" /> Xem thông tin &amp; Portfolio năng lực
+                  </span>
                   <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
-                    Chọn khung giờ rảnh của mentor và gửi yêu cầu đặt lịch. Mentor xem xét và xác nhận lịch hẹn, sau đó cung cấp link phòng học trực tuyến.
+                    Xem hồ sơ chi tiết của mentor bao gồm: số năm kinh nghiệm, công ty đang làm việc, thành tích nổi bật và trực tiếp xem các dự án thực tế trong mục Portfolio của họ.
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-4 items-start">
-                <div className="w-8 h-8 rounded-full bg-surface-muted border border-line text-fg flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-body font-bold">3</span>
+              {/* Step 3 */}
+              <div className="relative">
+                <div className="absolute -left-[38px] top-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-body shadow-md">
+                  3
                 </div>
                 <div>
-                  <span className="text-body font-bold text-fg block">Học tập & Đánh giá</span>
+                  <span className="text-body font-bold text-fg block flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-primary" /> Đặt lịch hẹn tiện lợi
+                  </span>
                   <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
-                    Tham gia buổi học qua Google Meet/Zoom hoàn toàn miễn phí. Sau buổi học, để lại đánh giá giúp cộng đồng ngày càng chất lượng hơn.
+                    Chọn khung giờ rảnh tương ứng của mentor, điền ngắn gọn mục tiêu học tập (cần hỗ trợ đồ án, luyện thi, hay định hướng CV) và gửi yêu cầu kết nối.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 4 */}
+              <div className="relative">
+                <div className="absolute -left-[38px] top-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-body shadow-md">
+                  4
+                </div>
+                <div>
+                  <span className="text-body font-bold text-fg block flex items-center gap-1.5">
+                    <Video className="w-4 h-4 text-primary" /> Tham gia phiên học
+                  </span>
+                  <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
+                    Khi lịch hẹn được duyệt, tham gia phòng học trực tuyến (Google Meet/Zoom) hoặc gặp trực tiếp để giải quyết thắc mắc học tập hoàn toàn miễn phí.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 5 */}
+              <div className="relative">
+                <div className="absolute -left-[38px] top-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-body shadow-md">
+                  5
+                </div>
+                <div>
+                  <span className="text-body font-bold text-fg block flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-primary fill-primary" /> Phản hồi &amp; Đánh giá
+                  </span>
+                  <p className="text-meta text-fg-muted mt-1 font-semibold leading-relaxed">
+                    Sau buổi học, hãy để lại điểm rating và đánh giá nhận xét. Ý kiến đóng góp của bạn giúp bảo vệ uy tín chuyên môn và chất lượng cộng đồng.
                   </p>
                 </div>
               </div>
@@ -316,6 +374,80 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
+        </div>
+      </section>
+
+      {/* Student Testimonials Section */}
+      <section className="py-20 bg-gradient-to-b from-surface-muted/50 to-surface border-t border-b border-line-soft text-left">
+        <div className="max-w-7xl mx-auto px-6 space-y-12">
+          <div className="text-center space-y-3 max-w-xl mx-auto">
+            <span className="inline-block text-meta font-extrabold text-brand-primary bg-primary-soft/80 border border-primary/20 py-1 px-3.5 rounded-full uppercase tracking-wider shadow-[0_1px_2px_rgba(0,56,224,0.02)]">
+              Câu chuyện thành công
+            </span>
+            <h2 className="text-3xl font-bold text-fg tracking-tight">Học viên nói gì về SkillSwap?</h2>
+            <p className="text-fg-muted text-body font-semibold">
+              Hàng ngàn sinh viên FPTU đã vượt qua các môn học khó và đạt được mục tiêu học tập nhờ sự đồng hành của các Mentor.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Testimonial 1 */}
+            <div className="bg-surface border border-line p-8 rounded-card shadow-sm space-y-5 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+              <Quote className="absolute right-6 top-6 w-10 h-10 text-slate-200/50 pointer-events-none" />
+              <p className="text-body text-fg-muted leading-relaxed font-semibold italic">
+                "Nhờ anh Long (K18) hướng dẫn làm đồ án tốt nghiệp React Native + AI, nhóm mình đã đạt loại Xuất sắc. Anh chỉ bảo tận tình từ kiến trúc API đến cách tối ưu hóa UX."
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <img
+                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=student1"
+                  alt="Student A"
+                  className="w-10 h-10 rounded-full border border-line"
+                />
+                <div>
+                  <span className="text-body font-bold text-fg block">Nguyễn Văn An</span>
+                  <span className="text-meta text-fg-faint font-extrabold">Sinh viên K18 — Kỹ thuật Phần mềm</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 2 */}
+            <div className="bg-surface border border-line p-8 rounded-card shadow-sm space-y-5 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+              <Quote className="absolute right-6 top-6 w-10 h-10 text-slate-200/50 pointer-events-none" />
+              <p className="text-body text-fg-muted leading-relaxed font-semibold italic">
+                "Mình học trái ngành qua Thiết kế đồ họa và rất bối rối. May mắn gặp chị Linh (Alumni) hướng dẫn hoàn thiện portfolio Behance và Figma, nhờ đó mình đã đậu thực tập UI/UX Designer tại VNG."
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <img
+                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=student2"
+                  alt="Student B"
+                  className="w-10 h-10 rounded-full border border-line"
+                />
+                <div>
+                  <span className="text-body font-bold text-fg block">Trần Thị Bích</span>
+                  <span className="text-meta text-fg-faint font-extrabold">Sinh viên K19 — Thiết kế Đồ họa</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 3 */}
+            <div className="bg-surface border border-line p-8 rounded-card shadow-sm space-y-5 flex flex-col justify-between hover:shadow-md transition-shadow relative">
+              <Quote className="absolute right-6 top-6 w-10 h-10 text-slate-200/50 pointer-events-none" />
+              <p className="text-body text-fg-muted leading-relaxed font-semibold italic">
+                "Cổng kết nối SkillSwap rất tuyệt vời. Mình đã đặt lịch gặp các cựu sinh viên đi làm tại các tập đoàn lớn để nhờ sửa CV và nhận lộ trình học tập, tiết kiệm thời gian định hướng rất nhiều."
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <img
+                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=student3"
+                  alt="Student C"
+                  className="w-10 h-10 rounded-full border border-line"
+                />
+                <div>
+                  <span className="text-body font-bold text-fg block">Lê Hoàng Nam</span>
+                  <span className="text-meta text-fg-faint font-extrabold">Sinh viên K18 — Quản trị Kinh doanh</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

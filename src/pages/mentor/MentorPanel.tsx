@@ -11,7 +11,10 @@ import { mentorProfileApi, helpTopicApi } from '../../api/mentorProfile';
 import type {
   VerificationRequest, VerificationStatus, DocumentType,
   HelpTopic, TeachingMode, SessionDuration, MentorProfileResponse,
+  MentorPortfolioItem,
 } from '../../api/types';
+import { useAuth } from '../../context/AuthContext';
+import { getExtendedMentorData, saveExtendedMentorData } from '../../lib/mockMentors';
 
 // SĐT VN — BE bắt buộc field này khi lưu hồ sơ mentor.
 const PHONE_RE = /^(0)(3|5|7|8|9)[0-9]{8}$/;
@@ -191,6 +194,7 @@ const getErrorMessage = (err: any, fallback: string): string => {
 
 // ---------------------------------------------------------------------------
 export const MentorPanel: React.FC = () => {
+  const { user } = useAuth();
   const [checked, setChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -208,6 +212,25 @@ export const MentorPanel: React.FC = () => {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
+
+  // Các trường mở rộng theo phản hồi UI/UX (lưu giả lập ở localStorage)
+  const [yearsOfExperience, setYearsOfExperience] = useState(1);
+  const [company, setCompany] = useState('');
+  const [projectsCount, setProjectsCount] = useState(3);
+  const [achievementsText, setAchievementsText] = useState('');
+  const [portfolios, setPortfolios] = useState<MentorPortfolioItem[]>([]);
+
+  // State thêm dự án mới vào Portfolio
+  const [newProjTitle, setNewProjTitle] = useState('');
+  const [newProjRole, setNewProjRole] = useState('');
+  const [newProjDesc, setNewProjDesc] = useState('');
+  const [newProjOutcome, setNewProjOutcome] = useState('');
+  const [newProjImgType, setNewProjImgType] = useState<'AI' | 'WEB' | 'UIUX' | 'MKT'>('WEB');
+  const [newProjFigma, setNewProjFigma] = useState('');
+  const [newProjGithub, setNewProjGithub] = useState('');
+  const [newProjBehance, setNewProjBehance] = useState('');
+  const [showAddProjForm, setShowAddProjForm] = useState(false);
+
   const [helpTopicsCatalog, setHelpTopicsCatalog] = useState<HelpTopic[]>([]);
   const [hydrated, setHydrated] = useState(false); // đã tải xong để bật tự lưu nháp
   const [uploading, setUploading] = useState(false); // đang upload minh chứng
@@ -286,9 +309,10 @@ export const MentorPanel: React.FC = () => {
       setReq(current);
 
       if (current) {
+        let prof: MentorProfileResponse | null = null;
         try {
-          const profile = await mentorProfileApi.get();
-          if (profile) fillProfileForm(profile);
+          prof = await mentorProfileApi.get();
+          if (prof) fillProfileForm(prof);
         } catch (err) {
           console.warn('Chưa có hồ sơ mentor, dùng form trống.', err);
         }
@@ -299,6 +323,15 @@ export const MentorPanel: React.FC = () => {
             if (raw) applyDraft(JSON.parse(raw));
           } catch { /* ignore */ }
         }
+
+        // Tải các thông tin bổ sung/mở rộng theo phản hồi UI/UX
+        const userId = user?.publicId || 'me';
+        const ext = getExtendedMentorData(userId, user?.fullName || 'Mentor', prof?.supportingSubjects);
+        setYearsOfExperience(ext.yearsOfExperience);
+        setCompany(ext.company);
+        setProjectsCount(ext.projectsCount);
+        setAchievementsText(ext.achievements.join('\n'));
+        setPortfolios(ext.portfolios);
       }
     } catch (err: any) {
       setError(getErrorMessage(err, 'Không tải được hồ sơ mentor.'));
@@ -418,6 +451,17 @@ export const MentorPanel: React.FC = () => {
     setError(null);
     try {
       await mentorProfileApi.update(buildPayload());
+      
+      // Lưu thông tin bổ sung/mở rộng vào localStorage
+      const userId = user?.publicId || 'me';
+      saveExtendedMentorData(userId, {
+        yearsOfExperience,
+        company: company || 'Đại học FPT',
+        projectsCount,
+        achievements: achievementsText.split('\n').map(a => a.trim()).filter(Boolean),
+        portfolios,
+      });
+
       flash('Đã lưu bản nháp.');
       // checklist (mentorProfileCompleted) có thể đổi sau khi lưu — đồng bộ lại với BE.
       try {
@@ -439,6 +483,17 @@ export const MentorPanel: React.FC = () => {
     setError(null);
     try {
       await mentorProfileApi.update(buildPayload());
+
+      // Lưu thông tin bổ sung/mở rộng vào localStorage
+      const userId = user?.publicId || 'me';
+      saveExtendedMentorData(userId, {
+        yearsOfExperience,
+        company: company || 'Đại học FPT',
+        projectsCount,
+        achievements: achievementsText.split('\n').map(a => a.trim()).filter(Boolean),
+        portfolios,
+      });
+
       const r = await mentorVerificationApi.submit({ submitNote, termsAccepted: true });
       setReq(r);
       clearDraft();
@@ -685,6 +740,150 @@ export const MentorPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Thông tin chuyên môn mở rộng (Point 1) */}
+      <div className="meetmind-card p-6 rounded-card space-y-4">
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Briefcase className="w-5 h-5 text-primary" /> Thông tin chuyên môn mở rộng</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Số năm kinh nghiệm</label>
+            <input type="number" min={0} value={yearsOfExperience} onChange={(e) => setYearsOfExperience(Number(e.target.value))} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+          </div>
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Công ty / Nơi làm việc</label>
+            <input type="text" placeholder="VD: FPT Software, VNG..." value={company} onChange={(e) => setCompany(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+          </div>
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Số dự án đã tham gia</label>
+            <input type="number" min={0} value={projectsCount} onChange={(e) => setProjectsCount(Number(e.target.value))} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+          </div>
+        </div>
+      </div>
+
+      {/* Giải thưởng & Thành tích (Point 1) */}
+      <div className="meetmind-card p-6 rounded-card space-y-3">
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Award className="w-5 h-5 text-primary" /> Giải thưởng &amp; Thành tích (Xuống dòng để nhập giải thưởng mới)</h3>
+        <textarea rows={4} placeholder={"Ví dụ:\nGiải nhất Nghiên cứu Khoa học FPTU 2025\nChứng chỉ TensorFlow Developer"} value={achievementsText} onChange={(e) => setAchievementsText(e.target.value)} className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 font-medium" />
+      </div>
+
+      {/* Quản lý danh sách Portfolio dự án (Point 2) */}
+      <div className="meetmind-card p-6 rounded-card space-y-4">
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Monitor className="w-5 h-5 text-primary" /> Quản lý danh sách Portfolio dự án</h3>
+        
+        {/* Project List */}
+        <div className="space-y-3">
+          {portfolios.map((proj, idx) => (
+            <div key={proj.id || idx} className="flex items-center justify-between p-3.5 bg-surface-muted border border-line rounded-xl">
+              <div>
+                <span className="text-meta font-black text-primary bg-primary-soft/80 border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider text-[8px] inline-block mr-2">{proj.role}</span>
+                <span className="text-body font-bold text-fg">{proj.title}</span>
+              </div>
+              <button type="button" onClick={() => setPortfolios(prev => prev.filter(p => p.id !== proj.id))} className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer">
+                <Trash2 className="w-4 h-4" /> Xóa
+              </button>
+            </div>
+          ))}
+          {portfolios.length === 0 && (
+            <p className="text-meta text-fg-faint font-semibold py-2">Chưa có dự án nào trong portfolio của bạn.</p>
+          )}
+        </div>
+
+        {/* Add Project Sub-form */}
+        {showAddProjForm ? (
+          <div className="p-5 border border-dashed border-line rounded-2xl space-y-4 bg-surface-muted/20">
+            <h4 className="text-body font-bold text-fg">Thêm dự án mới</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Tên dự án <span className="text-danger">*</span></label>
+                <input type="text" placeholder="VD: App FinVibe" value={newProjTitle} onChange={(e) => setNewProjTitle(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+              </div>
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Vai trò trong dự án <span className="text-danger">*</span></label>
+                <input type="text" placeholder="VD: UI/UX Designer, Lead Developer" value={newProjRole} onChange={(e) => setNewProjRole(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mô tả dự án <span className="text-danger">*</span></label>
+              <textarea rows={3} placeholder="Mô tả mục tiêu, cách thực hiện dự án của bạn..." value={newProjDesc} onChange={(e) => setNewProjDesc(e.target.value)} className="w-full bg-surface border border-line rounded-field p-2.5 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold resize-none" />
+            </div>
+
+            <div>
+              <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Kết quả đạt được (Không bắt buộc)</label>
+              <input type="text" placeholder="VD: Tiếp cận 1,000+ người dùng, điểm số đồ án 9.5" value={newProjOutcome} onChange={(e) => setNewProjOutcome(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Minh họa thiết kế / code</label>
+                <select value={newProjImgType} onChange={(e) => setNewProjImgType(e.target.value as any)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold">
+                  <option value="WEB">Mẫu Web/App Fullstack</option>
+                  <option value="AI">Mẫu Đồ thị / Thuật toán AI</option>
+                  <option value="UIUX">Mẫu Thiết kế Mobile UI/UX</option>
+                  <option value="MKT">Mẫu Biểu đồ Marketing</option>
+                </select>
+              </div>
+              <div className="space-y-3">
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Đường dẫn liên kết</label>
+                <div className="space-y-1">
+                  <input type="url" placeholder="GitHub Link (nếu có)" value={newProjGithub} onChange={(e) => setNewProjGithub(e.target.value)} className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                  <input type="url" placeholder="Figma Link (nếu có)" value={newProjFigma} onChange={(e) => setNewProjFigma(e.target.value)} className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                  <input type="url" placeholder="Behance Link (nếu có)" value={newProjBehance} onChange={(e) => setNewProjBehance(e.target.value)} className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button type="button" onClick={() => setShowAddProjForm(false)} className="py-1.5 px-4 bg-surface border border-line rounded-field text-meta font-bold text-fg hover:bg-surface-muted cursor-pointer">Hủy</button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newProjTitle.trim() || !newProjRole.trim() || !newProjDesc.trim()) {
+                    alert('Vui lòng điền đầy đủ các thông tin bắt buộc (*)');
+                    return;
+                  }
+                  const svgMap = {
+                    AI: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=800&auto=format&fit=crop&q=60',
+                    WEB: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=60',
+                    UIUX: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=800&auto=format&fit=crop&q=60',
+                    MKT: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=60'
+                  };
+                  
+                  const newItem: MentorPortfolioItem = {
+                    id: `p_user_${Date.now()}`,
+                    title: newProjTitle,
+                    role: newProjRole,
+                    description: newProjDesc,
+                    outcome: newProjOutcome || undefined,
+                    imageUrl: svgMap[newProjImgType],
+                    figmaUrl: newProjFigma || undefined,
+                    githubUrl: newProjGithub || undefined,
+                    behanceUrl: newProjBehance || undefined
+                  };
+                  
+                  setPortfolios(prev => [...prev, newItem]);
+                  // Reset form fields
+                  setNewProjTitle('');
+                  setNewProjRole('');
+                  setNewProjDesc('');
+                  setNewProjOutcome('');
+                  setNewProjFigma('');
+                  setNewProjGithub('');
+                  setNewProjBehance('');
+                  setShowAddProjForm(false);
+                }}
+                className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-white rounded-field text-meta font-bold cursor-pointer"
+              >
+                Thêm dự án
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setShowAddProjForm(true)} className="inline-flex items-center gap-1.5 text-meta text-primary hover:text-primary-hover font-bold border border-primary/25 border-dashed rounded-xl p-3 justify-center w-full bg-primary-soft/5 hover:bg-primary-soft/10 transition-colors cursor-pointer">
+            <Plus className="w-4 h-4" /> Thêm dự án vào Portfolio
+          </button>
+        )}
+      </div>
+
       <div className="meetmind-card p-6 rounded-card space-y-3">
         <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Tags className="w-5 h-5 text-primary" /> Chủ đề hỗ trợ ({helpTopicIds.length}/{helpMax})</h3>
         {helpTopicsCatalog.length === 0 ? (
@@ -728,13 +927,15 @@ export const MentorPanel: React.FC = () => {
 
   // ---------- Xem trước hồ sơ (read-only) — dùng cho bước Nộp & trạng thái Chờ duyệt ----------
   const ProfileSummary = (
-    <div className="meetmind-card p-7 rounded-card space-y-6">
+    <div className="meetmind-card p-7 rounded-card space-y-6 text-left">
       <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><ShieldCheck className="w-5 h-5 text-primary" /> Hồ sơ chuyên môn</h3>
       <div>
         <p className="text-body font-bold text-fg leading-snug">{headline || 'Chưa có headline'}</p>
         <p className="text-body text-fg-muted font-medium mt-2 leading-relaxed" style={{ textWrap: 'pretty' }}>{expertiseDescription || 'Chưa có mô tả chuyên môn.'}</p>
       </div>
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-body">
+        <span><span className="text-fg-muted font-semibold">Kinh nghiệm:</span> <span className="font-bold text-fg">{yearsOfExperience} năm ({company || 'Đại học FPT'})</span></span>
+        <span><span className="text-fg-muted font-semibold">Số dự án:</span> <span className="font-bold text-fg">{projectsCount} dự án</span></span>
         <span><span className="text-fg-muted font-semibold">Hình thức:</span> <span className="font-bold text-fg">{TEACHING_MODE_LABELS[teachingMode]}</span></span>
         <span><span className="text-fg-muted font-semibold">Thời lượng:</span> <span className="font-bold text-fg">{sessionDuration} phút/buổi</span></span>
         <span><span className="text-fg-muted font-semibold">Trạng thái:</span> <span className="font-bold text-fg">{isAvailable ? 'Đang nhận mentee' : 'Tạm ngưng'}</span></span>
@@ -750,6 +951,32 @@ export const MentorPanel: React.FC = () => {
         <div>
           <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Chủ đề hỗ trợ</p>
           <div className="flex flex-wrap gap-2">{resolvedHelpTopics.map((t) => (<span key={t.id} className="py-1.5 px-3 rounded-lg bg-surface border border-line text-fg-muted text-meta font-bold">{t.nameVi}</span>))}</div>
+        </div>
+      )}
+      {achievementsText.trim() && (
+        <div>
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Thành tích &amp; Giải thưởng</p>
+          <ul className="list-disc pl-5 space-y-1 text-body font-semibold text-fg-muted">
+            {achievementsText.split('\n').map(a => a.trim()).filter(Boolean).map((ach, i) => (
+              <li key={i}>{ach}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {portfolios.length > 0 && (
+        <div>
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Portfolio Dự án ({portfolios.length})</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {portfolios.map((proj, idx) => (
+              <div key={proj.id || idx} className="p-3.5 border border-line rounded-xl space-y-1.5 bg-surface-muted/10">
+                <span className="text-[8px] font-black text-primary bg-primary-soft/80 border border-primary/20 px-1.5 py-0.5 rounded-md uppercase tracking-wider inline-block">
+                  {proj.role}
+                </span>
+                <h4 className="text-meta font-bold text-fg">{proj.title}</h4>
+                <p className="text-xs text-fg-muted line-clamp-2 leading-relaxed">{proj.description}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       {(linkedinUrl || githubUrl || portfolioUrl) && (
