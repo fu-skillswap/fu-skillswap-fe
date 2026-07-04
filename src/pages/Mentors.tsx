@@ -1,12 +1,32 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, Send, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown } from 'lucide-react';
+import { Sparkles, Send, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown, Briefcase, LayoutGrid } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
 import type {
   MentorCard, MentorRecommendation, MentorReview,
   MentorAvailabilitySlot, ServiceSlotCandidate, MentorDetail,
+  MentorPortfolioItem,
 } from '../api/types';
 import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
+import { getExtendedMentorData } from '../lib/mockMentors';
+
+
+
+const Figma = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z" />
+    <path d="M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z" />
+    <path d="M12 9h3.5a3.5 3.5 0 1 1 0 7H12V9z" />
+    <path d="M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5a3.5 3.5 0 0 1-3.5-3.5z" />
+    <path d="M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z" />
+  </svg>
+);
+
+const Behance = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...props}>
+    <path d="M8.22 5.38c1.36 0 2.45.31 3.26.94.8.63 1.21 1.54 1.21 2.73 0 1.05-.33 1.9-.99 2.54-.66.65-1.57.97-2.73.97H3.94v-7.18h4.28zm-3.32 2.82h3.07c.88 0 1.32-.34 1.32-1.02 0-.67-.44-1.01-1.32-1.01H4.9v2.03zm3.17 6.47c1.47 0 2.62.33 3.44 1 .83.67 1.24 1.62 1.24 2.86 0 1.25-.43 2.22-1.28 2.9-.86.68-2.03 1.02-3.52 1.02H3.94v-7.78h4.13zm-3.17 3.32h3.09c.92 0 1.38-.37 1.38-1.12 0-.74-.46-1.11-1.38-1.11H4.9v2.23zm17.06-2.19c0 1.83-.51 3.24-1.53 4.23-1.02 1-2.45 1.5-4.28 1.5-1.92 0-3.37-.52-4.37-1.55S13.3 17.52 13.3 15.65c0-1.89.51-3.35 1.53-4.38 1.02-1.03 2.41-1.55 4.19-1.55 1.76 0 3.12.51 4.09 1.52.97 1.01 1.45 2.44 1.45 4.29v.27h-8.23c.06.87.35 1.52.88 1.95.53.43 1.2.65 2.01.65 1.31 0 2.11-.53 2.39-1.58h1.86zm-1.84-1.74c-.05-.8-.32-1.4-.81-1.81-.49-.41-1.12-.61-1.89-.61-.75 0-1.37.21-1.85.64s-.78 1.03-.89 1.78h5.44zm-5.74-5.26h6.05V10.2h-6.05V8.8z" />
+  </svg>
+);
 
 const Github = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -86,6 +106,9 @@ const getSubjectCode = (fullTitle: string = '') => {
 interface MentorVM extends MentorCard {
   matchScore?: number;
   matchReasons?: string[];
+  yearsOfExperience?: number;
+  company?: string;
+  projectsCount?: number;
 }
 
 const skillsOf = (m: MentorCard): string[] => (m.helpTopicTags || []).map((t) => t.nameVi);
@@ -110,6 +133,10 @@ export const Mentors: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialization, setSelectedSpecialization] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [selectedExperience, setSelectedExperience] = useState('ALL');
+  const [selectedRating, setSelectedRating] = useState('ALL');
+  const [selectedCampus, setSelectedCampus] = useState('ALL');
+  const [selectedPrice, setSelectedPrice] = useState('ALL');
   const [mentors, setMentors] = useState<MentorVM[]>([]);
   const [initialLoading, setInitialLoading] = useState(true); // chỉ hiện skeleton lần đầu
   const [searching, setSearching] = useState(false);          // các lần tìm sau: giữ list cũ + spinner nhẹ
@@ -142,6 +169,10 @@ export const Mentors: React.FC = () => {
   const [reviews, setReviews] = useState<MentorReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
+  // Custom Portfolio Tabs & Modal
+  const [activeDetailTab, setActiveDetailTab] = useState<'about' | 'portfolio'>('about');
+  const [selectedProject, setSelectedProject] = useState<MentorPortfolioItem | null>(null);
+
   // recommendations chỉ tải MỘT LẦN (dùng để ghép matchScore/reasons), không gọi lại mỗi lần gõ.
   useEffect(() => {
     mentorsApi.getRecommendations(12)
@@ -163,10 +194,14 @@ export const Mentors: React.FC = () => {
       const cards = paged?.content ?? [];
       const merged: MentorVM[] = cards.map((c) => {
         const rec = recMapRef.current.get(c.mentorUserId);
+        const ext = getExtendedMentorData(c.mentorUserId, c.displayName, c.specializationName);
         return {
           ...c,
           matchScore: c.matchScore ?? rec?.matchScore,
-          matchReasons: c.matchReasons ?? rec?.matchReasons
+          matchReasons: c.matchReasons ?? rec?.matchReasons,
+          yearsOfExperience: ext.yearsOfExperience,
+          company: ext.company,
+          projectsCount: ext.projectsCount,
         };
       });
       setMentors(merged);
@@ -192,14 +227,43 @@ export const Mentors: React.FC = () => {
     new Set(mentors.map((m) => m.specializationName).filter((s): s is string => !!s)),
   );
 
-  // Lọc phía client cho chuyên ngành & trạng thái (keyword đã lọc ở server).
+  const campuses = Array.from(
+    new Set(mentors.map((m) => m.campusName).filter((c): c is string => !!c)),
+  );
+
+  // Lọc phía client cho chuyên ngành, trạng thái, kinh nghiệm, rating, cơ sở và mức giá (Point 7)
   const filteredMentors = mentors.filter((m) => {
     const matchesSpecialization = selectedSpecialization === 'ALL' || m.specializationName === selectedSpecialization;
     const matchesStatus =
       selectedStatus === 'ALL' ||
       (selectedStatus === 'AVAILABLE' && m.isAvailable) ||
       (selectedStatus === 'BUSY' && !m.isAvailable);
-    return matchesSpecialization && matchesStatus;
+
+    // Lọc theo số năm kinh nghiệm
+    let matchesExperience = true;
+    if (selectedExperience === '<1') {
+      matchesExperience = m.yearsOfExperience !== undefined && m.yearsOfExperience < 1;
+    } else if (selectedExperience === '1-3') {
+      matchesExperience = m.yearsOfExperience !== undefined && m.yearsOfExperience >= 1 && m.yearsOfExperience <= 3;
+    } else if (selectedExperience === '3+') {
+      matchesExperience = m.yearsOfExperience !== undefined && m.yearsOfExperience >= 3;
+    }
+
+    // Lọc theo điểm đánh giá trung bình
+    let matchesRating = true;
+    if (selectedRating === '4.5') {
+      matchesRating = (m.ratingAverage ?? 0) >= 4.5;
+    } else if (selectedRating === '4.8') {
+      matchesRating = (m.ratingAverage ?? 0) >= 4.8;
+    }
+
+    // Lọc theo cơ sở campus
+    const matchesCampus = selectedCampus === 'ALL' || m.campusName === selectedCampus;
+
+    // Lọc theo mức giá (Nền tảng chủ yếu là miễn phí)
+    const matchesPrice = selectedPrice === 'ALL' || selectedPrice === 'FREE';
+
+    return matchesSpecialization && matchesStatus && matchesExperience && matchesRating && matchesCampus && matchesPrice;
   });
 
   const fetchSlots = async (mentorUserId: string) => {
@@ -239,10 +303,20 @@ export const Mentors: React.FC = () => {
     setActiveSlots([]);
     setBookingLoading(true);
     setBookingWeekOffset(0);
+    setActiveDetailTab('about');
     try {
       // Lấy cờ canRequestBooking (BE mới) song song với slots để gate sớm.
       const detail = await mentorsApi.getDetail(mentor.mentorUserId);
-      setSelectedMentorDetail(detail);
+      const ext = getExtendedMentorData(detail.mentorUserId, detail.displayName, detail.specializationName);
+      const mergedDetail: MentorDetail = {
+        ...detail,
+        yearsOfExperience: detail.yearsOfExperience ?? ext.yearsOfExperience,
+        company: detail.company ?? ext.company,
+        projectsCount: detail.projectsCount ?? ext.projectsCount,
+        achievements: detail.achievements ?? ext.achievements,
+        portfolios: detail.portfolios ?? ext.portfolios,
+      };
+      setSelectedMentorDetail(mergedDetail);
       if (detail && detail.canRequestBooking === false) {
         setActiveSlots([]);
         setBookingError(
@@ -505,6 +579,31 @@ export const Mentors: React.FC = () => {
               </span>
             </div>
           </div>
+
+          {/* Detailed Mentor Info Badges (Point 1) */}
+          <div className="border-t border-slate-100 bg-surface grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-4.5">
+            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Kinh nghiệm làm việc</span>
+              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
+                <Briefcase className="w-4 h-4 text-primary" />
+                {selectedMentorDetail.yearsOfExperience ? `${selectedMentorDetail.yearsOfExperience} Năm` : 'Chưa cập nhật'}
+              </span>
+            </div>
+            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Công ty / Tổ chức</span>
+              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none px-4 truncate max-w-full">
+                <Globe className="w-4 h-4 text-teal-600" />
+                {selectedMentorDetail.company || 'Đại học FPT'}
+              </span>
+            </div>
+            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Dự án đã tham gia</span>
+              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
+                <Award className="w-4 h-4 text-rose-500" />
+                {selectedMentorDetail.projectsCount ? `${selectedMentorDetail.projectsCount}+ Dự án` : 'Chưa cập nhật'}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Scroll down indicator */}
@@ -520,33 +619,145 @@ export const Mentors: React.FC = () => {
           </button>
         </div>
 
+        {/* Tab Navigator (Point 2) */}
+        <div className="flex border-b border-line-soft gap-6">
+          <button
+            onClick={() => setActiveDetailTab('about')}
+            className={`pb-4 text-body font-extrabold transition-all relative cursor-pointer ${
+              activeDetailTab === 'about'
+                ? 'text-primary'
+                : 'text-fg-faint hover:text-fg-muted'
+            }`}
+          >
+            Thông tin giới thiệu
+            {activeDetailTab === 'about' && (
+              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full animate-fadeIn" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveDetailTab('portfolio')}
+            className={`pb-4 text-body font-extrabold transition-all relative cursor-pointer ${
+              activeDetailTab === 'portfolio'
+                ? 'text-primary'
+                : 'text-fg-faint hover:text-fg-muted'
+            }`}
+          >
+            Dự án &amp; Portfolio ({selectedMentorDetail.portfolios?.length || 0})
+            {activeDetailTab === 'portfolio' && (
+              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full animate-fadeIn" />
+            )}
+          </button>
+        </div>
+
         {/* Main 2-column details & courses layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Column: Bio & Information (col-span-7) */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Bio Box */}
-            {selectedMentorDetail.bio && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <Award className="w-5 h-5 text-teal-600" />
-                  <span>Giới thiệu bản thân</span>
-                </h3>
-                <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
-                  {selectedMentorDetail.bio}
-                </p>
-              </div>
-            )}
+            
+            {activeDetailTab === 'about' ? (
+              <>
+                {/* Bio Box */}
+                {selectedMentorDetail.bio && (
+                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                      <Award className="w-5 h-5 text-teal-600" />
+                      <span>Giới thiệu bản thân</span>
+                    </h3>
+                    <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
+                      {selectedMentorDetail.bio}
+                    </p>
+                  </div>
+                )}
 
-            {/* Expertise box */}
-            {selectedMentorDetail.expertiseDescription && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <BookOpen className="w-5 h-5 text-teal-600" />
-                  <span>Kinh nghiệm & Chuyên môn</span>
-                </h3>
-                <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
-                  {selectedMentorDetail.expertiseDescription}
-                </p>
+                {/* Achievements Box (Point 1) */}
+                {selectedMentorDetail.achievements && selectedMentorDetail.achievements.length > 0 && (
+                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04)] hover:-translate-y-[1px] transition-all duration-300 space-y-4">
+                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                      <Award className="w-5 h-5 text-amber-500 fill-amber-500/10" />
+                      <span>Giải thưởng &amp; Thành tích</span>
+                    </h3>
+                    <ul className="space-y-3">
+                      {selectedMentorDetail.achievements.map((ach, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-body text-slate-600 font-medium leading-relaxed">
+                          <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                          <span>{ach}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Expertise box */}
+                {selectedMentorDetail.expertiseDescription && (
+                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                      <BookOpen className="w-5 h-5 text-teal-600" />
+                      <span>Kinh nghiệm &amp; Chuyên môn</span>
+                    </h3>
+                    <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
+                      {selectedMentorDetail.expertiseDescription}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Portfolios Tab View (Point 2) */
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {(selectedMentorDetail.portfolios ?? []).map((project) => (
+                    <div key={project.id} className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:-translate-y-[1px]">
+                      <div>
+                        {project.imageUrl && (
+                          <div className="h-40 overflow-hidden bg-slate-100 border-b border-line flex items-center justify-center">
+                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="p-5 space-y-2.5">
+                          <span className="text-[10px] font-extrabold text-primary bg-primary-soft/80 border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider inline-block">
+                            {project.role}
+                          </span>
+                          <h4 className="text-body font-bold text-slate-800 line-clamp-1">
+                            {project.title}
+                          </h4>
+                          <p className="text-meta text-slate-500 line-clamp-2 leading-relaxed">
+                            {project.description}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="p-5 pt-0 border-t border-slate-50 mt-3 flex items-center justify-between">
+                        <button
+                          onClick={() => setSelectedProject(project)}
+                          className="text-meta text-primary hover:text-primary-hover font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                          <span>Xem chi tiết</span>
+                        </button>
+                        <div className="flex gap-2">
+                          {project.figmaUrl && (
+                            <a href={project.figmaUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-rose-500" title="Figma Prototype">
+                              <Figma className="w-4 h-4" />
+                            </a>
+                          )}
+                          {project.githubUrl && (
+                            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900" title="GitHub Code">
+                              <Github className="w-4 h-4" />
+                            </a>
+                          )}
+                          {project.behanceUrl && (
+                            <a href={project.behanceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-blue-600" title="Behance Project">
+                              <Behance className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(!selectedMentorDetail.portfolios || selectedMentorDetail.portfolios.length === 0) && (
+                    <div className="col-span-1 md:col-span-2 py-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <p className="text-body font-bold text-slate-400">Mentor này chưa cấu hình danh sách Portfolio dự án.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -554,7 +765,7 @@ export const Mentors: React.FC = () => {
             <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
               <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
                 <Globe className="w-5 h-5 text-teal-600" />
-                <span>Thông tin đào tạo & Hỗ trợ</span>
+                <span>Thông tin đào tạo &amp; Hỗ trợ</span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-body font-semibold">
                 <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
@@ -962,10 +1173,9 @@ export const Mentors: React.FC = () => {
           </div>
 
           {/* Filter Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface border border-brand-border p-4 rounded-card shadow-sm">
-
-            {/* Search bar */}
-            <div className="relative md:col-span-2">
+          <div className="bg-surface border border-brand-border p-5 rounded-card shadow-sm space-y-4">
+            {/* Search row */}
+            <div className="relative w-full">
               <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-brand-grey" />
               <input
                 type="text"
@@ -977,35 +1187,93 @@ export const Mentors: React.FC = () => {
               {searching && <Loader2 className="absolute right-3.5 top-3.5 w-4 h-4 text-brand-terracotta animate-spin" />}
             </div>
 
-            {/* Specialization Filter */}
-            <div className="relative">
-              <select
-                value={selectedSpecialization}
-                onChange={(e) => setSelectedSpecialization(e.target.value)}
-                className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
-              >
-                <option value="ALL">Tất cả chuyên ngành</option>
-                {specializations.map((spec) => (
-                  <option key={spec} value={spec}>
-                    {spec}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Dropdowns Row (Point 7) */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+              {/* Specialization Filter */}
+              <div className="relative col-span-2 md:col-span-1">
+                <select
+                  value={selectedSpecialization}
+                  onChange={(e) => setSelectedSpecialization(e.target.value)}
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold text-xs"
+                >
+                  <option value="ALL">Tất cả ngành</option>
+                  {specializations.map((spec) => (
+                    <option key={spec} value={spec}>
+                      {spec}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Status Filter */}
-            <div className="relative">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold"
-              >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="AVAILABLE">Sẵn sàng (Available)</option>
-                <option value="BUSY">Đang bận (Busy)</option>
-              </select>
-            </div>
+              {/* Status Filter */}
+              <div className="relative">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold text-xs"
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="AVAILABLE">Sẵn sàng (Available)</option>
+                  <option value="BUSY">Đang bận (Busy)</option>
+                </select>
+              </div>
 
+              {/* Experience Filter */}
+              <div className="relative">
+                <select
+                  value={selectedExperience}
+                  onChange={(e) => setSelectedExperience(e.target.value)}
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold text-xs"
+                >
+                  <option value="ALL">Tất cả kinh nghiệm</option>
+                  <option value="<1">&lt; 1 năm</option>
+                  <option value="1-3">1 - 3 năm</option>
+                  <option value="3+">3+ năm</option>
+                </select>
+              </div>
+
+              {/* Rating Filter */}
+              <div className="relative">
+                <select
+                  value={selectedRating}
+                  onChange={(e) => setSelectedRating(e.target.value)}
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold text-xs"
+                >
+                  <option value="ALL">Tất cả điểm số</option>
+                  <option value="4.5">★ 4.5+ sao</option>
+                  <option value="4.8">★ 4.8+ sao</option>
+                </select>
+              </div>
+
+              {/* Campus Filter */}
+              <div className="relative">
+                <select
+                  value={selectedCampus}
+                  onChange={(e) => setSelectedCampus(e.target.value)}
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold text-xs"
+                >
+                  <option value="ALL">Tất cả cơ sở</option>
+                  {campuses.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Price Filter */}
+              <div className="relative">
+                <select
+                  value={selectedPrice}
+                  onChange={(e) => setSelectedPrice(e.target.value)}
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-2.5 px-3 text-body text-brand-text focus:outline-none focus:border-brand-terracotta cursor-pointer font-bold text-xs"
+                >
+                  <option value="ALL">Tất cả mức giá</option>
+                  <option value="FREE">Miễn phí (Free)</option>
+                  <option value="PAID">Có phí (SCoin)</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           {loadError && (
@@ -1253,6 +1521,99 @@ export const Mentors: React.FC = () => {
         </>
       )}
 
+      {/* Project Detail Dialog Modal (Point 2) */}
+      {selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="bg-surface rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl animate-slideUp max-h-[90vh] flex flex-col border border-line">
+            {/* Header Image */}
+            {selectedProject.imageUrl && (
+              <div className="h-56 bg-surface-muted flex items-center justify-center relative shrink-0">
+                <img src={selectedProject.imageUrl} alt={selectedProject.title} className="w-full h-full object-cover" />
+                <button
+                  onClick={() => setSelectedProject(null)}
+                  className="absolute right-4 top-4 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+            {/* Body */}
+            <div className="p-8 overflow-y-auto space-y-6 text-left">
+              {!selectedProject.imageUrl && (
+                <div className="flex justify-between items-start">
+                  <span className="text-[10px] font-extrabold text-primary bg-primary-soft/80 border border-primary/20 px-2.5 py-1 rounded-md uppercase tracking-wider">
+                    {selectedProject.role}
+                  </span>
+                  <button onClick={() => setSelectedProject(null)} className="w-8 h-8 rounded-full hover:bg-surface-muted text-fg-faint flex items-center justify-center transition-colors cursor-pointer">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                {selectedProject.imageUrl && (
+                  <span className="text-[10px] font-extrabold text-primary bg-primary-soft/80 border border-primary/20 px-2.5 py-1 rounded-md uppercase tracking-wider inline-block">
+                    {selectedProject.role}
+                  </span>
+                )}
+                <h3 className="text-xl font-black text-fg leading-tight">
+                  {selectedProject.title}
+                </h3>
+              </div>
+
+              <div className="space-y-4 text-body text-fg-muted leading-relaxed font-semibold">
+                <div className="space-y-1.5">
+                  <span className="text-meta text-fg-faint block uppercase tracking-wider font-extrabold">Mô tả dự án</span>
+                  <p className="whitespace-pre-line text-justify">{selectedProject.description}</p>
+                </div>
+
+                {selectedProject.outcome && (
+                  <div className="p-4.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-1.5">
+                    <span className="text-meta text-emerald-600 block uppercase tracking-wider font-extrabold flex items-center gap-1.5">
+                      <Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> Kết quả đạt được
+                    </span>
+                    <p className="text-emerald-800 text-justify">{selectedProject.outcome}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Project Links */}
+              <div className="flex flex-wrap gap-3 pt-3 border-t border-line-soft">
+                {selectedProject.figmaUrl && (
+                  <a
+                    href={selectedProject.figmaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4.5 py-2.5 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 text-body font-bold transition-colors cursor-pointer"
+                  >
+                    <Figma className="w-4 h-4" /> Figma prototype
+                  </a>
+                )}
+                {selectedProject.githubUrl && (
+                  <a
+                    href={selectedProject.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4.5 py-2.5 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 text-body font-bold transition-colors cursor-pointer"
+                  >
+                    <Github className="w-4 h-4" /> Source code GitHub
+                  </a>
+                )}
+                {selectedProject.behanceUrl && (
+                  <a
+                    href={selectedProject.behanceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4.5 py-2.5 rounded-full border border-blue-200 text-blue-600 hover:bg-blue-50 text-body font-bold transition-colors cursor-pointer"
+                  >
+                    <Behance className="w-4 h-4" /> Project Behance
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
