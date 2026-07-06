@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, Send, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown, Briefcase, LayoutGrid } from 'lucide-react';
+import { Sparkles, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, Briefcase, LayoutGrid, ChevronLeft, ChevronRight, Info, BookOpen } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
 import type {
   MentorCard, MentorRecommendation, MentorReview,
@@ -7,6 +7,7 @@ import type {
   MentorPortfolioItem,
 } from '../api/types';
 import { bookingsApi } from '../api/bookings';
+import { chatApi } from '../api/chat';
 import { onAvatarError } from '../lib/img';
 import { getExtendedMentorData } from '../lib/mockMentors';
 
@@ -43,6 +44,7 @@ const Linkedin = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+/*
 const WEEKDAYS = [
   { value: 'MONDAY', label: 'T2' },
   { value: 'TUESDAY', label: 'T3' },
@@ -68,6 +70,7 @@ const getWeekDays = (offset = 0) => {
   }
   return days;
 };
+*/
 
 const formatDateISO = (d: Date) => {
   const yyyy = d.getFullYear();
@@ -76,9 +79,11 @@ const formatDateISO = (d: Date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+/*
 const formatDateDisplay = (d: Date) => {
   return `${d.getDate()}/${d.getMonth() + 1}`;
 };
+*/
 
 const getLocalDateStr = (iso: string) => {
   const d = new Date(iso);
@@ -91,6 +96,31 @@ const getLocalDateStr = (iso: string) => {
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
+const getDaysInMonthGrid = (year: number, month: number) => {
+  const firstDay = new Date(year, month, 1);
+  const startDayOfWeek = firstDay.getDay();
+  const days: Date[] = [];
+  
+  const prevMonthLastDay = new Date(year, month, 0).getDate();
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    days.push(new Date(year, month - 1, prevMonthLastDay - i));
+  }
+  
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    days.push(new Date(year, month, d));
+  }
+  
+  const totalCells = days.length > 35 ? 42 : 35;
+  const nextDaysNeeded = totalCells - days.length;
+  for (let d = 1; d <= nextDaysNeeded; d++) {
+    days.push(new Date(year, month + 1, d));
+  }
+  
+  return days;
+};
+
+/*
 const getDayNameLong = (date: Date) => {
   const dayIndex = date.getDay();
   const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -101,6 +131,7 @@ const getSubjectCode = (fullTitle: string = '') => {
   const match = fullTitle.match(/^\[(.*?)\]/);
   return match ? match[1] : '';
 };
+*/
 
 // View-model gộp card + thông tin tương hợp (nếu có từ recommendations).
 interface MentorVM extends MentorCard {
@@ -149,7 +180,6 @@ export const Mentors: React.FC = () => {
   const [selectedMentorDetail, setSelectedMentorDetail] = useState<MentorDetail | null>(null);
   const bookingSectionRef = useRef<HTMLDivElement | null>(null);
   const [activeSlots, setActiveSlots] = useState<MentorAvailabilitySlot[]>([]);
-  const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState('');
@@ -161,7 +191,6 @@ export const Mentors: React.FC = () => {
   const [goalTitle, setGoalTitle] = useState('');
   const [goalDescription, setGoalDescription] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [bookingWeekOffset, setBookingWeekOffset] = useState<number>(0);
 
   // Review Drawer State
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
@@ -170,8 +199,35 @@ export const Mentors: React.FC = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // Custom Portfolio Tabs & Modal
-  const [activeDetailTab, setActiveDetailTab] = useState<'about' | 'portfolio'>('about');
   const [selectedProject, setSelectedProject] = useState<MentorPortfolioItem | null>(null);
+
+  const [profileReviews, setProfileReviews] = useState<MentorReview[]>([]);
+  const [profileReviewsLoading, setProfileReviewsLoading] = useState(false);
+  const [selectedDateStr, setSelectedDateStr] = useState<string>('');
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<Date>(new Date());
+  const [showAllSlotsModal, setShowAllSlotsModal] = useState(false);
+
+  const [isDetailedBookingMode, setIsDetailedBookingMode] = useState(false);
+  const [schedulerViewMode, setSchedulerViewMode] = useState<'day' | 'week'>('week');
+  const [visibleStartDate, setVisibleStartDate] = useState<Date>(new Date());
+  const [allCandidatesMap, setAllCandidatesMap] = useState<{ [slotId: string]: ServiceSlotCandidate[] }>({});
+  const [allCandidatesLoading, setAllCandidatesLoading] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+
+  const getWeekDays = (baseDate: Date) => {
+    const day = baseDate.getDay();
+    const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(baseDate);
+    monday.setDate(diff);
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const next = new Date(monday);
+      next.setDate(monday.getDate() + i);
+      days.push(next);
+    }
+    return days;
+  };
 
   // recommendations chỉ tải MỘT LẦN (dùng để ghép matchScore/reasons), không gọi lại mỗi lần gõ.
   useEffect(() => {
@@ -266,30 +322,6 @@ export const Mentors: React.FC = () => {
     return matchesSpecialization && matchesStatus && matchesExperience && matchesRating && matchesCampus && matchesPrice;
   });
 
-  const fetchSlots = async (mentorUserId: string) => {
-    setBookingLoading(true);
-    try {
-      const slots = await mentorsApi.getAvailabilitySlots(mentorUserId);
-      setActiveSlots(slots);
-      if (slots.length === 1) setSelectedSlotId(slots[0].slotId);
-    } catch (err: any) {
-      console.error('Lỗi tải slots:', err);
-      setBookingError('Không tải được thông tin lịch rảnh của mentor.');
-    } finally {
-      setBookingLoading(false);
-    }
-  };
-
-  const handleSwitchWeek = async (offset: number) => {
-    if (!activeMentor) return;
-    setBookingWeekOffset(offset);
-    setSelectedSlotId('');
-    setSelectedServiceId('');
-    setSelectedCandidateKey('');
-    setCandidates([]);
-    await fetchSlots(activeMentor.mentorUserId);
-  };
-
   const handleViewProfile = async (mentor: MentorVM, shouldScrollToBooking = false) => {
     setActiveMentor(mentor);
     setBookingSuccess(false);
@@ -301,9 +333,17 @@ export const Mentors: React.FC = () => {
     setGoalTitle('');
     setGoalDescription('');
     setActiveSlots([]);
-    setBookingLoading(true);
-    setBookingWeekOffset(0);
-    setActiveDetailTab('about');
+    const today = new Date();
+    setSelectedDateStr(formatDateISO(today));
+    setCurrentCalendarMonth(today);
+    
+    setProfileReviews([]);
+    setProfileReviewsLoading(true);
+    mentorsApi.getReviews(mentor.mentorUserId, 0, 5)
+      .then((paged) => setProfileReviews(paged?.content ?? []))
+      .catch((err) => console.warn('Failed to load profile reviews', err))
+      .finally(() => setProfileReviewsLoading(false));
+
     try {
       // Lấy cờ canRequestBooking (BE mới) song song với slots để gate sớm.
       const detail = await mentorsApi.getDetail(mentor.mentorUserId);
@@ -337,8 +377,6 @@ export const Mentors: React.FC = () => {
       }
     } catch (err: any) {
       setBookingError(err?.response?.data?.message || 'Không tải được thông tin đặt lịch của mentor.');
-    } finally {
-      setBookingLoading(false);
     }
   };
 
@@ -385,6 +423,109 @@ export const Mentors: React.FC = () => {
     return () => { cancelled = true; };
   }, [activeMentor, selectedSlotId, selectedServiceId]);
 
+  // Parallel candidate fetching for visible slots in the detailed scheduler grid
+  useEffect(() => {
+    if (!isDetailedBookingMode || !selectedMentorDetail || !selectedServiceId || activeSlots.length === 0) {
+      setAllCandidatesMap({});
+      return;
+    }
+
+    const visibleDates: string[] = [];
+    if (schedulerViewMode === 'week') {
+      const weekDays = getWeekDays(visibleStartDate);
+      weekDays.forEach(d => visibleDates.push(formatDateISO(d)));
+    } else {
+      visibleDates.push(formatDateISO(visibleStartDate));
+    }
+
+    const visibleSlots = activeSlots.filter(slot => {
+      const slotDateStr = getLocalDateStr(slot.startTime);
+      return visibleDates.includes(slotDateStr);
+    });
+
+    if (visibleSlots.length === 0) {
+      setAllCandidatesMap({});
+      return;
+    }
+
+    let active = true;
+    setAllCandidatesLoading(true);
+
+    const fetchAll = async () => {
+      try {
+        const promises = visibleSlots.map(slot =>
+          mentorsApi.getSlotCandidates(selectedMentorDetail.mentorUserId, slot.slotId, selectedServiceId)
+            .then(res => ({
+              slotId: slot.slotId,
+              candidates: res.candidateServiceSlots || [],
+            }))
+            .catch(() => ({ slotId: slot.slotId, candidates: [] }))
+        );
+        const results = await Promise.all(promises);
+        if (!active) return;
+        const candidateMap: { [slotId: string]: ServiceSlotCandidate[] } = {};
+        results.forEach(r => {
+          candidateMap[r.slotId] = r.candidates;
+        });
+        setAllCandidatesMap(candidateMap);
+      } catch (err) {
+        console.warn('Failed to load candidate slots in detailed mode', err);
+      } finally {
+        if (active) setAllCandidatesLoading(false);
+      }
+    };
+
+    fetchAll();
+  }, [isDetailedBookingMode, selectedMentorDetail, selectedServiceId, activeSlots, visibleStartDate, schedulerViewMode]);
+
+  // Load availability slots dynamically when month picker changes, matching Swagger API flow
+  useEffect(() => {
+    if (!selectedMentorDetail) return;
+
+    const year = currentCalendarMonth.getFullYear();
+    const month = currentCalendarMonth.getMonth();
+    
+    // Clamp fromDate to today's date if selected month is current/past to avoid querying past dates which causes 400 Bad Request
+    const today = new Date();
+    const todayStr = formatDateISO(today);
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const isCurrentMonthOrPast = (year < currentYear) || (year === currentYear && month <= currentMonth);
+    const firstDay = isCurrentMonthOrPast ? todayStr : formatDateISO(new Date(year, month, 1));
+    const lastDay = formatDateISO(new Date(year, month + 1, 0));
+
+    let active = true;
+    mentorsApi.getAvailabilitySlots(selectedMentorDetail.mentorUserId, firstDay, lastDay)
+      .then(slots => {
+        if (active) {
+          setActiveSlots(slots);
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to load slots for selected month', err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedMentorDetail, currentCalendarMonth]);
+
+  const handleChatWithMentor = async () => {
+    if (!selectedMentorDetail) return;
+    try {
+      const convos = await chatApi.listConversations({ size: 100 });
+      const found = convos.content?.find(c => c.otherUserId === selectedMentorDetail.mentorUserId);
+      if (found) {
+        window.location.href = `/chat?conversationId=${found.id}`;
+      } else {
+        alert('Bạn chỉ có thể nhắn tin cho mentor sau khi yêu cầu đặt lịch hẹn được chấp nhận.');
+      }
+    } catch (err) {
+      console.warn('Failed to find conversation', err);
+      alert('Không thể kết nối với hệ thống tin nhắn lúc này.');
+    }
+  };
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeMentor) return;
@@ -410,9 +551,11 @@ export const Mentors: React.FC = () => {
         learningGoalDescription: goalDescription.trim() || undefined,
       });
       setBookingSuccess(true);
+      setShowGoalModal(false);
       setTimeout(() => {
         setSelectedMentorDetail(null);
         setActiveMentor(null);
+        setIsDetailedBookingMode(false);
         setBookingSuccess(false);
       }, 3000);
     } catch (err: any) {
@@ -438,409 +581,1108 @@ export const Mentors: React.FC = () => {
     }
   };
 
-  const renderMentorProfile = () => {
+  const renderDetailedBookingCalendar = () => {
     if (!selectedMentorDetail) return null;
-    const selectedSlot = activeSlots.find((s) => s.slotId === selectedSlotId) || null;
-    const slotServices = selectedSlot?.services || [];
+
+    const selectedService = selectedMentorDetail.services?.find(s => s.serviceId === selectedServiceId) || selectedMentorDetail.services?.[0] || null;
+    const serviceCode = selectedService ? selectedService.title.match(/^\[(.*?)\]/)?.[1] || 'Môn học' : 'Môn học';
+
+    const visibleDays = schedulerViewMode === 'week' ? getWeekDays(visibleStartDate) : [visibleStartDate];
+
+    const getVisibleHours = () => {
+      const hoursSet = new Set<string>();
+      visibleDays.forEach(dayDate => {
+        const dateStr = formatDateISO(dayDate);
+        const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === dateStr);
+        daySlots.forEach(slot => {
+          const slotCandidates = allCandidatesMap[slot.slotId] || [];
+          slotCandidates.forEach(c => {
+            const startHour = new Date(c.startTime).getHours();
+            hoursSet.add(`${startHour.toString().padStart(2, '0')}:00`);
+            const endHour = new Date(c.endTime).getHours();
+            hoursSet.add(`${endHour.toString().padStart(2, '0')}:00`);
+          });
+        });
+      });
+
+      if (hoursSet.size === 0) {
+        return ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'];
+      }
+
+      const sortedHours = Array.from(hoursSet).sort();
+      const minHour = parseInt(sortedHours[0].split(':')[0], 10);
+      const maxHour = parseInt(sortedHours[sortedHours.length - 1].split(':')[0], 10);
+      
+      const filledHours = [];
+      for (let h = minHour; h <= maxHour; h++) {
+        filledHours.push(`${h.toString().padStart(2, '0')}:00`);
+      }
+      return filledHours;
+    };
+
+    const visibleHours = getVisibleHours();
+
+    const getMonthYearLabel = () => {
+      const months = visibleDays.map(d => d.getMonth() + 1);
+      const uniqueMonths = Array.from(new Set(months));
+      const year = visibleStartDate.getFullYear();
+      if (uniqueMonths.length > 1) {
+        return `Tháng ${uniqueMonths[0]} - ${uniqueMonths[1]}, ${year}`;
+      }
+      return `Tháng ${uniqueMonths[0]}, ${year}`;
+    };
+
+    const getSelectedDateDisplay = () => {
+      if (!selectedCandidateKey) return 'Chưa chọn';
+      const [selStart] = selectedCandidateKey.split('|');
+      const dateObj = new Date(selStart);
+      return `${dateObj.getDate()} Tháng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`;
+    };
+
+    const getSelectedTimeDisplay = () => {
+      if (!selectedCandidateKey) return 'Chưa chọn';
+      const [selStart, selEnd] = selectedCandidateKey.split('|');
+      return `${fmtTime(selStart)} - ${fmtTime(selEnd)}`;
+    };
+
+    const priceDisplay = selectedService
+      ? selectedService.free
+        ? 'Miễn phí'
+        : `${selectedService.priceScoin?.toLocaleString('en-US')} SCoin`
+      : '0 SCoin';
+
+    const handlePrevRange = () => {
+      setVisibleStartDate(prev => {
+        const next = new Date(prev);
+        if (schedulerViewMode === 'week') {
+          next.setDate(prev.getDate() - 7);
+        } else {
+          next.setDate(prev.getDate() - 1);
+        }
+        return next;
+      });
+    };
+
+    const handleNextRange = () => {
+      setVisibleStartDate(prev => {
+        const next = new Date(prev);
+        if (schedulerViewMode === 'week') {
+          next.setDate(prev.getDate() + 7);
+        } else {
+          next.setDate(prev.getDate() + 1);
+        }
+        return next;
+      });
+    };
+
+    if (bookingSuccess) {
+      return (
+        <div className="space-y-6 animate-fadeIn text-center py-24 bg-white border border-[#e8eeff] rounded-3xl p-8 max-w-md mx-auto shadow-sm my-12 font-sans">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-md">
+            <Check className="w-8 h-8 stroke-[3]" />
+          </div>
+          <h3 className="text-slate-800 font-extrabold text-xl font-sans">Gửi yêu cầu đặt lịch thành công!</h3>
+          <p className="text-slate-500 text-sm font-semibold max-w-xs mx-auto leading-relaxed">
+            Hệ thống đã gửi yêu cầu tới {selectedMentorDetail.displayName}. Đang chuyển hướng...
+          </p>
+        </div>
+      );
+    }
 
     return (
-      <div className="space-y-8 animate-fadeIn text-left">
+      <div className="space-y-6 animate-fadeIn text-left font-sans">
+        {/* Back navigation header */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => {
+              setIsDetailedBookingMode(false);
+              setSelectedCandidateKey('');
+              setSelectedSlotId('');
+            }}
+            className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-800 transition-colors shadow-xs cursor-pointer active:scale-95"
+            title="Quay lại hồ sơ mentor"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h2 className="text-headline-md text-[#151c29] font-bold leading-tight font-sans">
+              Chi tiết lịch hẹn – Mentor {selectedMentorDetail.displayName}
+            </h2>
+            <p className="text-sm font-bold text-primary block mt-0.5 font-sans">
+              Lịch rảnh môn: {selectedService ? selectedService.title : 'Chưa chọn'}
+            </p>
+          </div>
+        </div>
 
+        {/* 2-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Column 1: Scheduler Grid (lg:col-span-8) */}
+          <div className="lg:col-span-8 bg-white border border-[#e8eeff] rounded-3xl p-6 shadow-sm space-y-4">
+            
+            {/* Header: month and view toggler */}
+            <div className="flex justify-between items-center pb-2">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePrevRange}
+                  className="p-1.5 hover:bg-slate-100 border border-slate-100 rounded-full cursor-pointer text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                  <ChevronLeft className="w-4.5 h-4.5" />
+                </button>
+                <span className="text-sm font-extrabold text-[#151c29] uppercase tracking-wide min-w-[120px] text-center font-sans">
+                  {getMonthYearLabel()}
+                </span>
+                <button
+                  onClick={handleNextRange}
+                  className="p-1.5 hover:bg-slate-100 border border-slate-100 rounded-full cursor-pointer text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                  <ChevronRight className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              <div className="flex bg-slate-100 p-1 rounded-xl gap-1 border border-slate-100">
+                <button
+                  onClick={() => setSchedulerViewMode('day')}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer font-sans ${
+                    schedulerViewMode === 'day'
+                      ? 'bg-white text-slate-800 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Ngày
+                </button>
+                <button
+                  onClick={() => setSchedulerViewMode('week')}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer font-sans ${
+                    schedulerViewMode === 'week'
+                      ? 'bg-white text-slate-800 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Tuần
+                </button>
+              </div>
+            </div>
+
+            {/* Grid Schedule */}
+            {allCandidatesLoading ? (
+              <div className="py-24 text-center space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                <span className="text-xs text-slate-400 font-semibold block font-sans">Đang tải lịch rảnh mentor...</span>
+              </div>
+            ) : (
+              <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-xs">
+                
+                {/* Day Columns Header */}
+                <div
+                  className="grid border-b border-slate-100 bg-[#f9f9ff]"
+                  style={{
+                    gridTemplateColumns: schedulerViewMode === 'week' 
+                      ? '80px repeat(7, minmax(0, 1fr))' 
+                      : '80px minmax(0, 1fr)'
+                  }}
+                >
+                  <div className="p-3 text-center border-r border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center font-sans">
+                    Giờ
+                  </div>
+                  {visibleDays.map((dayDate, idx) => {
+                    const isToday = formatDateISO(new Date()) === formatDateISO(dayDate);
+                    const weekdayLabel = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][dayDate.getDay()];
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 text-center border-r border-slate-100 last:border-r-0 ${isToday ? 'bg-primary/5' : ''}`}
+                      >
+                        <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wide block font-sans">{weekdayLabel}</span>
+                        <span className={`text-base font-black block mt-0.5 font-sans ${isToday ? 'text-primary' : 'text-slate-800'}`}>{dayDate.getDate()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Grid Rows by Hours */}
+                <div className="divide-y divide-slate-100">
+                  {visibleHours.map((hour) => {
+                    return (
+                      <div
+                        key={hour}
+                        className="grid min-h-[96px]"
+                        style={{
+                          gridTemplateColumns: schedulerViewMode === 'week' 
+                            ? '80px repeat(7, minmax(0, 1fr))' 
+                            : '80px minmax(0, 1fr)'
+                        }}
+                      >
+                        {/* Hour Label Column */}
+                        <div className="p-2 flex items-center justify-center border-r border-slate-100 bg-slate-50/50 text-[11px] font-extrabold text-[#717786] font-sans">
+                          {hour}
+                        </div>
+                        
+                        {/* Slots for each visible day at this hour */}
+                        {visibleDays.map((dayDate, idx) => {
+                          const dateStr = formatDateISO(dayDate);
+                          const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === dateStr);
+                          
+                          return (
+                            <div
+                              key={idx}
+                              className="p-2 border-r border-slate-100 last:border-r-0 relative flex flex-col gap-2 justify-center bg-white min-h-[96px] hover:bg-slate-50/20 transition-colors"
+                            >
+                              {daySlots.map(slot => {
+                                const slotCandidates = allCandidatesMap[slot.slotId] || [];
+                                const hourCandidates = slotCandidates.filter(c => {
+                                  const cStartHour = new Date(c.startTime).getHours().toString().padStart(2, '0') + ':00';
+                                  return cStartHour === hour;
+                                });
+                                
+                                return hourCandidates.map(c => {
+                                  const cStartStr = fmtTime(c.startTime);
+                                  const cEndStr = fmtTime(c.endTime);
+                                  const isSelected = selectedCandidateKey === `${c.startTime}|${c.endTime}`;
+                                  const isBlocked = !!c.reasonIfBlocked;
+                                  
+                                  if (isBlocked) {
+                                    return (
+                                      <div
+                                        key={`${c.startTime}|${c.endTime}`}
+                                        className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-center items-center h-full min-h-[72px] text-center select-none"
+                                      >
+                                        <span className="text-[10px] font-bold text-slate-400 block font-sans">{cStartStr} - {cEndStr}</span>
+                                        <span className="text-[9px] text-slate-400 font-semibold mt-0.5 font-sans">Số lượng: 1/1</span>
+                                        <span className="text-xs font-black text-slate-400 mt-1 block uppercase tracking-wider font-sans">Đã đầy</span>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  if (isSelected) {
+                                    return (
+                                      <div
+                                        key={`${c.startTime}|${c.endTime}`}
+                                        className="p-2.5 rounded-xl bg-primary text-white border border-primary flex flex-col justify-center items-center h-full min-h-[72px] text-center cursor-pointer transition-all duration-200 shadow-md shadow-primary/20 active:scale-[0.98] select-none animate-scaleUp font-sans"
+                                        onClick={() => {
+                                          setSelectedCandidateKey('');
+                                          setSelectedSlotId('');
+                                        }}
+                                      >
+                                        <div className="flex items-center justify-center gap-1">
+                                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                          <span className="text-[10px] font-bold block font-sans">{cStartStr} - {cEndStr}</span>
+                                        </div>
+                                        <span className="text-[9px] text-blue-100 font-semibold mt-0.5 font-sans">Số lượng: 0/1</span>
+                                        <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">Đang chọn</span>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  // Available
+                                  return (
+                                    <div
+                                      key={`${c.startTime}|${c.endTime}`}
+                                      className="p-2.5 rounded-xl bg-blue-50/70 border border-primary/20 hover:bg-primary/10 text-primary hover:border-primary/40 flex flex-col justify-center items-center h-full min-h-[72px] text-center cursor-pointer transition-all duration-200 hover:shadow-xs active:scale-[0.98] select-none font-sans"
+                                      onClick={() => {
+                                        setSelectedSlotId(slot.slotId);
+                                        setSelectedCandidateKey(`${c.startTime}|${c.endTime}`);
+                                      }}
+                                    >
+                                      <span className="text-[10px] font-bold block font-sans">{cStartStr} - {cEndStr}</span>
+                                      <span className="text-[9px] text-primary/80 font-semibold mt-0.5 font-sans">Số lượng: 0/1</span>
+                                      <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">Trống</span>
+                                    </div>
+                                  );
+                                });
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Column 2: Booking Info Sidebar (lg:col-span-4) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Guide Card */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
+              <h3 className="text-body font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 font-sans">
+                <Info className="w-5 h-5 text-primary" />
+                <span>Hướng dẫn đặt lịch</span>
+              </h3>
+              <div className="space-y-4 text-xs text-slate-600 leading-relaxed font-sans font-semibold">
+                <div className="flex gap-3 items-start">
+                  <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">1</span>
+                  <p>Chọn ngày rảnh cho môn <span className="font-extrabold text-slate-800">[{serviceCode}]</span> (ô màu xanh nhạt).</p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">2</span>
+                  <p>Chọn khung giờ phù hợp.</p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">3</span>
+                  <p>Xác nhận thông tin và thanh toán bằng SCoin.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Booking Details Card */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-5 font-sans">
+              <h3 className="text-body font-bold text-slate-800 border-b border-slate-100 pb-3 font-sans">
+                Thông tin đặt lịch
+              </h3>
+
+              <div className="space-y-4 font-sans font-semibold">
+                {/* Service */}
+                <div className="flex items-start justify-between gap-3 text-xs">
+                  <span className="text-slate-400 font-bold flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4 text-slate-300" /> Môn học
+                  </span>
+                  <span className="text-slate-800 font-extrabold text-right max-w-[200px]">
+                    {selectedService ? selectedService.title : 'Chưa chọn'}
+                  </span>
+                </div>
+
+                {/* Date */}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-bold flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-slate-300" /> Ngày
+                  </span>
+                  <span className="text-slate-800 font-extrabold">
+                    {getSelectedDateDisplay()}
+                  </span>
+                </div>
+
+                {/* Time */}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-bold flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-slate-300" /> Thời gian
+                  </span>
+                  {selectedCandidateKey ? (
+                    <span className="bg-primary/10 text-primary px-3 py-1 rounded-full font-black text-[10px]">
+                      {getSelectedTimeDisplay()}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-bold font-sans">Chưa chọn</span>
+                  )}
+                </div>
+
+                {/* Separator */}
+                <div className="border-t border-slate-100 my-2" />
+
+                {/* SCoin Price */}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-800 font-bold text-xs font-sans">Tổng chi phí</span>
+                  <div className="flex items-center gap-1.5">
+                    {/* SCoin Blue Icon */}
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-black shadow-xs">
+                      S
+                    </div>
+                    <span className="text-primary text-base font-black font-sans">{priceDisplay}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <button
+                type="button"
+                disabled={!selectedCandidateKey}
+                onClick={() => {
+                  setGoalTitle('');
+                  setGoalDescription('');
+                  setShowGoalModal(true);
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-xs font-black uppercase tracking-wider py-3.5 px-4 rounded-xl cursor-pointer hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-primary/25 font-sans"
+              >
+                <span>Xác nhận đặt lịch</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              <p className="text-[10px] text-slate-400 text-center font-medium font-sans leading-relaxed">
+                Bằng việc xác nhận, bạn đồng ý với chính sách hủy lịch của chúng tôi.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
+  const renderMentorProfile = () => {
+    if (!selectedMentorDetail) return null;
+    if (isDetailedBookingMode) {
+      return renderDetailedBookingCalendar();
+    }
+    const selectedSlot = activeSlots.find((s) => s.slotId === selectedSlotId) || null;
+    const slotServices = selectedSlot?.services || [];
+    
+    // Determine the featured service (either selected service or first available service)
+    const featuredService = selectedMentorDetail.services && selectedMentorDetail.services.length > 0
+      ? selectedMentorDetail.services.find(s => s.serviceId === selectedServiceId) || selectedMentorDetail.services[0]
+      : null;
+
+    return (
+      <div data-theme="vibrant" className="vibrant-profile-theme space-y-6 animate-fadeIn text-left">
         {/* Back Button */}
         <button
           onClick={() => {
             setSelectedMentorDetail(null);
             setActiveMentor(null);
           }}
-          className="relative z-10 flex items-center gap-2 text-body font-bold text-slate-400 hover:text-primary cursor-pointer transition-colors"
+          className="relative z-10 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-primary cursor-pointer transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4.5 h-4.5" />
           <span>Quay lại danh sách mentor</span>
         </button>
 
         {/* Cover Banner & Main Header */}
-        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100/80 shadow-md">
-          {/* Subtle brushed material texture / micro-mesh overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.03)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.03)_50%,rgba(255,255,255,0.03)_75%,transparent_75%,transparent)] bg-[length:4px_4px] opacity-60 pointer-events-none" />
-
+        <div className="relative overflow-hidden rounded-2xl bg-white border border-[#e8eeff] shadow-sm pb-6">
           {/* Cover gradient layer */}
-          <div
-            className="h-40 bg-cover bg-center bg-no-repeat relative"
-            style={{ backgroundImage: "url('/background-mentor-profile.jpg')" }}
-          >
-            {/* Soft overlay blend to keep it polished */}
-            <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 to-transparent pointer-events-none" />
+          <div className="h-44 bg-gradient-to-r from-[#151c29] via-[#004493] to-[#0059bb] flex items-center justify-center relative">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#00e0ff]/10 via-transparent to-transparent opacity-60"></div>
+            {/* Cyber Grid lines pattern */}
+            <svg className="absolute inset-0 w-full h-full opacity-15" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="banner-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                  <path d="M 24 0 L 0 0 0 24" fill="none" stroke="white" strokeWidth="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#banner-grid)" />
+            </svg>
+            <span className="text-white text-headline-xl font-bold tracking-widest opacity-35 select-none font-headline">MENTOR PROFILE DETAIL</span>
           </div>
 
           {/* Info Area (Centered avatar & text) */}
-          <div className="p-8 pt-0 flex flex-col items-center justify-center -mt-20 relative z-10 text-center">
+          <div className="px-8 flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16 relative z-10">
             {/* Centered Avatar with thick borders, shadow, and ring */}
-            <div className="relative group mb-4">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 pointer-events-none" />
+            <div className="relative shrink-0 group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-full blur-md opacity-45 group-hover:opacity-75 transition duration-500 pointer-events-none" />
               <img
                 src={selectedMentorDetail.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
                 onError={onAvatarError}
                 alt={selectedMentorDetail.displayName}
-                className="relative w-32 h-32 rounded-full bg-white object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-[1.02]"
+                className="relative w-32 h-32 rounded-full bg-white object-cover border-4 border-white shadow-lg transition-transform duration-300 hover:scale-[1.02]"
               />
             </div>
 
-            <div className="space-y-3 max-w-2xl">
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <h1 className="text-3xl font-black text-slate-800 font-serif leading-tight tracking-tight">
+            <div className="flex-1 text-center md:text-left pb-1 space-y-1.5 md:pt-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-3 justify-center md:justify-start">
+                <h2 className="text-headline-lg text-primary font-bold font-sans leading-tight">
                   {selectedMentorDetail.displayName}
-                </h1>
-                <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm ${selectedMentorDetail.isAvailable
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200/50'
-                  : 'bg-rose-100 text-rose-800 border border-rose-200/50'
-                  }`}>
+                </h2>
+                <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-xs ${
+                  selectedMentorDetail.isAvailable
+                    ? 'bg-[#eafbf3] text-[#00a854] border border-[#c3f2d9]'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200/50'
+                }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${selectedMentorDetail.isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                  {selectedMentorDetail.isAvailable ? 'Sẵn sàng' : 'Bận'}
+                  {selectedMentorDetail.isAvailable ? 'Sẵn sàng ngay' : 'Đang bận'}
                 </span>
               </div>
 
-              <div className="text-body font-bold text-primary bg-primary-soft/80 border border-primary/20 px-4 py-1.5 rounded-full shadow-[inset_0_1px_2px_rgba(255,255,255,0.9)] inline-block">
-                {selectedMentorDetail.headline || 'Mentor chia sẻ kỹ năng'}
-              </div>
+              <p className="text-body-lg text-slate-500 font-medium">{selectedMentorDetail.headline || 'Mentor chia sẻ kỹ năng'}</p>
+            </div>
+          </div>
+        </div>
 
-              <p className="text-meta text-slate-500 font-bold flex items-center justify-center gap-2 flex-wrap">
-                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">{selectedMentorDetail.programName}</span>
-                <span className="text-slate-300 font-normal">•</span>
-                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">{selectedMentorDetail.specializationName}</span>
-                <span className="text-slate-300 font-normal">•</span>
-                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">Học kỳ {selectedMentorDetail.semester}</span>
-                {selectedMentorDetail.alumni && (
-                  <>
-                    <span className="text-slate-300 font-normal">•</span>
-                    <span className="text-brand-terracotta font-black bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200/50">[Cựu sinh viên]</span>
-                  </>
-                )}
+        {/* Horizontal Metrics Bar */}
+        <div className="bg-white border border-[#e8eeff] rounded-2xl p-6 shadow-sm grid grid-cols-2 md:grid-cols-5 gap-6 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+          <div className="flex flex-col items-center justify-center text-center p-2">
+            <div className="flex items-center gap-1 text-primary text-headline-md font-bold">
+              <Star className="w-5 h-5 fill-[#eab308] text-[#eab308]" />
+              <span>{(selectedMentorDetail.ratingAverage ?? 0).toFixed(1)}</span>
+            </div>
+            <span className="text-xs text-slate-400 font-semibold">{selectedMentorDetail.reviewCount || 0} Đánh giá</span>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
+            <span className="text-primary text-headline-md font-bold">{selectedMentorDetail.completedSessions || 0}</span>
+            <span className="text-xs text-slate-400 font-semibold">Buổi mentoring</span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
+            <span className="text-primary text-headline-md font-bold">{selectedMentorDetail.yearsOfExperience || 0}+</span>
+            <span className="text-xs text-slate-400 font-semibold">Năm kinh nghiệm</span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
+            <span className="text-primary text-headline-md font-bold">{selectedMentorDetail.projectsCount || 0}+</span>
+            <span className="text-xs text-slate-400 font-semibold">Dự án</span>
+          </div>
+
+          <div className="col-span-2 md:col-span-1 flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
+            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Công tác tại</span>
+            <span className="text-slate-800 text-body-md font-bold mt-1 flex items-center justify-center gap-1.5 truncate max-w-full">
+              <Briefcase className="w-4 h-4 text-secondary shrink-0" />
+              {selectedMentorDetail.company || 'FPT Software'}
+            </span>
+          </div>
+        </div>
+
+        {/* Main Grid Layout (2 columns: left 7/12, right 5/12) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column: Bio & Information (col-span-7) */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Giới thiệu bản thân */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
+              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
+                <Award className="w-5 h-5 text-primary" />
+                <span>Giới thiệu bản thân</span>
+              </h3>
+              <p className="text-body-md text-slate-600 leading-relaxed whitespace-pre-line text-justify font-sans">
+                {selectedMentorDetail.bio || 'Chưa có thông tin giới thiệu.'}
               </p>
             </div>
 
-            {/* Social Links */}
-            <div className="flex gap-3 mt-6 justify-center shrink-0">
-              {selectedMentorDetail.linkedinUrl && (
-                <a
-                  href={selectedMentorDetail.linkedinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-primary transition-all duration-200 shadow-sm"
-                  title="LinkedIn"
-                >
-                  <Linkedin className="w-5 h-5" />
-                </a>
-              )}
-              {selectedMentorDetail.githubUrl && (
-                <a
-                  href={selectedMentorDetail.githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all duration-200 shadow-sm"
-                  title="GitHub"
-                >
-                  <Github className="w-5 h-5" />
-                </a>
-              )}
-              {selectedMentorDetail.portfolioUrl && (
-                <a
-                  href={selectedMentorDetail.portfolioUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-teal-600 transition-all duration-200 shadow-sm"
-                  title="Portfolio Website"
-                >
-                  <Globe className="w-5 h-5" />
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* Stats Row */}
-          <div className="border-t border-slate-100 bg-slate-50/50 grid grid-cols-3 divide-x divide-slate-100 text-center py-6 shadow-[inset_0_4px_8px_rgba(0,0,0,0.015)]">
-            <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Đánh giá trung bình</span>
-              <span className="text-xl font-black text-slate-800 flex items-center justify-center gap-1.5 leading-none">
-                <Star className="w-5 h-5 fill-amber-400 text-amber-500 drop-shadow-[0_1.5px_3px_rgba(245,158,11,0.4)] stroke-[1.8]" />
-                {(selectedMentorDetail.ratingAverage ?? 0).toFixed(1)}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Số lượt đánh giá</span>
-              <span className="text-xl font-black text-slate-800 leading-none">
-                {selectedMentorDetail.reviewCount || 0}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Số buổi mentoring</span>
-              <span className="text-xl font-black text-slate-800 leading-none">
-                {selectedMentorDetail.completedSessions || 0}
-              </span>
-            </div>
-          </div>
-
-          {/* Detailed Mentor Info Badges (Point 1) */}
-          <div className="border-t border-slate-100 bg-surface grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-4.5">
-            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Kinh nghiệm làm việc</span>
-              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
-                <Briefcase className="w-4 h-4 text-primary" />
-                {selectedMentorDetail.yearsOfExperience ? `${selectedMentorDetail.yearsOfExperience} Năm` : 'Chưa cập nhật'}
-              </span>
-            </div>
-            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Công ty / Tổ chức</span>
-              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none px-4 truncate max-w-full">
-                <Globe className="w-4 h-4 text-teal-600" />
-                {selectedMentorDetail.company || 'Đại học FPT'}
-              </span>
-            </div>
-            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Dự án đã tham gia</span>
-              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
-                <Award className="w-4 h-4 text-rose-500" />
-                {selectedMentorDetail.projectsCount ? `${selectedMentorDetail.projectsCount}+ Dự án` : 'Chưa cập nhật'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll down indicator */}
-        <div className="flex flex-col items-center justify-center py-2.5">
-          <button
-            onClick={() => {
-              bookingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center gap-1.5 text-xs font-black text-primary hover:text-primary-hover animate-bounce cursor-pointer group transition-all duration-300"
-          >
-            <span>Đặt lịch học phía dưới</span>
-            <ChevronDown className="w-5 h-5 group-hover:scale-110 transition-transform stroke-[3.5]" />
-          </button>
-        </div>
-
-        {/* Tab Navigator (Point 2) */}
-        <div className="flex border-b border-line-soft gap-6">
-          <button
-            onClick={() => setActiveDetailTab('about')}
-            className={`pb-4 text-body font-extrabold transition-all relative cursor-pointer ${
-              activeDetailTab === 'about'
-                ? 'text-primary'
-                : 'text-fg-faint hover:text-fg-muted'
-            }`}
-          >
-            Thông tin giới thiệu
-            {activeDetailTab === 'about' && (
-              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full animate-fadeIn" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveDetailTab('portfolio')}
-            className={`pb-4 text-body font-extrabold transition-all relative cursor-pointer ${
-              activeDetailTab === 'portfolio'
-                ? 'text-primary'
-                : 'text-fg-faint hover:text-fg-muted'
-            }`}
-          >
-            Dự án &amp; Portfolio ({selectedMentorDetail.portfolios?.length || 0})
-            {activeDetailTab === 'portfolio' && (
-              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full animate-fadeIn" />
-            )}
-          </button>
-        </div>
-
-        {/* Main 2-column details & courses layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Bio & Information (col-span-7) */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {activeDetailTab === 'about' ? (
-              <>
-                {/* Bio Box */}
-                {selectedMentorDetail.bio && (
-                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                      <Award className="w-5 h-5 text-teal-600" />
-                      <span>Giới thiệu bản thân</span>
-                    </h3>
-                    <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
-                      {selectedMentorDetail.bio}
-                    </p>
-                  </div>
+            {/* Kỹ năng chuyên môn */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
+              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <span>Kỹ năng chuyên môn</span>
+              </h3>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 ? (
+                  selectedMentorDetail.helpTopicTags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="px-4 py-2 rounded-full text-xs font-bold bg-[#00e0ff]/10 text-primary border border-[#00e0ff]/20 transition-all hover:scale-102"
+                    >
+                      {tag.nameVi}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-400 italic">Chưa cập nhật kỹ năng.</span>
                 )}
+              </div>
+            </div>
 
-                {/* Achievements Box (Point 1) */}
-                {selectedMentorDetail.achievements && selectedMentorDetail.achievements.length > 0 && (
-                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04)] hover:-translate-y-[1px] transition-all duration-300 space-y-4">
-                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                      <Award className="w-5 h-5 text-amber-500 fill-amber-500/10" />
-                      <span>Giải thưởng &amp; Thành tích</span>
-                    </h3>
-                    <ul className="space-y-3">
-                      {selectedMentorDetail.achievements.map((ach, idx) => (
-                        <li key={idx} className="flex items-start gap-3 text-body text-slate-600 font-medium leading-relaxed">
-                          <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                          <span>{ach}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Expertise box */}
-                {selectedMentorDetail.expertiseDescription && (
-                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                      <BookOpen className="w-5 h-5 text-teal-600" />
-                      <span>Kinh nghiệm &amp; Chuyên môn</span>
-                    </h3>
-                    <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
-                      {selectedMentorDetail.expertiseDescription}
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              /* Portfolios Tab View (Point 2) */
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {(selectedMentorDetail.portfolios ?? []).map((project) => (
-                    <div key={project.id} className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:-translate-y-[1px]">
+            {/* Dự án tiêu biểu */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
+              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
+                <Briefcase className="w-5 h-5 text-primary" />
+                <span>Dự án tiêu biểu</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {selectedMentorDetail.portfolios && selectedMentorDetail.portfolios.length > 0 ? (
+                  selectedMentorDetail.portfolios.map((project) => (
+                    <div key={project.id} className="border border-slate-100 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300">
                       <div>
-                        {project.imageUrl && (
-                          <div className="h-40 overflow-hidden bg-slate-100 border-b border-line flex items-center justify-center">
+                        {project.imageUrl ? (
+                          <div className="h-36 overflow-hidden bg-slate-50 border-b border-slate-100">
                             <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
                           </div>
+                        ) : (
+                          <div className="h-36 bg-gradient-to-br from-slate-100 to-slate-200 border-b border-slate-100 flex items-center justify-center">
+                            <Briefcase className="w-8 h-8 text-slate-400" />
+                          </div>
                         )}
-                        <div className="p-5 space-y-2.5">
-                          <span className="text-[10px] font-extrabold text-primary bg-primary-soft/80 border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider inline-block">
-                            {project.role}
+                        <div className="p-4 space-y-2">
+                          <span className="inline-block text-[10px] font-bold text-secondary bg-secondary-container/10 px-2 py-0.5 rounded uppercase tracking-wider">
+                            Vai trò: {project.role || 'Developer'}
                           </span>
-                          <h4 className="text-body font-bold text-slate-800 line-clamp-1">
+                          <h4 className="text-body-md font-bold text-slate-800 line-clamp-1 font-headline">
                             {project.title}
                           </h4>
-                          <p className="text-meta text-slate-500 line-clamp-2 leading-relaxed">
+                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
                             {project.description}
                           </p>
                         </div>
                       </div>
-                      <div className="p-5 pt-0 border-t border-slate-50 mt-3 flex items-center justify-between">
+                      <div className="p-4 pt-0 flex items-center justify-between border-t border-slate-50 mt-2">
                         <button
                           onClick={() => setSelectedProject(project)}
-                          className="text-meta text-primary hover:text-primary-hover font-bold flex items-center gap-1 cursor-pointer"
+                          className="text-xs text-primary hover:text-primary-hover font-bold flex items-center gap-1 cursor-pointer"
                         >
                           <LayoutGrid className="w-3.5 h-3.5" />
                           <span>Xem chi tiết</span>
                         </button>
                         <div className="flex gap-2">
                           {project.figmaUrl && (
-                            <a href={project.figmaUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-rose-500" title="Figma Prototype">
-                              <Figma className="w-4 h-4" />
+                            <a href={project.figmaUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full hover:bg-slate-50 text-slate-400 hover:text-[#f24e1e]" title="Figma Prototype">
+                              <Figma className="w-3.5 h-3.5" />
                             </a>
                           )}
                           {project.githubUrl && (
-                            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900" title="GitHub Code">
-                              <Github className="w-4 h-4" />
+                            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full hover:bg-slate-50 text-slate-400 hover:text-slate-900" title="GitHub Code">
+                              <Github className="w-3.5 h-3.5" />
                             </a>
                           )}
                           {project.behanceUrl && (
-                            <a href={project.behanceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-blue-600" title="Behance Project">
-                              <Behance className="w-4 h-4" />
+                            <a href={project.behanceUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full hover:bg-slate-50 text-slate-400 hover:text-[#1769ff]" title="Behance Project">
+                              <Behance className="w-3.5 h-3.5" />
                             </a>
                           )}
                         </div>
                       </div>
                     </div>
-                  ))}
-                  {(!selectedMentorDetail.portfolios || selectedMentorDetail.portfolios.length === 0) && (
-                    <div className="col-span-1 md:col-span-2 py-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                      <p className="text-body font-bold text-slate-400">Mentor này chưa cấu hình danh sách Portfolio dự án.</p>
+                  ))
+                ) : (
+                  <div className="col-span-2 py-8 text-center text-slate-400 italic">
+                    Chưa có dự án nào được cập nhật.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Học vấn & Giải thưởng */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
+              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
+                <Award className="w-5 h-5 text-primary" />
+                <span>Học vấn &amp; Giải thưởng</span>
+              </h3>
+              <div className="relative border-l border-slate-100 pl-5 ml-2.5 space-y-6 pt-2 text-left">
+                {/* Education block */}
+                <div className="relative">
+                  <span className="absolute -left-[26px] top-1.5 w-3 h-3 rounded-full bg-primary border-2 border-white ring-4 ring-primary-soft" />
+                  <h4 className="text-body-md font-bold text-slate-800 font-headline">Đại học FPT</h4>
+                  <span className="text-xs text-slate-400 font-semibold block">{selectedMentorDetail.programName} ({selectedMentorDetail.specializationName})</span>
+                  <p className="text-xs text-slate-500 mt-1">Cơ sở: {selectedMentorDetail.campusName} - Học kỳ: {selectedMentorDetail.semester}</p>
+                </div>
+
+                {/* Achievements block */}
+                {selectedMentorDetail.achievements && selectedMentorDetail.achievements.map((ach, idx) => (
+                  <div key={idx} className="relative">
+                    <span className="absolute -left-[26px] top-1.5 w-3 h-3 rounded-full bg-secondary border-2 border-white ring-4 ring-secondary-container/20" />
+                    <h4 className="text-body-md font-bold text-slate-800 font-headline">{ach}</h4>
+                    <span className="text-xs text-slate-400 font-semibold block">Thành tích nổi bật</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Các buổi chia sẻ khác */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
+              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
+                <Calendar className="w-5 h-5 text-primary" />
+                <span>Các buổi chia sẻ khác</span>
+              </h3>
+              <div className="space-y-4 pt-2">
+                {selectedMentorDetail.services && selectedMentorDetail.services.length > 0 ? (
+                  selectedMentorDetail.services.map((srv) => (
+                    <div key={srv.serviceId} className="p-4 rounded-xl border border-slate-100 bg-[#f9f9ff]/50 space-y-3 relative hover:border-primary/30 transition-all text-left">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded uppercase tracking-wider">
+                          {selectedMentorDetail.specializationName || 'Chuyên môn'}
+                        </span>
+                        <span className="text-xs font-black text-secondary whitespace-nowrap bg-secondary-container/10 border border-secondary/20 px-3 py-1 rounded-full font-headline">
+                          {srv.free ? 'Miễn phí' : `${srv.priceScoin?.toLocaleString('en-US')} SCoin / giờ`}
+                        </span>
+                      </div>
+                      <h4 className="text-body-md font-bold text-slate-800 font-headline">{srv.title}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{srv.description}</p>
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-100/60">
+                        <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-300" /> {srv.durationMinutes} phút / buổi
+                        </span>
+                        <button
+                          onClick={() => {
+                            setSelectedServiceId(srv.serviceId);
+                            setIsDetailedBookingMode(true);
+                            setVisibleStartDate(new Date());
+                          }}
+                          className="text-xs text-primary hover:text-primary-hover font-bold hover:underline cursor-pointer"
+                        >
+                          Chọn lớp hỗ trợ
+                        </button>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 italic">Chưa có dịch vụ chia sẻ khác.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Featured Service & Booking Widget (col-span-5) */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Gói nổi bật */}
+            {featuredService && (
+              <div className="bg-gradient-to-b from-[#e8eeff]/50 to-white border border-[#c1c6d7] p-6 rounded-2xl shadow-sm space-y-4 text-left relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl pointer-events-none"></div>
+                <span className="inline-block text-[10px] font-black text-white bg-primary px-3 py-1 rounded-full uppercase tracking-wider font-headline">
+                  Gói nổi bật
+                </span>
+                <h3 className="text-body-lg font-bold text-[#151c29] font-headline leading-snug">
+                  {featuredService.title}
+                </h3>
+                <div className="flex items-baseline gap-1 text-primary">
+                  <span className="text-headline-lg font-extrabold font-headline">
+                    {featuredService.free ? 'Miễn phí' : featuredService.priceScoin?.toLocaleString('en-US')}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">
+                    {featuredService.free ? '' : 'SCoin / giờ'}
+                  </span>
+                </div>
+                
+                <div className="border-t border-slate-100 pt-4 space-y-2.5">
+                  <div className="flex items-start gap-2.5 text-xs text-[#414754] font-semibold">
+                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <span>Thời lượng phiên: {featuredService.durationMinutes} phút</span>
+                  </div>
+                  <div className="flex items-start gap-2.5 text-xs text-[#414754] font-semibold">
+                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <span>Hỗ trợ trực tiếp 1-1 qua Google Meet / Teams</span>
+                  </div>
+                  <div className="flex items-start gap-2.5 text-xs text-[#414754] font-semibold">
+                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <span>Học tập &amp; giải đáp vướng mắc thực tế</span>
+                  </div>
+                  {featuredService.description && (
+                    <p className="text-xs text-slate-500 italic mt-2 border-t border-dashed border-slate-100 pt-2 line-clamp-3">
+                      "{featuredService.description}"
+                    </p>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Academic Information */}
-            <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                <Globe className="w-5 h-5 text-teal-600" />
-                <span>Thông tin đào tạo &amp; Hỗ trợ</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-body font-semibold">
-                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Cơ sở học tập</span>
-                  <span className="text-slate-800">{selectedMentorDetail.campusName}</span>
+            {/* Lên lịch hẹn hỗ trợ widget */}
+            <div
+              ref={bookingSectionRef}
+              className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4 text-left relative overflow-hidden"
+            >
+              {bookingSuccess ? (
+                <div className="py-12 text-center space-y-4 animate-fadeIn">
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-md">
+                    <Check className="w-8 h-8 stroke-[3]" />
+                  </div>
+                  <h3 className="text-slate-800 font-bold text-lg font-serif">Gửi yêu cầu đặt lịch thành công!</h3>
+                  <p className="text-slate-500 text-body-md font-medium max-w-xs mx-auto">Hệ thống đã gửi yêu cầu tới {activeMentor?.displayName}. Đang chuyển hướng...</p>
                 </div>
-                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Chuyên ngành chính</span>
-                  <span className="text-slate-800">{selectedMentorDetail.specializationName}</span>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="text-body-lg font-bold text-slate-900 font-headline">Đặt lịch hẹn hỗ trợ</h3>
+                    <p className="text-xs text-slate-400 mt-1">Chọn ngày, giờ và điền mục tiêu của bạn để gửi yêu cầu cho mentor</p>
+                  </div>
+
+                  {bookingError && (
+                    <div className="flex items-start gap-2 bg-rose-500/5 border border-rose-200 text-rose-600 p-3 rounded-xl text-xs font-semibold text-left">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{bookingError}</span>
+                    </div>
+                  )}
+
+                  {/* Monthly Calendar View */}
+                  <div className="bg-[#f0f4ff]/40 p-4.5 rounded-2xl border border-[#e8eeff] space-y-3">
+                    {/* Month Picker Header */}
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-sm font-bold text-[#151c29] font-headline">
+                        {`Tháng ${currentCalendarMonth.getMonth() + 1}, ${currentCalendarMonth.getFullYear()}`}
+                      </span>
+                      <div className="flex gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+                          }}
+                          className="p-1 hover:bg-slate-200/50 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
+                        >
+                          <ChevronLeft className="w-4.5 h-4.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+                          }}
+                          className="p-1 hover:bg-slate-200/50 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
+                        >
+                          <ChevronRight className="w-4.5 h-4.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Weekday Labels */}
+                    <div className="grid grid-cols-7 gap-1 text-center">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, idx) => (
+                        <span key={idx} className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          {dayLabel}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Monthly Days Grid */}
+                    <div className="grid grid-cols-7 gap-1.5 text-center">
+                      {getDaysInMonthGrid(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth()).map((dayDate, idx) => {
+                        const dateStr = formatDateISO(dayDate);
+                        const isSelected = selectedDateStr === dateStr;
+                        const isCurrentMonth = dayDate.getMonth() === currentCalendarMonth.getMonth();
+                        const isToday = formatDateISO(new Date()) === dateStr;
+                        const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === dateStr);
+                        const hasSlots = daySlots.some(s => s.services && s.services.length > 0);
+
+                        let cellClass = "w-8 h-8 mx-auto flex items-center justify-center rounded-full text-xs font-semibold transition-all relative border ";
+                        
+                        if (!isCurrentMonth) {
+                          cellClass += "border-transparent text-slate-300 pointer-events-none";
+                        } else if (isSelected) {
+                          cellClass += "bg-primary border-primary text-white font-bold shadow-sm cursor-pointer";
+                        } else if (hasSlots) {
+                          cellClass += "bg-[#e8eeff] border-primary/20 text-primary hover:bg-primary/10 cursor-pointer";
+                        } else {
+                          cellClass += "border-transparent text-slate-500 hover:bg-slate-50 cursor-pointer";
+                        }
+
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDateStr(dateStr);
+                              if (daySlots.length > 0) {
+                                handleSelectSlot(daySlots[0].slotId);
+                              } else {
+                                setSelectedSlotId('');
+                                setCandidates([]);
+                                setSelectedCandidateKey('');
+                              }
+                            }}
+                            className={cellClass}
+                          >
+                            <span>{dayDate.getDate()}</span>
+                            {hasSlots && !isSelected && (
+                              <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                            )}
+                            {isToday && !isSelected && !hasSlots && (
+                              <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Selected Day Status & Booking Flow */}
+                  {(() => {
+                    const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === selectedDateStr);
+                    const slot = daySlots[0] || null;
+                    const slotServices = slot?.services || [];
+
+                    return (
+                      <div className="space-y-4 pt-1">
+                        {/* Service selector */}
+                        {daySlots.length > 0 && slotServices.length > 0 && (
+                          <div className="space-y-1.5 text-left">
+                            <label className="block text-xs font-bold text-[#414754] uppercase tracking-wide font-headline">Chọn môn học / dịch vụ</label>
+                            {slotServices.length === 1 ? (
+                              <div className="p-3 bg-[#f9f9ff] border border-slate-200/60 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between">
+                                <span>{slotServices[0].title}</span>
+                                <span className="text-[10px] font-black text-secondary bg-secondary-container/10 border border-secondary/20 px-2 py-0.5 rounded-full">
+                                  {slotServices[0].isFree ? 'Miễn phí' : `${slotServices[0].priceScoin?.toLocaleString('en-US') || 0} Point`}
+                                </span>
+                              </div>
+                            ) : (
+                              <select
+                                value={selectedServiceId}
+                                onChange={(e) => {
+                                  setSelectedServiceId(e.target.value);
+                                  setBookingError(null);
+                                }}
+                                className="w-full bg-[#f9f9ff] border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23717786%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_10px_center] bg-no-repeat"
+                              >
+                                {slotServices.map(s => {
+                                  const sId = s.serviceId || (s as any).id;
+                                  return (
+                                    <option key={sId} value={sId}>
+                                      {s.title} ({s.isFree ? 'Miễn phí' : `${s.priceScoin?.toLocaleString('en-US')} Point`})
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Chọn khung giờ dropdown */}
+                        <div className="space-y-1.5 text-left">
+                          <label className="block text-xs font-bold text-[#414754] uppercase tracking-wide font-headline">Chọn khung giờ</label>
+                          {daySlots.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic py-3 text-center bg-slate-50 border border-slate-100 rounded-xl font-sans">
+                              Không có lịch rảnh nào trong ngày này.
+                            </p>
+                          ) : !selectedServiceId ? (
+                            <p className="text-xs text-slate-400 italic py-1">Vui lòng chọn môn học/dịch vụ ở trên.</p>
+                          ) : candidatesLoading ? (
+                            <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold py-2">
+                              <Loader2 className="w-4.5 h-4.5 animate-spin text-primary" /> Đang kiểm tra slot trống...
+                            </div>
+                          ) : candidates.length === 0 ? (
+                            <p className="text-xs text-rose-600 font-semibold py-1">Khung lịch này hiện đã kín, vui lòng chọn lại.</p>
+                          ) : (
+                            <select
+                              value={selectedCandidateKey}
+                              onChange={(e) => setSelectedCandidateKey(e.target.value)}
+                              className="w-full bg-[#f9f9ff] border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23717786%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_10px_center] bg-no-repeat"
+                            >
+                              <option value="" disabled className="text-slate-400">-- Chọn khung giờ học --</option>
+                              {candidates.map((c) => {
+                                const key = `${c.startTime}|${c.endTime}`;
+                                const dateObj = parseCandidateTime(c.startTime);
+                                const startStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                return (
+                                  <option key={key} value={key} className="text-slate-800 font-semibold font-sans">
+                                    {startStr}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          )}
+                        </div>
+
+                        {/* "Xem chi tiết các khung giờ" button */}
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsDetailedBookingMode(true);
+                              setVisibleStartDate(selectedDateStr ? new Date(selectedDateStr) : new Date());
+                            }}
+                            className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-[#414754] hover:bg-slate-50 text-xs font-bold py-2.5 px-4 rounded-xl cursor-pointer hover:shadow-xs transition-all active:scale-[0.99] font-sans"
+                          >
+                            <Calendar className="w-4 h-4 text-slate-400" />
+                            <span>Xem chi tiết các khung giờ</span>
+                          </button>
+                        </div>
+
+                        {/* Booking Form Details */}
+                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                          {/* "Đặt lịch học ngay" Trigger Button */}
+                          <button
+                            type="button"
+                            disabled={!selectedSlotId || !selectedServiceId || !selectedCandidateKey}
+                            onClick={() => {
+                              setGoalTitle('');
+                              setGoalDescription('');
+                              setShowGoalModal(true);
+                            }}
+                            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-primary/20 font-sans"
+                          >
+                            <span>Đặt lịch học ngay</span>
+                          </button>
+
+                          {/* "Nhắn tin cho Mentor" Button */}
+                          <button
+                            type="button"
+                            onClick={handleChatWithMentor}
+                            className="w-full flex items-center justify-center gap-2 bg-white border border-primary/25 hover:bg-slate-50 text-primary text-xs font-bold py-3 px-4 rounded-xl cursor-pointer transition-all active:scale-[0.98] font-sans"
+                          >
+                            <span>Nhắn tin cho Mentor</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
-                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Hình thức hỗ trợ</span>
-                  <span className="text-slate-800">
-                    {selectedMentorDetail.teachingMode === 'ONLINE'
-                      ? 'Trực tuyến (Online)'
-                      : selectedMentorDetail.teachingMode === 'OFFLINE'
-                        ? 'Trực tiếp (Offline)'
-                        : 'Hỗn hợp (Hybrid)'}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Thời lượng chuẩn 1 phiên</span>
-                  <span className="text-slate-800">{selectedMentorDetail.defaultSessionDuration || 60} phút</span>
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Lĩnh vực hỗ trợ */}
-            {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <Heart className="w-5 h-5 text-teal-600" />
-                  <span>Lĩnh vực hỗ trợ chủ đạo</span>
-                </h3>
-                <div className="flex flex-wrap gap-2.5">
-                  {selectedMentorDetail.helpTopicTags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="px-4 py-1.5 rounded-full text-body font-bold bg-slate-50 border border-slate-200/60 text-slate-700 shadow-sm shadow-slate-100 hover:border-teal-500/40 hover:text-teal-600 transition-colors"
+            {/* Connection card as a button, matching image 1 layout */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsDetailedBookingMode(true);
+                if (!selectedServiceId && selectedMentorDetail.services && selectedMentorDetail.services.length > 0) {
+                  setSelectedServiceId(selectedMentorDetail.services[0].serviceId);
+                }
+                setVisibleStartDate(selectedDateStr ? new Date(selectedDateStr) : new Date());
+              }}
+              className="w-full bg-white border border-[#e8eeff] py-5 px-6 rounded-2xl text-slate-900 hover:bg-slate-50/80 hover:shadow-md text-sm font-black uppercase tracking-wider text-center cursor-pointer transition-all active:scale-[0.99] shadow-sm font-sans"
+            >
+              Kết nối với {selectedMentorDetail.displayName}
+            </button>
+
+            {/* Kết nối với Mentor */}
+            {(selectedMentorDetail.linkedinUrl || selectedMentorDetail.githubUrl || selectedMentorDetail.portfolioUrl) && (
+              <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm text-center space-y-4">
+                <h4 className="text-xs text-slate-400 font-bold uppercase tracking-wider font-headline">
+                  Kết nối với {selectedMentorDetail.displayName}
+                </h4>
+                <div className="flex gap-4 justify-center">
+                  {selectedMentorDetail.linkedinUrl && (
+                    <a
+                      href={selectedMentorDetail.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 hover:bg-primary/10 border border-slate-100 text-slate-700 hover:text-primary transition-all duration-300 shadow-sm"
+                      title="LinkedIn"
                     >
-                      {tag.nameVi}
-                    </span>
-                  ))}
+                      <Linkedin className="w-5 h-5" />
+                    </a>
+                  )}
+                  {selectedMentorDetail.githubUrl && (
+                    <a
+                      href={selectedMentorDetail.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-900/10 border border-slate-100 text-slate-700 hover:text-slate-900 transition-all duration-300 shadow-sm"
+                      title="GitHub"
+                    >
+                      <Github className="w-5 h-5" />
+                    </a>
+                  )}
+                  {selectedMentorDetail.portfolioUrl && (
+                    <a
+                      href={selectedMentorDetail.portfolioUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 hover:bg-teal-500/10 border border-slate-100 text-slate-700 hover:text-teal-600 transition-all duration-300 shadow-sm"
+                      title="Portfolio Website"
+                    >
+                      <Globe className="w-5 h-5" />
+                    </a>
+                  )}
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Right Column: Active Services / Courses List (col-span-5) */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                <BookOpen className="w-5 h-5 text-teal-600" />
-                <span>Các môn hỗ trợ của Mentor</span>
-              </h3>
+            {/* Đánh giá gần đây */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h4 className="text-xs font-bold text-[#151c29] uppercase tracking-wider font-headline">Đánh giá gần đây</h4>
+                <button
+                  onClick={() => handleOpenReviews(selectedMentorDetail)}
+                  className="text-xs text-primary font-bold hover:underline cursor-pointer"
+                >
+                  Xem tất cả
+                </button>
+              </div>
 
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-                {!selectedMentorDetail.services || selectedMentorDetail.services.length === 0 ? (
-                  <p className="text-body text-slate-400 italic text-center py-8">Mentor chưa cập nhật môn học hỗ trợ nào.</p>
+              <div className="space-y-3 pt-1">
+                {profileReviewsLoading ? (
+                  <div className="py-6 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                ) : profileReviews.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic py-4 text-center">Chưa có đánh giá nào.</p>
                 ) : (
-                  selectedMentorDetail.services.map((srv) => (
-                    <div key={srv.serviceId} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 space-y-3 hover:shadow-sm hover:border-slate-200/80 transition-all text-left relative overflow-hidden group">
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="text-body font-black text-slate-800 leading-snug group-hover:text-primary transition-colors">{srv.title}</span>
-                        <span className="text-meta font-black text-teal-700 whitespace-nowrap bg-teal-50 border border-teal-200/50 px-3 py-1 rounded-full shrink-0 shadow-2xs">
-                          {srv.free ? 'Miễn phí' : `${srv.priceScoin?.toLocaleString('en-US')} P`}
-                        </span>
+                  profileReviews.map((rev) => (
+                    <div key={rev.reviewId} className="p-3 border border-slate-100 rounded-xl space-y-2 bg-slate-50/30 text-left">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={rev.reviewerAvatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+                            onError={onAvatarError}
+                            alt={rev.reviewerDisplayName}
+                            className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                          />
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block leading-tight">{rev.reviewerDisplayName}</span>
+                            <span className="text-[10px] text-slate-400 font-semibold block">{fmtDateTime(rev.createdAt)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-0.5 text-amber-400">
+                          {Array.from({ length: rev.rating }).map((_, i) => (
+                            <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
                       </div>
-                      <p className="text-meta text-slate-500 leading-relaxed font-semibold line-clamp-2">{srv.description}</p>
-                      <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-400 pt-2 border-t border-slate-100">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-slate-300" />
-                          Thời gian: {srv.durationMinutes} phút
-                        </span>
-                      </div>
+                      {rev.comment && (
+                        <p className="text-xs text-slate-600 leading-relaxed font-medium font-sans">
+                          "{rev.comment}"
+                        </p>
+                      )}
                     </div>
                   ))
                 )}
@@ -849,308 +1691,94 @@ export const Mentors: React.FC = () => {
           </div>
         </div>
 
-        {/* Inline Booking Grid (Scrolled to when clicking schedule) */}
-        <div
-          ref={bookingSectionRef}
-          className="bg-white border border-slate-100 p-8 rounded-3xl shadow-[0_15px_35px_rgba(0,0,0,0.03),inset_0_2px_4px_rgba(255,255,255,0.95)] mt-8 text-left relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.01)_1px,transparent_1px)] [background-size:12px_12px]"
-        >
-          {bookingSuccess ? (
-            <div className="py-12 text-center space-y-4 animate-fadeIn">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-md">
-                <Check className="w-8 h-8 stroke-[3]" />
+        {/* Modal: Chi tiết các khung giờ hoạt động */}
+        {showAllSlotsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn">
+            <div className="bg-white rounded-3xl border border-slate-100 p-6 max-w-md w-full shadow-2xl space-y-4 animate-scaleUp">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="text-body-lg font-bold text-slate-900 font-headline">Lịch hoạt động của Mentor</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAllSlotsModal(false)}
+                  className="p-1 hover:bg-slate-100 rounded-full cursor-pointer text-slate-400 hover:text-slate-700"
+                >
+                  <X className="w-4.5 h-4.5" />
+                </button>
               </div>
-              <h3 className="text-slate-800 font-bold text-lg font-serif">Gửi yêu cầu đặt lịch thành công!</h3>
-              <p className="text-slate-500 text-body font-semibold max-w-md mx-auto">Hệ thống đã gửi yêu cầu tới {activeMentor?.displayName}. Đang chuyển hướng quay lại danh sách mentor...</p>
-            </div>
-          ) : (
-            <>
-              <div className="border-b border-slate-100 pb-4 mb-6">
-                <h3 className="text-lg font-black text-slate-800 font-serif">Đặt lịch hẹn hỗ trợ cùng {selectedMentorDetail.displayName}</h3>
-                <p className="text-body text-slate-500 font-medium mt-1">Chọn khung giờ trống trên lịch → Chọn môn học hỗ trợ → Điền mục tiêu học tập</p>
-              </div>
-
-              {bookingError && (
-                <div className="flex items-start gap-2 bg-rose-500/5 border border-rose-200 text-rose-600 p-3.5 rounded-xl text-meta font-semibold text-left mb-4">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{bookingError}</span>
-                </div>
-              )}
-
-              {/* Booking 2-Column Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Calendar Grid (col-span-8) */}
-                <div className="lg:col-span-8 space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-teal-600" />
-                      <h4 className="text-body font-extrabold text-slate-800">Chọn khung lịch rảnh của mentor</h4>
-                    </div>
-
-                    {/* Week switcher */}
-                    <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-full gap-1 shrink-0 shadow-inner-soft">
-                      <button
-                        type="button"
-                        onClick={() => handleSwitchWeek(0)}
-                        className={`px-4 py-1.5 rounded-full text-[11px] font-extrabold transition-all cursor-pointer ${bookingWeekOffset === 0
-                          ? 'bg-white text-primary shadow-sm border border-slate-200/50'
-                          : 'text-slate-500 hover:text-slate-800'
-                          }`}
-                      >
-                        Tuần này
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSwitchWeek(1)}
-                        className={`px-4 py-1.5 rounded-full text-[11px] font-extrabold transition-all cursor-pointer ${bookingWeekOffset === 1
-                          ? 'bg-white text-primary shadow-sm border border-slate-200/50'
-                          : 'text-slate-500 hover:text-slate-800'
-                          }`}
-                      >
-                        Tuần sau
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Week calendar grid */}
-                  {bookingLoading ? (
-                    <div className="py-24 flex flex-col items-center gap-4">
-                      <Loader2 className="w-10 h-10 animate-spin text-teal-600" />
-                      <p className="text-slate-400 text-body font-semibold animate-pulse">Đang tải lịch trống của mentor...</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-7 gap-2 pt-1.5">
-                      {getWeekDays(bookingWeekOffset).map((dayDate, idx) => {
-                        const dayName = WEEKDAYS[idx].label;
-                        const dateStr = formatDateISO(dayDate);
-                        const isToday = formatDateISO(new Date()) === dateStr;
-                        const daySlots = getBookingDaySlots(dayDate);
-
-                        return (
-                          <div key={idx} className={`rounded-2xl border p-3 flex flex-col text-left min-h-[270px] transition-all shadow-[inset_0_2px_4px_rgba(255,255,255,0.8)] ${isToday ? 'bg-teal-50/20 border-teal-500/30 ring-1 ring-teal-500/10' : 'bg-slate-50/30 border-slate-100/80 hover:bg-slate-50/50'}`}>
-                            {/* Day Header */}
-                            <div className="text-center pb-2 border-b border-slate-100 mb-3 shrink-0">
-                              <span className={`text-[10px] font-extrabold block tracking-wide uppercase ${isToday ? 'text-teal-600' : 'text-slate-400'}`}>
-                                {dayName}
-                              </span>
-                              <span className={`text-meta font-black inline-flex items-center justify-center w-7 h-7 rounded-full mt-1 transition-all ${isToday ? 'bg-teal-600 text-white shadow-md shadow-teal-500/15' : 'text-slate-700 bg-slate-100/50 border border-slate-200/30'}`}>
-                                {dayDate.getDate()}
-                              </span>
-                            </div>
-
-                            {/* Day Slots List */}
-                            <div className="flex-1 space-y-2 overflow-y-auto scrollbar-none pr-0.5">
-                              {daySlots.length === 0 ? (
-                                <div className="h-full flex items-center justify-center py-8">
-                                  <span className="text-[10px] text-slate-400/60 italic font-semibold text-center leading-tight">
-                                    Không có lịch
-                                  </span>
-                                </div>
-                              ) : (
-                                daySlots.map(slot => {
-                                  const selected = selectedSlotId === slot.slotId;
-                                  const hasServices = slot.services && slot.services.length > 0;
-
-                                  return (
-                                    <div
-                                      key={slot.slotId}
+              
+              <div className="max-h-[350px] overflow-y-auto space-y-3 pr-1 text-left">
+                {activeSlots.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic text-center py-6">Mentor chưa thiết lập lịch rảnh nào.</p>
+                ) : (
+                  (() => {
+                    const grouped: { [dateStr: string]: MentorAvailabilitySlot[] } = {};
+                    activeSlots.forEach(s => {
+                      const dStr = getLocalDateStr(s.startTime);
+                      if (!grouped[dStr]) grouped[dStr] = [];
+                      grouped[dStr].push(s);
+                    });
+                    
+                    return Object.entries(grouped).sort((a,b) => a[0].localeCompare(b[0])).map(([dStr, slots]) => {
+                      const dateObj = new Date(dStr);
+                      const formattedDate = dateObj.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' });
+                      
+                      return (
+                        <div key={dStr} className="space-y-1.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                          <span className="text-xs font-bold text-primary block uppercase tracking-wide">{formattedDate}</span>
+                          <div className="grid grid-cols-1 gap-1.5">
+                            {slots.map(s => {
+                              const start = fmtTime(s.startTime);
+                              const end = fmtTime(s.endTime);
+                              const active = s.services && s.services.length > 0;
+                              return (
+                                <div key={s.slotId} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                                  <span className="font-semibold text-slate-700">{start} - {end}</span>
+                                  {active ? (
+                                    <button
+                                      type="button"
                                       onClick={() => {
-                                        if (hasServices) {
-                                          handleSelectSlot(slot.slotId);
-                                        }
+                                        setSelectedDateStr(dStr);
+                                        handleSelectSlot(s.slotId);
+                                        setShowAllSlotsModal(false);
                                       }}
-                                      className={`p-2.5 rounded-xl border text-left shadow-[0_2px_4px_rgba(0,0,0,0.01),inset_0_2px_3px_rgba(255,255,255,0.9)] group/item relative cursor-pointer transition-all duration-200 hover:-translate-y-[1.5px] ${selected
-                                        ? 'bg-primary border-primary text-white shadow-md shadow-primary/20 ring-2 ring-primary/30 scale-[1.02]'
-                                        : hasServices
-                                          ? 'bg-emerald-50/60 border-emerald-200/80 hover:bg-emerald-50/90 text-emerald-800 hover:border-emerald-300'
-                                          : 'bg-slate-100/40 border-slate-200/30 text-slate-400/50 opacity-40 cursor-not-allowed'
-                                        }`}
+                                      className="bg-primary/10 text-primary hover:bg-primary hover:text-white px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
                                     >
-                                      <div className="text-[9px] font-extrabold flex items-center justify-between">
-                                        <span className="flex items-center gap-0.5">
-                                          <Clock className="w-2.5 h-2.5 shrink-0" />
-                                          {fmtTime(slot.startTime)} - {fmtTime(slot.endTime)}
-                                        </span>
-                                      </div>
-
-                                      {hasServices && (
-                                        <div className="mt-1.5 space-y-1">
-                                          {slot.services?.map(sv => {
-                                            const code = getSubjectCode(sv.title);
-                                            return (
-                                              <span
-                                                key={sv.serviceId}
-                                                className={`block text-[8px] font-black tracking-wide truncate border px-1.5 py-0.5 rounded text-center leading-normal ${selected ? 'bg-white/15 border-white/20 text-white' : 'bg-white/80 border-slate-200/50 text-slate-700'}`}
-                                                title={sv.title}
-                                              >
-                                                {code ? code : sv.title}
-                                              </span>
-                                            );
-                                          })}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6 text-left">
-                  {!selectedSlotId ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-slate-50/50 border border-dashed border-slate-200 rounded-3xl min-h-[300px] shadow-[inset_0_4px_10px_rgba(0,0,0,0.01)] bg-[radial-gradient(rgba(0,0,0,0.015)_1px,transparent_1px)] [background-size:10px_10px]">
-                      <Calendar className="w-12 h-12 text-slate-300 mb-3.5" />
-                      <h4 className="text-body font-black text-slate-700">Cấu hình Đăng ký</h4>
-                      <p className="text-meta text-slate-400 font-bold mt-2.5 max-w-[260px] leading-relaxed">
-                        👉 <span className="text-primary font-black">Hướng dẫn:</span> Bạn cần <span className="text-slate-800 font-extrabold">bấm chọn một khung lịch rảnh (màu xanh lá)</span> ở bảng lịch bên trái, hệ thống mới tải các giờ cụ thể tại đây để bạn chọn.
-                      </p>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleBookingSubmit} className="space-y-5">
-                      <div className="border-b border-slate-100 pb-3.5 mb-4">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Khung giờ đã chọn</span>
-                        <span className="text-body font-black text-slate-800 block mt-1.5 p-3 rounded-2xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                          {selectedSlot ? (
-                            <>
-                              {getDayNameLong(new Date(selectedSlot.startTime))}, {formatDateDisplay(new Date(selectedSlot.startTime))}
-                              <span className="text-primary ml-1.5 font-black block sm:inline mt-0.5 sm:mt-0">
-                                ({fmtTime(selectedSlot.startTime)} - {fmtTime(selectedSlot.endTime)})
-                              </span>
-                            </>
-                          ) : 'Chưa chọn'}
-                        </span>
-                      </div>
-
-                      {/* Service selector */}
-                      <div className="space-y-1.5">
-                        <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Môn học / Dịch vụ</label>
-                        {slotServices.length === 0 ? (
-                          <p className="text-meta text-rose-600 font-semibold">Khung lịch này chưa được gán dịch vụ nào.</p>
-                        ) : slotServices.length === 1 ? (
-                          <div className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl text-body font-bold text-slate-800 flex items-center justify-between shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                            <span>{slotServices[0].title}</span>
-                            <span className="text-meta font-black text-teal-700 bg-teal-50 border border-teal-200/50 px-2 py-0.5 rounded-full">{slotServices[0].isFree ? 'Miễn phí' : `${slotServices[0].priceScoin?.toLocaleString('en-US') || 0} Point`}</span>
-                          </div>
-                        ) : (
-                          <div className="space-y-1.5">
-                            {slotServices.map(s => {
-                              const sId = s.serviceId || (s as any).id;
-                              const selected = selectedServiceId === sId;
-                              return (
-                                <button
-                                  key={sId}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedServiceId(sId);
-                                    setBookingError(null);
-                                  }}
-                                  className={`w-full p-3 rounded-xl border flex items-center justify-between text-left transition-all duration-200 ${selected
-                                    ? 'bg-primary/10 border-primary text-primary font-bold shadow-2xs shadow-primary/5'
-                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer'
-                                    }`}
-                                >
-                                  <span className="text-meta font-bold">{s.title}</span>
-                                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${selected ? 'bg-primary text-white border-primary/20' : 'bg-slate-50 text-slate-500 border-slate-200/50'}`}>{s.isFree ? 'FREE' : `${s.priceScoin?.toLocaleString('en-US')} P`}</span>
-                                </button>
+                                      Chọn slot này
+                                    </button>
+                                  ) : (
+                                    <span className="text-rose-500 bg-rose-50 px-2 py-0.5 rounded font-bold">Bận</span>
+                                  )}
+                                </div>
                               );
                             })}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Precise segment candidate selector */}
-                      <div className="space-y-1.5">
-                        <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Giờ học cụ thể</label>
-                        {!selectedServiceId ? (
-                          <p className="text-meta text-slate-400 italic py-1">Vui lòng bấm chọn khung lịch rảnh (màu xanh lá) ở bên trái để tải giờ học.</p>
-                        ) : candidatesLoading ? (
-                          <div className="flex items-center gap-2 text-meta text-slate-400 font-semibold py-1">
-                            <Loader2 className="w-4 h-4 animate-spin text-teal-600" /> Đang kiểm tra slot trống...
-                          </div>
-                        ) : candidates.length === 0 ? (
-                          <p className="text-meta text-rose-600 font-semibold">Hiện tại khung giờ này đã không còn trống, vui lòng chọn lại khung giờ khác.</p>
-                        ) : (
-                          <select
-                            value={selectedCandidateKey}
-                            onChange={(e) => setSelectedCandidateKey(e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-body text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer shadow-sm shadow-slate-100"
-                          >
-                            <option value="" disabled className="text-slate-400">-- Chọn giờ học --</option>
-                            {candidates.map((c) => {
-                              const key = `${c.startTime}|${c.endTime}`;
-                              const dateObj = parseCandidateTime(c.startTime);
-                              const endObj = parseCandidateTime(c.endTime);
-                              const startStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                              const endStr = endObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                              return (
-                                <option key={key} value={key} className="text-slate-800 font-semibold">
-                                  {startStr} - {endStr}
-                                </option>
-                              );
-                            })}
-                          </select>
-                        )}
-                      </div>
-
-                      {/* Goal Title */}
-                      <div className="space-y-1.5">
-                        <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Mục tiêu (tiêu đề ngắn)</label>
-                        <input
-                          type="text"
-                          required
-                          value={goalTitle}
-                          onChange={(e) => setGoalTitle(e.target.value)}
-                          placeholder="Ví dụ: Cần support bài Lab 3 Java Web"
-                          className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-body text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold placeholder-slate-400/60 shadow-sm shadow-slate-100 transition-all"
-                        />
-                      </div>
-
-                      {/* Goal Description */}
-                      <div className="space-y-1.5">
-                        <label className="block text-meta font-extrabold text-slate-400 uppercase tracking-wide">Mô tả chi tiết</label>
-                        <textarea
-                          required
-                          rows={3}
-                          value={goalDescription}
-                          onChange={(e) => setGoalDescription(e.target.value)}
-                          placeholder="Mô tả rõ lỗi gặp phải hoặc phần kiến thức cần mentor hỗ trợ..."
-                          className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-body text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 resize-none placeholder-slate-400/60 font-medium shadow-sm shadow-slate-100 transition-all"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={bookingSubmitting || !selectedSlotId || !selectedServiceId || !selectedCandidateKey}
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-600 text-white text-body font-black py-3 px-4 rounded-xl cursor-pointer hover:opacity-95 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {bookingSubmitting ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <>
-                            <Send className="w-3.5 h-3.5" />
-                            <span>Gửi yêu cầu đặt lịch</span>
-                          </>
-                        )}
-                      </button>
-                    </form>
-                  )}
-                </div>
+                        </div>
+                      );
+                    });
+                  })()
+                )}
               </div>
-            </>
-          )}
-        </div>
+              
+              <button
+                type="button"
+                onClick={() => setShowAllSlotsModal(false)}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl cursor-pointer transition-all"
+              >
+                Đóng lại
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
+  /*
   const getBookingDaySlots = (dayDate: Date) => {
     const targetStr = formatDateISO(dayDate);
     return activeSlots.filter(s => getLocalDateStr(s.startTime) === targetStr);
   };
+  */
 
   return (
     <div className="space-y-8 text-left relative min-h-screen pb-16">
@@ -1611,6 +2239,76 @@ export const Mentors: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {showGoalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl border border-slate-100 p-8 max-w-md w-full shadow-2xl space-y-5 animate-scaleUp text-left font-sans">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-body-lg font-bold text-slate-900 font-sans">Mục tiêu học tập của bạn</h3>
+              <button
+                type="button"
+                onClick={() => setShowGoalModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-full cursor-pointer text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-4.5 h-4.5" />
+              </button>
+            </div>
+
+            {bookingError && (
+              <div className="flex items-start gap-2 bg-rose-500/5 border border-rose-200 text-rose-600 p-3 rounded-xl text-xs font-semibold text-left font-sans">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{bookingError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleBookingSubmit} className="space-y-4 font-sans">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#414754] uppercase tracking-wide">Tiêu đề mục tiêu ngắn</label>
+                <input
+                  type="text"
+                  required
+                  value={goalTitle}
+                  onChange={(e) => setGoalTitle(e.target.value)}
+                  placeholder="Ví dụ: Cần hỗ trợ cấu trúc database bài Lab 3"
+                  className="w-full bg-[#f9f9ff] border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold placeholder-slate-400 font-sans"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#414754] uppercase tracking-wide">Mô tả chi tiết vướng mắc</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={goalDescription}
+                  onChange={(e) => setGoalDescription(e.target.value)}
+                  placeholder="Mô tả rõ lỗi gặp phải hoặc kiến thức cần mentor hỗ trợ..."
+                  className="w-full bg-[#f9f9ff] border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 resize-none placeholder-slate-400 font-sans"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowGoalModal(false)}
+                  className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl cursor-pointer transition-all font-sans"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={bookingSubmitting}
+                  className="w-1/2 flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold py-3 rounded-xl cursor-pointer hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm font-sans"
+                >
+                  {bookingSubmitting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <span>Xác nhận đặt</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

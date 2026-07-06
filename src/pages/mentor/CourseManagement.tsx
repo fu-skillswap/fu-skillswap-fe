@@ -916,7 +916,6 @@ export const CourseManagement: React.FC = () => {
 
                             {/* Absolute Event blocks for this day */}
                             {daySlots.map((slot) => {
-                              // Calculate position
                               const START_HOUR = 9;
                               const END_HOUR = 21;
                               const HOUR_HEIGHT = 50;
@@ -931,7 +930,7 @@ export const CourseManagement: React.FC = () => {
                               const endDec = Math.max(START_HOUR, Math.min(END_HOUR, parseTimeToDecimal(slot.endTime)));
 
                               const top = (startDec - START_HOUR) * HOUR_HEIGHT;
-                              const height = Math.max(35, (endDec - startDec) * HOUR_HEIGHT); // Min height 35px
+                              const height = Math.max(45, (endDec - startDec) * HOUR_HEIGHT);
 
                               const formatLocalTime = (iso: string) => {
                                 const d = new Date(iso);
@@ -939,6 +938,7 @@ export const CourseManagement: React.FC = () => {
                               };
 
                               const slotServices = slot.services || [];
+                              const candidatesList = allCandidatesMap[slot.slotId] || [];
 
                               return (
                                 <div
@@ -947,38 +947,65 @@ export const CourseManagement: React.FC = () => {
                                     e.stopPropagation();
                                     handleOpenAssignModal(slot);
                                   }}
-                                  className="absolute left-1 right-1 rounded-md border border-primary/20 bg-primary-soft/85 hover:bg-primary shadow-xs p-1.5 overflow-hidden group/rule transition-all hover:z-10 hover:shadow-md text-left cursor-pointer"
+                                  className="absolute left-1 right-1 rounded-md border border-primary/20 bg-primary-soft/85 hover:bg-primary-soft shadow-xs p-1.5 overflow-hidden group/rule transition-all hover:z-10 hover:shadow-md text-left cursor-pointer flex flex-col justify-between"
                                   style={{
                                     top: `${top}px`,
                                     height: `${height}px`
                                   }}
                                 >
-                                  {/* Time & status */}
-                                  <div className="flex items-center justify-between text-[9px] font-extrabold text-primary group-hover/rule:text-white leading-tight">
-                                    <span className="truncate">
-                                      {formatLocalTime(slot.startTime)} - {formatLocalTime(slot.endTime)}
-                                    </span>
+                                  {/* Time Range & Title block */}
+                                  <div>
+                                    <div className="flex items-center justify-between text-[9px] font-extrabold text-primary group-hover/rule:text-primary leading-tight">
+                                      <span className="truncate">
+                                        {formatLocalTime(slot.startTime)} - {formatLocalTime(slot.endTime)}
+                                      </span>
+                                    </div>
+                                    <div className="mt-1 space-y-0.5 overflow-y-auto max-h-[30px] scrollbar-thin">
+                                      {slotServices.slice(0, 1).map(srv => {
+                                        const { subjectCode, cleanTitle } = parseTitle(srv.title);
+                                        return (
+                                          <div
+                                            key={srv.serviceId}
+                                            className="text-[8px] font-bold bg-white/90 text-fg rounded px-1.5 py-0.5 border border-line-soft truncate"
+                                            title={cleanTitle}
+                                          >
+                                            <span className="text-primary font-extrabold mr-1">[{subjectCode}]</span>
+                                            {cleanTitle}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
 
-                                  {/* Assigned Courses Badges */}
-                                  <div className="mt-1 space-y-0.5 overflow-y-auto max-h-[calc(100%-14px)] scrollbar-thin">
-                                    {slotServices.map(srv => {
-                                      const { subjectCode, cleanTitle } = parseTitle(srv.title);
-                                      return (
-                                        <div
-                                          key={srv.serviceId}
-                                          className="text-[9px] font-bold bg-white/90 text-fg rounded px-1.5 py-0.5 border border-line-soft truncate"
-                                          title={cleanTitle}
-                                        >
-                                          <span className="text-primary font-extrabold mr-1">[{subjectCode}]</span>
-                                          {cleanTitle}
-                                        </div>
-                                      );
-                                    })}
-                                    {slotServices.length === 0 && (
-                                      <div className="text-[9px] font-bold bg-amber-50 text-amber-700 rounded px-1.5 py-0.5 border border-amber-200/60 truncate">
-                                        ⚠️ Trống (Chưa gán)
+                                  {/* Candidates pills grid */}
+                                  <div className="mt-1.5 flex-1 overflow-y-auto scrollbar-thin">
+                                    {candidatesList.length > 0 ? (
+                                      <div className="grid grid-cols-2 gap-1">
+                                        {candidatesList.map((cand, candIdx) => {
+                                          const candStartStr = formatLocalTime(cand.startTime);
+                                          const isBlocked = !cand.isSelectable;
+
+                                          return (
+                                            <div
+                                              key={candIdx}
+                                              className={`text-[8px] font-extrabold rounded px-1 py-0.5 text-center truncate border ${
+                                                isBlocked
+                                                  ? 'bg-slate-200 border-slate-300 text-slate-500'
+                                                  : 'bg-green-100 border-green-200 text-green-700'
+                                              }`}
+                                              title={`${candStartStr} - ${isBlocked ? 'Đã đặt' : 'Trống'}`}
+                                            >
+                                              {candStartStr}
+                                            </div>
+                                          );
+                                        })}
                                       </div>
+                                    ) : (
+                                      slotServices.length === 0 && (
+                                        <div className="text-[8px] font-bold bg-amber-50 text-amber-700 rounded px-1.5 py-0.5 border border-amber-200/60 truncate">
+                                          ⚠️ Chưa gán môn
+                                        </div>
+                                      )
                                     )}
                                   </div>
                                 </div>
