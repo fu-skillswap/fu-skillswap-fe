@@ -25,7 +25,6 @@ export const mentorsApi = {
         tagIds: params.tagIds && params.tagIds.length ? params.tagIds : undefined,
         campusId: params.campusId || undefined,
         specializationId: params.specializationId || undefined,
-        teachingMode: params.teachingMode || undefined,
       },
     }),
 

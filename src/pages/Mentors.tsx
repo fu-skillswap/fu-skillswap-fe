@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sparkles, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, Briefcase, LayoutGrid, ChevronLeft, ChevronRight, Info, BookOpen } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
+import { catalogApi } from '../api/catalog';
 import type {
   MentorCard, MentorRecommendation, MentorReview,
   MentorAvailabilitySlot, ServiceSlotCandidate, MentorDetail,
-  MentorPortfolioItem,
+  MentorPortfolioItem, MentorProfileOptions, SupportLevelOption,
 } from '../api/types';
 import { bookingsApi } from '../api/bookings';
 import { chatApi } from '../api/chat';
@@ -44,7 +45,6 @@ const Linkedin = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-/*
 const WEEKDAYS = [
   { value: 'MONDAY', label: 'T2' },
   { value: 'TUESDAY', label: 'T3' },
@@ -172,6 +172,7 @@ export const Mentors: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true); // chỉ hiện skeleton lần đầu
   const [searching, setSearching] = useState(false);          // các lần tìm sau: giữ list cũ + spinner nhẹ
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [profileOptions, setProfileOptions] = useState<MentorProfileOptions | null>(null);
   const recMapRef = useRef<Map<string, MentorRecommendation>>(new Map());
   const didInitRef = useRef(false);
 
@@ -239,6 +240,21 @@ export const Mentors: React.FC = () => {
       })
       .catch(() => { /* không bắt buộc */ });
   }, []);
+
+  // Nhãn 3 nhóm support level (không hard-code — lấy từ catalog). Fail-safe: ẩn nhãn nếu lỗi.
+  useEffect(() => {
+    let alive = true;
+    catalogApi.getMentorProfileOptions()
+      .then((o) => { if (alive) setProfileOptions(o); })
+      .catch(() => { /* fallback: hiển thị "Mức X/4" */ });
+    return () => { alive = false; };
+  }, []);
+
+  // Tra nhãn theo value trong 1 nhóm support level.
+  const levelLabel = (list: SupportLevelOption[] | undefined, value?: number): string | null => {
+    if (value == null) return null;
+    return list?.find((o) => o.value === value)?.label ?? null;
+  };
 
   // Tải danh sách mentor từ BE (search). Lần đầu -> skeleton; các lần sau -> giữ list cũ.
   const loadMentors = useCallback(async (keyword: string) => {
@@ -350,10 +366,11 @@ export const Mentors: React.FC = () => {
       const ext = getExtendedMentorData(detail.mentorUserId, detail.displayName, detail.specializationName);
       const mergedDetail: MentorDetail = {
         ...detail,
+        // achievements nay là object v2 do BE trả trực tiếp (không còn lấy từ mock).
+        achievements: detail.achievements ?? [],
         yearsOfExperience: detail.yearsOfExperience ?? ext.yearsOfExperience,
         company: detail.company ?? ext.company,
         projectsCount: detail.projectsCount ?? ext.projectsCount,
-        achievements: detail.achievements ?? ext.achievements,
         portfolios: detail.portfolios ?? ext.portfolios,
       };
       setSelectedMentorDetail(mergedDetail);
@@ -1137,38 +1154,189 @@ export const Mentors: React.FC = () => {
               </p>
             </div>
 
-            {/* Kỹ năng chuyên môn */}
-            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
-              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <span>Kỹ năng chuyên môn</span>
-              </h3>
-              <div className="flex flex-wrap gap-2 pt-2">
-                {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 ? (
-                  selectedMentorDetail.helpTopicTags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="px-4 py-2 rounded-full text-xs font-bold bg-[#00e0ff]/10 text-primary border border-[#00e0ff]/20 transition-all hover:scale-102"
-                    >
-                      {tag.nameVi}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-xs text-slate-400 italic">Chưa cập nhật kỹ năng.</span>
+            {/* Social Links */}
+            <div className="flex gap-3 mt-6 justify-center shrink-0">
+              {selectedMentorDetail.githubUrl && (
+                <a
+                  href={selectedMentorDetail.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all duration-200 shadow-sm"
+                  title="GitHub"
+                >
+                  <Github className="w-5 h-5" />
+                </a>
+              )}
+              {selectedMentorDetail.portfolioUrl && (
+                <a
+                  href={selectedMentorDetail.portfolioUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-teal-600 transition-all duration-200 shadow-sm"
+                  title="Portfolio Website"
+                >
+                  <Globe className="w-5 h-5" />
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Stats Row */}
+          <div className="border-t border-slate-100 bg-slate-50/50 grid grid-cols-3 divide-x divide-slate-100 text-center py-6 shadow-[inset_0_4px_8px_rgba(0,0,0,0.015)]">
+            <div className="space-y-1">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Đánh giá trung bình</span>
+              <span className="text-xl font-black text-slate-800 flex items-center justify-center gap-1.5 leading-none">
+                <Star className="w-5 h-5 fill-amber-400 text-amber-500 drop-shadow-[0_1.5px_3px_rgba(245,158,11,0.4)] stroke-[1.8]" />
+                {(selectedMentorDetail.ratingAverage ?? 0).toFixed(1)}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Số lượt đánh giá</span>
+              <span className="text-xl font-black text-slate-800 leading-none">
+                {selectedMentorDetail.reviewCount || 0}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Số buổi mentoring</span>
+              <span className="text-xl font-black text-slate-800 leading-none">
+                {selectedMentorDetail.completedSessions || 0}
+              </span>
+            </div>
+          </div>
+
+          {/* Số liệu thật của mentor (thay cho dữ liệu mock trước đây) */}
+          <div className="border-t border-slate-100 bg-surface grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-4.5">
+            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Buổi đã hoàn thành</span>
+              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
+                <Briefcase className="w-4 h-4 text-primary" />
+                {selectedMentorDetail.completedSessions ?? 0} buổi
+              </span>
+            </div>
+            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Điểm đánh giá</span>
+              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                {selectedMentorDetail.reviewCount ? selectedMentorDetail.ratingAverage.toFixed(1) : 'Chưa có'}
+              </span>
+            </div>
+            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Lượt đánh giá</span>
+              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
+                <Award className="w-4 h-4 text-rose-500" />
+                {selectedMentorDetail.reviewCount ?? 0} lượt
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll down indicator */}
+        <div className="flex flex-col items-center justify-center py-2.5">
+          <button
+            onClick={() => {
+              bookingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="flex flex-col items-center gap-1.5 text-xs font-black text-primary hover:text-primary-hover animate-bounce cursor-pointer group transition-all duration-300"
+          >
+            <span>Đặt lịch học phía dưới</span>
+            <ChevronDown className="w-5 h-5 group-hover:scale-110 transition-transform stroke-[3.5]" />
+          </button>
+        </div>
+
+        {/* Tab Navigator (Point 2) */}
+        <div className="flex border-b border-line-soft gap-6">
+          <button
+            onClick={() => setActiveDetailTab('about')}
+            className={`pb-4 text-body font-extrabold transition-all relative cursor-pointer ${
+              activeDetailTab === 'about'
+                ? 'text-primary'
+                : 'text-fg-faint hover:text-fg-muted'
+            }`}
+          >
+            Thông tin giới thiệu
+            {activeDetailTab === 'about' && (
+              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full animate-fadeIn" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveDetailTab('portfolio')}
+            className={`pb-4 text-body font-extrabold transition-all relative cursor-pointer ${
+              activeDetailTab === 'portfolio'
+                ? 'text-primary'
+                : 'text-fg-faint hover:text-fg-muted'
+            }`}
+          >
+            Dự án &amp; Portfolio ({selectedMentorDetail.portfolios?.length || 0})
+            {activeDetailTab === 'portfolio' && (
+              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full animate-fadeIn" />
+            )}
+          </button>
+        </div>
+
+        {/* Main 2-column details & courses layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column: Bio & Information (col-span-7) */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            {activeDetailTab === 'about' ? (
+              <>
+                {/* Bio Box */}
+                {selectedMentorDetail.bio && (
+                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                      <Award className="w-5 h-5 text-teal-600" />
+                      <span>Giới thiệu bản thân</span>
+                    </h3>
+                    <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
+                      {selectedMentorDetail.bio}
+                    </p>
+                  </div>
+
                 )}
               </div>
             </div>
 
-            {/* Dự án tiêu biểu */}
-            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
-              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
-                <Briefcase className="w-5 h-5 text-primary" />
-                <span>Dự án tiêu biểu</span>
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                {selectedMentorDetail.portfolios && selectedMentorDetail.portfolios.length > 0 ? (
-                  selectedMentorDetail.portfolios.map((project) => (
-                    <div key={project.id} className="border border-slate-100 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300">
+                {/* Achievements Box (Point 1) */}
+                {selectedMentorDetail.achievements && selectedMentorDetail.achievements.length > 0 && (
+                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04)] hover:-translate-y-[1px] transition-all duration-300 space-y-4">
+                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                      <Award className="w-5 h-5 text-amber-500 fill-amber-500/10" />
+                      <span>Giải thưởng &amp; Thành tích</span>
+                    </h3>
+                    <ul className="space-y-3">
+                      {selectedMentorDetail.achievements.map((ach) => (
+                        <li key={ach.id} className="flex items-start gap-3 text-body text-slate-600 font-medium leading-relaxed">
+                          <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                          <span>
+                            <span className="font-bold text-slate-800">{ach.title}</span>
+                            {ach.awardDescription && <span className="text-slate-500"> — {ach.awardDescription}</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Expertise box */}
+                {selectedMentorDetail.expertiseDescription && (
+                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                      <BookOpen className="w-5 h-5 text-teal-600" />
+                      <span>Kinh nghiệm &amp; Chuyên môn</span>
+                    </h3>
+                    <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
+                      {selectedMentorDetail.expertiseDescription}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Portfolios Tab View (Point 2) */
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {(selectedMentorDetail.portfolios ?? []).map((project) => (
+                    <div key={project.id} className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:-translate-y-[1px]">
+
                       <div>
                         {project.imageUrl ? (
                           <div className="h-36 overflow-hidden bg-slate-50 border-b border-slate-100">
@@ -1595,6 +1763,114 @@ export const Mentors: React.FC = () => {
               Kết nối với {selectedMentorDetail.displayName}
             </button>
 
+            {/* Mức độ hỗ trợ */}
+            {(selectedMentorDetail.foundationSupportLevel != null ||
+              selectedMentorDetail.outputReviewSupportLevel != null ||
+              selectedMentorDetail.directionSupportLevel != null) && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4 text-left">
+                <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3">
+                  Mức độ hỗ trợ của Mentor
+                </h3>
+                <div className="space-y-3.5">
+                  {selectedMentorDetail.foundationSupportLevel != null && (
+                    <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                      <span className="text-meta text-slate-400">Hỗ trợ nền tảng · Mức {selectedMentorDetail.foundationSupportLevel}/4</span>
+                      <span className="text-slate-800">{levelLabel(profileOptions?.foundationSupportLevels, selectedMentorDetail.foundationSupportLevel) ?? `Mức ${selectedMentorDetail.foundationSupportLevel}/4`}</span>
+                    </div>
+                  )}
+                  {selectedMentorDetail.outputReviewSupportLevel != null && (
+                    <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                      <span className="text-meta text-slate-400">Review sản phẩm · Mức {selectedMentorDetail.outputReviewSupportLevel}/4</span>
+                      <span className="text-slate-800">{levelLabel(profileOptions?.outputReviewSupportLevels, selectedMentorDetail.outputReviewSupportLevel) ?? `Mức ${selectedMentorDetail.outputReviewSupportLevel}/4`}</span>
+                    </div>
+                  )}
+                  {selectedMentorDetail.directionSupportLevel != null && (
+                    <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                      <span className="text-meta text-slate-400">Định hướng · Mức {selectedMentorDetail.directionSupportLevel}/4</span>
+                      <span className="text-slate-800">{levelLabel(profileOptions?.directionSupportLevels, selectedMentorDetail.directionSupportLevel) ?? `Mức ${selectedMentorDetail.directionSupportLevel}/4`}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Môn học thế mạnh */}
+            {selectedMentorDetail.subjectResults && selectedMentorDetail.subjectResults.length > 0 && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4 text-left">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <BookOpen className="w-5 h-5 text-teal-600" />
+                  <span>Môn học thế mạnh</span>
+                </h3>
+                <div className="flex flex-wrap gap-2.5">
+                  {selectedMentorDetail.subjectResults
+                    .slice()
+                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                    .map((s) => (
+                      <span
+                        key={s.id ?? s.subjectCode}
+                        className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-meta font-bold px-3 py-1.5 rounded-lg"
+                        title={s.subjectName}
+                      >
+                        {s.subjectCode}
+                        <span className="text-brand-terracotta font-extrabold">{s.scoreValue.toFixed(1)}</span>
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dự án tiêu biểu */}
+            {selectedMentorDetail.featuredProjects && selectedMentorDetail.featuredProjects.length > 0 && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4 text-left">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <Briefcase className="w-5 h-5 text-teal-600" />
+                  <span>Dự án tiêu biểu</span>
+                </h3>
+                <div className="space-y-5">
+                  {selectedMentorDetail.featuredProjects
+                    .slice()
+                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                    .map((p) => (
+                      <div key={p.id} className="flex gap-4 items-start">
+                        {p.pictureUrl && (
+                          <img src={p.pictureUrl} alt={p.title} className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-body font-bold text-slate-800">{p.title}</p>
+                          {p.content && <p className="text-meta text-slate-500 mt-0.5">{p.content}</p>}
+                          {p.projectDescription && <p className="text-meta text-slate-600 mt-1 leading-relaxed">{p.projectDescription}</p>}
+                          {p.liveDemoUrl && (
+                            <a href={p.liveDemoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-meta font-bold text-primary hover:text-primary-hover mt-1.5">
+                              <Globe className="w-3.5 h-3.5" /> Xem demo
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lĩnh vực hỗ trợ */}
+            {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4 text-left">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <Heart className="w-5 h-5 text-teal-600" />
+                  <span>Lĩnh vực hỗ trợ chủ đạo</span>
+                </h3>
+                <div className="flex flex-wrap gap-2.5">
+                  {selectedMentorDetail.helpTopicTags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="px-4 py-1.5 rounded-full text-body font-bold bg-slate-50 border border-slate-200/60 text-slate-700 shadow-sm shadow-slate-100 hover:border-teal-500/40 hover:text-teal-600 transition-colors"
+                    >
+                      {tag.nameVi}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Kết nối với Mentor */}
             {(selectedMentorDetail.linkedinUrl || selectedMentorDetail.githubUrl || selectedMentorDetail.portfolioUrl) && (
               <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm text-center space-y-4">
@@ -1612,6 +1888,7 @@ export const Mentors: React.FC = () => {
                     >
                       <Linkedin className="w-5 h-5" />
                     </a>
+                  )}
                   )}
                   {selectedMentorDetail.githubUrl && (
                     <a
@@ -2084,10 +2361,6 @@ export const Mentors: React.FC = () => {
                   <div className="flex items-center gap-2 text-meta font-semibold text-brand-text">
                     <span>Buổi đã hoàn thành:</span>
                     <span className="text-brand-terracotta font-bold">{drawerMentor.completedSessions}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-meta font-semibold text-brand-text">
-                    <span>Hình thức:</span>
-                    <span className="text-brand-blue font-bold">{drawerMentor.teachingMode}</span>
                   </div>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { AdminLayout } from './components/AdminLayout';
 import { Login } from './pages/Login';
 import { CompleteProfile } from './pages/CompleteProfile';
+import { MentoringNeeds } from './pages/MentoringNeeds';
 import { Dashboard } from './pages/Dashboard';
 import { Mentors } from './pages/Mentors';
 import { Profile } from './pages/Profile';
@@ -51,6 +52,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <CompleteProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Bộ câu hỏi nhu cầu mentoring (mentee) — trang riêng, focus */}
+          <Route
+            path="/mentoring-needs"
+            element={
+              <ProtectedRoute>
+                <MentoringNeeds />
               </ProtectedRoute>
             }
           />

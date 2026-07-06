@@ -205,19 +205,72 @@ export interface MentorTag {
   primary?: boolean;
 }
 
-/** Card mentor trong danh sách khám phá — khớp MentorDiscoveryCardResponse. */
+/** Môn học + điểm của mentor — khớp MentorSubjectResultResponse (contract v2). */
+export interface MentorSubjectResult {
+  id?: string;
+  subjectCode: string;
+  subjectName?: string;
+  scoreValue: number;
+  displayOrder?: number;
+}
+
+/** Dự án tiêu biểu của mentor — khớp MentorFeaturedProjectResponse (contract v2). */
+export interface MentorFeaturedProject {
+  id: string;
+  title: string;
+  pictureUrl?: string;
+  content?: string;
+  projectDescription?: string;
+  liveDemoUrl?: string;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Học vấn/giải thưởng của mentor — khớp MentorAchievementResponse (contract v2). */
+export interface MentorAchievement {
+  id: string;
+  title: string;
+  awardDescription?: string;
+  achievedAt?: string;
+  productHeader?: string;
+  productDescription?: string;
+  demoUrl?: string;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 1 mức hỗ trợ (value 1..4 + label) — GET /api/catalog/mentor-profile-options. */
+export interface SupportLevelOption {
+  value: number;
+  label: string;
+}
+
+/** Nhãn cho 3 nhóm support level — không hard-code ở FE, lấy từ catalog. */
+export interface MentorProfileOptions {
+  foundationSupportLevels: SupportLevelOption[];
+  outputReviewSupportLevels: SupportLevelOption[];
+  directionSupportLevels: SupportLevelOption[];
+}
+
+/** Card mentor trong danh sách khám phá — khớp MentorDiscoveryCardResponse (v2). */
 export interface MentorCard {
   mentorUserId: string;
   displayName: string;
   avatarUrl: string;
   headline: string;
   expertiseDescription?: string;
-  supportingSubjects?: string;
+  subjectResults?: MentorSubjectResult[];
+  foundationSupportLevel?: number;
+  outputReviewSupportLevel?: number;
+  directionSupportLevel?: number;
+  featuredProjects?: MentorFeaturedProject[];
+  achievements?: MentorAchievement[];
   isAvailable: boolean;
   ratingAverage: number;
   reviewCount: number;
   completedSessions: number;
-  teachingMode: TeachingMode;
   verifiedAt?: string;
   campusId?: string;
   campusName?: string;
@@ -262,14 +315,16 @@ export interface MentorDetail {
   headline: string;
   bio?: string;
   expertiseDescription?: string;
-  supportingSubjects?: string;
+  subjectResults?: MentorSubjectResult[];
+  foundationSupportLevel?: number;
+  outputReviewSupportLevel?: number;
+  directionSupportLevel?: number;
+  featuredProjects?: MentorFeaturedProject[];
   isAvailable: boolean;
   bookingSuspendedUntil?: string;
   ratingAverage: number;
   reviewCount: number;
   completedSessions: number;
-  teachingMode: TeachingMode;
-  defaultSessionDuration?: number;
   verifiedAt?: string;
   campusId?: string;
   campusName?: string;
@@ -280,7 +335,6 @@ export interface MentorDetail {
   semester?: number;
   alumni?: boolean;
   portfolioUrl?: string;
-  linkedinUrl?: string;
   githubUrl?: string;
   helpTopicTags: MentorTag[];
   services: MentorServiceItem[];
@@ -290,11 +344,12 @@ export interface MentorDetail {
   hasCompletedProfile?: boolean;
   /** Mentor có ít nhất 1 service đang active không. */
   hasActiveServices?: boolean;
-  // Các trường mở rộng theo phản hồi UI/UX
+  /** Học vấn/giải thưởng (contract v2 — object thay cho string[] cũ). */
+  achievements?: MentorAchievement[];
+  // Các trường mở rộng theo phản hồi UI/UX (hiện lấy từ mock, BE chưa trả)
   yearsOfExperience?: number;
   company?: string;
   projectsCount?: number;
-  achievements?: string[];
   portfolios?: MentorPortfolioItem[];
 }
 
@@ -374,7 +429,6 @@ export interface MentorSearchParams {
   tagIds?: string[];
   campusId?: string;
   specializationId?: string;
-  teachingMode?: TeachingMode;
 }
 
 // ---------- Bookings (luồng mới: candidates + lifecycle 2 phía) ----------
@@ -668,6 +722,76 @@ export interface ChatMessage {
   createdAt?: string;
   /** True nếu tin nhắn do user hiện tại gửi. */
   isMine: boolean;
+}
+
+// =====================================================================
+// Mentoring needs — questionnaire matching (contract BE mới)
+// =====================================================================
+
+/** Trạng thái onboarding — GET /api/me/onboarding-status. */
+export interface OnboardingStatus {
+  studentProfileCompleted: boolean;
+  mentorProfileCompleted: boolean;
+  /** Field mới: mentee đã trả lời 5 câu hỏi nhu cầu mentoring chưa. */
+  mentoringNeedsCompleted?: boolean;
+  mentorVerificationStatus: string;
+  roles: Role[];
+  nextRecommendedAction: string;
+}
+
+export type MatchingQuestionType = 'LEVEL' | 'FIT' | 'DURATION_PREFERENCE';
+
+export interface MatchingOption {
+  code: string;
+  label: string;
+  scoreValue?: number | null;
+  displayOrder: number;
+}
+
+export interface MatchingQuestion {
+  code: string;
+  type: MatchingQuestionType;
+  questionText: string;
+  displayOrder: number;
+  options: MatchingOption[];
+}
+
+/** GET /api/me/matching-profile/questionnaire — bộ 5 câu đang active. */
+export interface MatchingQuestionnaire {
+  activationId: string;
+  versionId: string;
+  versionNumber: number;
+  phase: string;
+  activatedAt?: string;
+  questions: MatchingQuestion[];
+}
+
+/** GET/PUT /api/me/matching-profile — trạng thái + feature nhu cầu của user. */
+export interface MatchingProfile {
+  exists: boolean;
+  /** Nếu false → cần hiển thị form 5 câu hỏi. */
+  currentActivationCompleted: boolean;
+  latestAnsweredAt?: string | null;
+  activeActivationId?: string | null;
+  activeVersionId?: string | null;
+  activeVersionNumber?: number | null;
+  foundationNeedLevel?: number | null;
+  outputReviewNeedLevel?: number | null;
+  directionNeedLevel?: number | null;
+  mentorFitCode?: string | null;
+  durationPreferenceCode?: string | null;
+  /** Map questionCode -> optionCode để prefill radio. */
+  latestAnswerCodes?: Record<string, string>;
+}
+
+/** PUT /api/me/matching-profile — 5 answer code phẳng theo thứ tự câu hỏi. */
+export interface MatchingSubmitPayload {
+  phase?: string;
+  question1AnswerCode: string;
+  question2AnswerCode: string;
+  question3AnswerCode: string;
+  question4AnswerCode: string;
+  question5AnswerCode: string;
 }
 
 // =====================================================================
