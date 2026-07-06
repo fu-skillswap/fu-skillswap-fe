@@ -671,6 +671,76 @@ export interface ChatMessage {
 }
 
 // =====================================================================
+// Mentoring needs — questionnaire matching (contract BE mới)
+// =====================================================================
+
+/** Trạng thái onboarding — GET /api/me/onboarding-status. */
+export interface OnboardingStatus {
+  studentProfileCompleted: boolean;
+  mentorProfileCompleted: boolean;
+  /** Field mới: mentee đã trả lời 5 câu hỏi nhu cầu mentoring chưa. */
+  mentoringNeedsCompleted?: boolean;
+  mentorVerificationStatus: string;
+  roles: Role[];
+  nextRecommendedAction: string;
+}
+
+export type MatchingQuestionType = 'LEVEL' | 'FIT' | 'DURATION_PREFERENCE';
+
+export interface MatchingOption {
+  code: string;
+  label: string;
+  scoreValue?: number | null;
+  displayOrder: number;
+}
+
+export interface MatchingQuestion {
+  code: string;
+  type: MatchingQuestionType;
+  questionText: string;
+  displayOrder: number;
+  options: MatchingOption[];
+}
+
+/** GET /api/me/matching-profile/questionnaire — bộ 5 câu đang active. */
+export interface MatchingQuestionnaire {
+  activationId: string;
+  versionId: string;
+  versionNumber: number;
+  phase: string;
+  activatedAt?: string;
+  questions: MatchingQuestion[];
+}
+
+/** GET/PUT /api/me/matching-profile — trạng thái + feature nhu cầu của user. */
+export interface MatchingProfile {
+  exists: boolean;
+  /** Nếu false → cần hiển thị form 5 câu hỏi. */
+  currentActivationCompleted: boolean;
+  latestAnsweredAt?: string | null;
+  activeActivationId?: string | null;
+  activeVersionId?: string | null;
+  activeVersionNumber?: number | null;
+  foundationNeedLevel?: number | null;
+  outputReviewNeedLevel?: number | null;
+  directionNeedLevel?: number | null;
+  mentorFitCode?: string | null;
+  durationPreferenceCode?: string | null;
+  /** Map questionCode -> optionCode để prefill radio. */
+  latestAnswerCodes?: Record<string, string>;
+}
+
+/** PUT /api/me/matching-profile — 5 answer code phẳng theo thứ tự câu hỏi. */
+export interface MatchingSubmitPayload {
+  phase?: string;
+  question1AnswerCode: string;
+  question2AnswerCode: string;
+  question3AnswerCode: string;
+  question4AnswerCode: string;
+  question5AnswerCode: string;
+}
+
+// =====================================================================
 // Payment / Wallet / Payout (module payment BE mới — PayOS, SCoin)
 // =====================================================================
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { BookOpen, ChevronRight, GraduationCap, UserPlus, MapPin } from 'lucide-react';
+import { BookOpen, ChevronRight, GraduationCap, UserPlus, MapPin, Sparkles, ArrowRight } from 'lucide-react';
 import { studentProfileApi } from '../api/studentProfile';
+import { onboardingApi } from '../api/matching';
 import type { StudentProfile } from '../api/types';
 import { ForumFeed } from '../components/ForumFeed';
 import { AdCarousel } from '../components/AdCarousel';
@@ -15,6 +16,7 @@ export const Dashboard: React.FC = () => {
   const { user } = useAuth();
 
   const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [needsMentoring, setNeedsMentoring] = useState(false);
   const campusName = profile?.campus?.name || '';
   const programName = profile?.program?.nameVi || '';
 
@@ -23,11 +25,32 @@ export const Dashboard: React.FC = () => {
     studentProfileApi.get()
       .then((p) => { if (active) setProfile(p); })
       .catch((err) => console.warn('Không tải được hồ sơ học viên', err));
+    // Cờ nhu cầu mentoring: chưa trả lời 5 câu -> hiện banner nhắc.
+    onboardingApi.getStatus()
+      .then((s) => { if (active) setNeedsMentoring(s.mentoringNeedsCompleted === false); })
+      .catch(() => { /* ẩn banner nếu lỗi/không có quyền */ });
     return () => { active = false; };
   }, []);
 
   return (
     <div className="space-y-6 text-left relative">
+      {needsMentoring && (
+        <Link
+          to="/mentoring-needs"
+          className="flex items-center gap-4 bg-gradient-to-r from-brand-primary to-brand-secondary text-white rounded-card px-5 py-4 shadow-md shadow-brand-primary/20 hover:opacity-95 transition-all group"
+        >
+          <div className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-body font-extrabold leading-tight">Cá nhân hoá gợi ý mentor cho bạn</p>
+            <p className="text-white/85 text-meta font-semibold mt-0.5">Trả lời nhanh 5 câu để hệ thống tìm mentor hợp với nhu cầu của bạn.</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 bg-white/15 text-white text-meta font-bold py-2 px-3.5 rounded-full shrink-0 group-hover:gap-2.5 transition-all">
+            Bắt đầu <ArrowRight className="w-4 h-4" />
+          </span>
+        </Link>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* ===== Feed diễn đàn (gộp vào trang chủ) ===== */}
         <div className="lg:col-span-2">
