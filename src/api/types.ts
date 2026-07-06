@@ -101,12 +101,17 @@ export interface MentorProfilePayload {
   supportingSubjects?: string; // optional, max 1000 chars
   isAvailable: boolean;
   helpTopicIds: string[]; // required, 1-20 items, no duplicates
-  teachingMode: TeachingMode;
-  sessionDuration: SessionDuration;
+  teachingMode?: TeachingMode;
+  sessionDuration?: SessionDuration;
   phoneNumber: string; // BẮT BUỘC, pattern ^(0)(3|5|7|8|9)[0-9]{8}$
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
+  // new fields:
+  subjectResults?: MentorSubjectResult[];
+  foundationSupportLevel?: number;
+  outputReviewSupportLevel?: number;
+  directionSupportLevel?: number;
 }
 
 /** GET/PUT /api/me/mentor-profile trả MentorProfileResponse: helpTopics là mảng tag. */
@@ -124,6 +129,13 @@ export interface MentorProfileResponse {
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
+  // new fields:
+  subjectResults?: MentorSubjectResult[];
+  foundationSupportLevel?: number;
+  outputReviewSupportLevel?: number;
+  directionSupportLevel?: number;
+  featuredProjects?: MentorFeaturedProject[];
+  achievements?: MentorAchievement[];
 }
 
 export type MentorProfile = MentorProfileResponse;
@@ -239,6 +251,22 @@ export interface MentorAchievement {
   displayOrder?: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface MentorFeaturedProjectRequest {
+  title: string;
+  content: string;
+  projectDescription: string;
+  liveDemoUrl?: string;
+}
+
+export interface MentorAchievementRequest {
+  title: string;
+  awardDescription: string;
+  achievedAt: string; // format YYYY-MM-DD
+  productHeader?: string;
+  productDescription?: string;
+  demoUrl?: string;
 }
 
 /** 1 mức hỗ trợ (value 1..4 + label) — GET /api/catalog/mentor-profile-options. */
