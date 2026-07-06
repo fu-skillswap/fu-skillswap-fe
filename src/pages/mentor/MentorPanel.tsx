@@ -3,18 +3,20 @@ import {
   ShieldCheck, UploadCloud, FileText, Image as ImageIcon, Trash2, Send,
   Clock, CheckCircle2, XCircle, AlertTriangle, Undo2, Plus, Paperclip,
   ListChecks, Lock, Check, Square, CheckSquare, Settings, Tags, Link2,
-  Pencil, Award, Briefcase, Monitor, ExternalLink, Lightbulb, UserPlus,
-  ArrowRight, ArrowLeft,
+  Pencil, Award, Briefcase, Monitor, ExternalLink, UserPlus,
+  ArrowRight, ArrowLeft, X,
 } from 'lucide-react';
 import { mentorVerificationApi } from '../../api/mentorVerification';
-import { mentorProfileApi, helpTopicApi } from '../../api/mentorProfile';
+import { mentorProfileApi, helpTopicApi, mentorProjectsApi, mentorAchievementsApi } from '../../api/mentorProfile';
+import { catalogApi } from '../../api/catalog';
+import { useAuth } from '../../context/AuthContext';
+import { forumApi } from '../../api/forum';
 import type {
   VerificationRequest, VerificationStatus, DocumentType,
-  HelpTopic, TeachingMode, SessionDuration, MentorProfileResponse,
-  MentorPortfolioItem,
+  HelpTopic, MentorProfileResponse,
+  MentorPortfolioItem, MentorAchievement,
+  MentorSubjectResult, MentorProfileOptions, SupportLevelOption, ForumPost,
 } from '../../api/types';
-import { useAuth } from '../../context/AuthContext';
-import { getExtendedMentorData, saveExtendedMentorData } from '../../lib/mockMentors';
 
 // SĐT VN — BE bắt buộc field này khi lưu hồ sơ mentor.
 const PHONE_RE = /^(0)(3|5|7|8|9)[0-9]{8}$/;
@@ -78,17 +80,9 @@ const CHECKLIST_ROWS: { key: 'academicProfileCompleted' | 'mentorProfileComplete
   { key: 'hasExpertiseProof', label: 'Minh chứng chuyên môn', hint: 'Chứng chỉ, hợp đồng lao động hoặc portfolio — bắt buộc.' },
 ];
 
-const SESSION_DURATIONS: SessionDuration[] = [15, 30, 60, 90];
-const TEACHING_MODES: { value: TeachingMode; label: string }[] = [
-  { value: 'ONLINE', label: 'Trực tuyến' },
-  { value: 'OFFLINE', label: 'Trực tiếp' },
-  { value: 'HYBRID', label: 'Kết hợp' },
-];
-const TEACHING_MODE_LABELS: Record<TeachingMode, string> = { ONLINE: 'Trực tuyến', OFFLINE: 'Trực tiếp', HYBRID: 'Kết hợp' };
 
 const HEADLINE_MAX = 200;
 const EXPERTISE_MAX = 1000;
-const SUPPORTING_MAX = 1000;
 const HELP_TOPICS_MAX = 20;
 
 // ---------------------------------------------------------------------------
@@ -195,41 +189,59 @@ const getErrorMessage = (err: any, fallback: string): string => {
 // ---------------------------------------------------------------------------
 export const MentorPanel: React.FC = () => {
   const { user } = useAuth();
+  const getLevelLabel = (opts: SupportLevelOption[] | undefined, val: number | undefined) => {
+    if (val === undefined) return '';
+    return opts?.find((o) => o.value === val)?.label ?? `Mức ${val}/4`;
+  };
   const [checked, setChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [req, setReq] = useState<VerificationRequest | null>(null);
+  const activeReq = req || (user?.roles?.includes('MENTOR') ? { status: 'APPROVED', timeline: [] } as any : null);
 
-  // Mentor profile form (đúng field thật của MentorProfilePayload)
+  // Mentor profile form
   const [headline, setHeadline] = useState('');
   const [expertiseDescription, setExpertiseDescription] = useState('');
-  const [supportingSubjects, setSupportingSubjects] = useState('');
   const [isAvailable, setIsAvailable] = useState(true);
   const [helpTopicIds, setHelpTopicIds] = useState<string[]>([]);
-  const [teachingMode, setTeachingMode] = useState<TeachingMode>('ONLINE');
-  const [sessionDuration, setSessionDuration] = useState<SessionDuration>(60);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [portfolioUrl, setPortfolioUrl] = useState('');
 
-  // Các trường mở rộng theo phản hồi UI/UX (lưu giả lập ở localStorage)
-  const [yearsOfExperience, setYearsOfExperience] = useState(1);
-  const [company, setCompany] = useState('');
-  const [projectsCount, setProjectsCount] = useState(3);
-  const [achievementsText, setAchievementsText] = useState('');
-  const [portfolios, setPortfolios] = useState<MentorPortfolioItem[]>([]);
+  // New API fields:
+  const [subjectResults, setSubjectResults] = useState<MentorSubjectResult[]>([]);
+  const [foundationSupportLevel, setFoundationSupportLevel] = useState<number>(1);
+  const [outputReviewSupportLevel, setOutputReviewSupportLevel] = useState<number>(1);
+  const [directionSupportLevel, setDirectionSupportLevel] = useState<number>(1);
+  const [achievements, setAchievements] = useState<MentorAchievement[]>([]);
+  const [supportOptions, setSupportOptions] = useState<MentorProfileOptions | null>(null);
 
-  // State thêm dự án mới vào Portfolio
+  // States for adding subject result
+  const [newSubjectCode, setNewSubjectCode] = useState('');
+  const [newSubjectName, setNewSubjectName] = useState('');
+  const [newSubjectScore, setNewSubjectScore] = useState('');
+
+  // States for adding achievement
+  const [newAchTitle, setNewAchTitle] = useState('');
+  const [newAchDesc, setNewAchDesc] = useState('');
+  const [newAchDate, setNewAchDate] = useState('2026-01-01');
+  const [showAddAchForm, setShowAddAchForm] = useState(false);
+
+  // States for projects list (portfolios in frontend state)
+  const [portfolios, setPortfolios] = useState<MentorPortfolioItem[]>([]);
   const [newProjTitle, setNewProjTitle] = useState('');
   const [newProjRole, setNewProjRole] = useState('');
   const [newProjDesc, setNewProjDesc] = useState('');
-  const [newProjOutcome, setNewProjOutcome] = useState('');
-  const [newProjImgType, setNewProjImgType] = useState<'AI' | 'WEB' | 'UIUX' | 'MKT'>('WEB');
   const [newProjFigma, setNewProjFigma] = useState('');
-  const [newProjGithub, setNewProjGithub] = useState('');
-  const [newProjBehance, setNewProjBehance] = useState('');
+  const [projectImageFile, setProjectImageFile] = useState<File | null>(null);
   const [showAddProjForm, setShowAddProjForm] = useState(false);
+
+  // Real-time blogs state
+  const [blogs, setBlogs] = useState<ForumPost[]>([]);
+  const [newBlogTitle, setNewBlogTitle] = useState('');
+  const [newBlogContent, setNewBlogContent] = useState('');
+  const [newBlogHelpTopicId, setNewBlogHelpTopicId] = useState('');
+  const [activeAddModal, setActiveAddModal] = useState<'project' | 'achievement' | 'blog' | null>(null);
 
   const [helpTopicsCatalog, setHelpTopicsCatalog] = useState<HelpTopic[]>([]);
   const [hydrated, setHydrated] = useState(false); // đã tải xong để bật tự lưu nháp
@@ -252,22 +264,23 @@ export const MentorPanel: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
 
   const [msg, setMsg] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
   const flash = (m: string, ms = 3000) => { setMsg(m); setTimeout(() => setMsg(null), ms); };
 
   const fillProfileForm = (p: MentorProfileResponse) => {
     setHeadline(p.headline ?? '');
     setExpertiseDescription(p.expertiseDescription ?? '');
-    setSupportingSubjects(p.supportingSubjects ?? '');
     setIsAvailable(p.isAvailable ?? true);
-    // BE trả helpTopics (mảng tag), map về danh sách id để binding chip.
     setHelpTopicIds((p.helpTopics ?? []).map((t) => t.id));
-    setTeachingMode(p.teachingMode ?? 'ONLINE');
-    setSessionDuration(p.sessionDuration ?? 60);
     setPhoneNumber(p.phoneNumber ?? '');
-    setLinkedinUrl(p.linkedinUrl ?? '');
     setGithubUrl(p.githubUrl ?? '');
     setPortfolioUrl(p.portfolioUrl ?? '');
+
+    // new fields:
+    setSubjectResults(p.subjectResults ?? []);
+    setFoundationSupportLevel(p.foundationSupportLevel ?? 1);
+    setOutputReviewSupportLevel(p.outputReviewSupportLevel ?? 1);
+    setDirectionSupportLevel(p.directionSupportLevel ?? 1);
   };
 
   // Khôi phục nháp đã lưu ở localStorage (giữ thông tin chưa lưu khi reload).
@@ -275,21 +288,20 @@ export const MentorPanel: React.FC = () => {
     if (!d || typeof d !== 'object') return;
     if (typeof d.headline === 'string') setHeadline(d.headline);
     if (typeof d.expertiseDescription === 'string') setExpertiseDescription(d.expertiseDescription);
-    if (typeof d.supportingSubjects === 'string') setSupportingSubjects(d.supportingSubjects);
     if (typeof d.isAvailable === 'boolean') setIsAvailable(d.isAvailable);
     if (Array.isArray(d.helpTopicIds)) setHelpTopicIds(d.helpTopicIds as string[]);
-    if (d.teachingMode) setTeachingMode(d.teachingMode as TeachingMode);
-    if (d.sessionDuration) setSessionDuration(d.sessionDuration as SessionDuration);
     if (typeof d.phoneNumber === 'string') setPhoneNumber(d.phoneNumber);
-    if (typeof d.linkedinUrl === 'string') setLinkedinUrl(d.linkedinUrl);
     if (typeof d.githubUrl === 'string') setGithubUrl(d.githubUrl);
     if (typeof d.portfolioUrl === 'string') setPortfolioUrl(d.portfolioUrl);
+    if (Array.isArray(d.subjectResults)) setSubjectResults(d.subjectResults as MentorSubjectResult[]);
+    if (typeof d.foundationSupportLevel === 'number') setFoundationSupportLevel(d.foundationSupportLevel);
+    if (typeof d.outputReviewSupportLevel === 'number') setOutputReviewSupportLevel(d.outputReviewSupportLevel);
+    if (typeof d.directionSupportLevel === 'number') setDirectionSupportLevel(d.directionSupportLevel);
   };
   const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } };
 
   const load = async () => {
     setLoading(true);
-    setError(null);
     try {
       try {
         const topics = await helpTopicApi.list();
@@ -298,17 +310,19 @@ export const MentorPanel: React.FC = () => {
         console.warn('Không tải được danh sách help topics.', err);
       }
 
-      let current: VerificationRequest | null = null;
       try {
-        current = await mentorVerificationApi.getCurrent();
-        try { current.timeline = await mentorVerificationApi.getTimeline(); } catch { /* optional */ }
-      } catch (err: any) {
-        if (err?.response?.status !== 404) throw err;
-        current = null;
+        const opts = await catalogApi.getMentorProfileOptions();
+        setSupportOptions(opts);
+      } catch (err) {
+        console.warn('Lỗi load support options', err);
       }
+
+      // Lấy hồ sơ xác thực hiện tại.
+      const current = await mentorVerificationApi.getCurrent();
+      try { current.timeline = await mentorVerificationApi.getTimeline(); } catch { /* optional */ }
       setReq(current);
 
-      if (current) {
+      if (current || user?.roles?.includes('MENTOR')) {
         let prof: MentorProfileResponse | null = null;
         try {
           prof = await mentorProfileApi.get();
@@ -317,24 +331,37 @@ export const MentorPanel: React.FC = () => {
           console.warn('Chưa có hồ sơ mentor, dùng form trống.', err);
         }
         // Khôi phục nháp chưa lưu (chỉ khi hồ sơ còn đang soạn).
-        if (current.status === 'DRAFT' || current.status === 'NEEDS_REVISION') {
+        if (current && (current.status === 'DRAFT' || current.status === 'NEEDS_REVISION')) {
           try {
             const raw = localStorage.getItem(DRAFT_KEY);
             if (raw) applyDraft(JSON.parse(raw));
           } catch { /* ignore */ }
         }
 
-        // Tải các thông tin bổ sung/mở rộng theo phản hồi UI/UX
-        const userId = user?.publicId || 'me';
-        const ext = getExtendedMentorData(userId, user?.fullName || 'Mentor', prof?.supportingSubjects);
-        setYearsOfExperience(ext.yearsOfExperience);
-        setCompany(ext.company);
-        setProjectsCount(ext.projectsCount);
-        setAchievementsText(ext.achievements.join('\n'));
-        setPortfolios(ext.portfolios);
+        // Load achievements & projects from backend
+        try {
+          const achs = await mentorAchievementsApi.list();
+          setAchievements(achs || []);
+        } catch (err) {
+          console.warn('Failed to load achievements', err);
+        }
+
+        try {
+          const projs = await mentorProjectsApi.list();
+          setPortfolios(projs.map(p => ({
+            id: p.id,
+            title: p.title,
+            role: p.content || '',
+            description: p.projectDescription || '',
+            imageUrl: p.pictureUrl || '',
+            figmaUrl: p.liveDemoUrl || '',
+          })));
+        } catch (err) {
+          console.warn('Failed to load projects', err);
+        }
       }
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Không tải được hồ sơ mentor.'));
+      console.error(getErrorMessage(err, 'Không tải được hồ sơ mentor.'));
     } finally {
       setChecked(true);
       setLoading(false);
@@ -349,12 +376,14 @@ export const MentorPanel: React.FC = () => {
     if (req.status !== 'DRAFT' && req.status !== 'NEEDS_REVISION') return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        headline, expertiseDescription, supportingSubjects, isAvailable, helpTopicIds,
-        teachingMode, sessionDuration, phoneNumber, linkedinUrl, githubUrl, portfolioUrl,
+        headline, expertiseDescription, isAvailable, helpTopicIds,
+        phoneNumber, githubUrl, portfolioUrl,
+        foundationSupportLevel, outputReviewSupportLevel, directionSupportLevel,
+        subjectResults,
       }));
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, req?.status, headline, expertiseDescription, supportingSubjects, isAvailable, helpTopicIds, teachingMode, sessionDuration, phoneNumber, linkedinUrl, githubUrl, portfolioUrl]);
+  }, [hydrated, req?.status, headline, expertiseDescription, isAvailable, helpTopicIds, phoneNumber, githubUrl, portfolioUrl, foundationSupportLevel, outputReviewSupportLevel, directionSupportLevel, subjectResults]);
 
   /**
    * Làm mới request (checklist/allowedActions/documents) NGẦM — KHÔNG bật `loading`
@@ -383,7 +412,6 @@ export const MentorPanel: React.FC = () => {
     else if (headline.length > HEADLINE_MAX) e.headline = `Headline tối đa ${HEADLINE_MAX} ký tự.`;
     if (!expertiseDescription.trim()) e.expertiseDescription = 'Vui lòng điền Mô tả chuyên môn.';
     else if (expertiseDescription.length > EXPERTISE_MAX) e.expertiseDescription = `Mô tả chuyên môn tối đa ${EXPERTISE_MAX} ký tự.`;
-    if (supportingSubjects.length > SUPPORTING_MAX) e.supportingSubjects = `Môn học hỗ trợ tối đa ${SUPPORTING_MAX} ký tự.`;
     if (helpTopicIds.length === 0) e.helpTopics = 'Vui lòng chọn ít nhất 1 chủ đề hỗ trợ.';
     else if (helpTopicIds.length > HELP_TOPICS_MAX) e.helpTopics = `Chỉ được chọn tối đa ${HELP_TOPICS_MAX} chủ đề.`;
     if (!PHONE_RE.test(phoneNumber.trim())) e.phoneNumber = 'Số điện thoại Việt Nam không hợp lệ (VD: 0901234567).';
@@ -394,16 +422,180 @@ export const MentorPanel: React.FC = () => {
   const buildPayload = () => ({
     headline,
     expertiseDescription,
-    supportingSubjects: supportingSubjects || undefined,
     isAvailable,
     helpTopicIds,
-    teachingMode,
-    sessionDuration,
     phoneNumber: phoneNumber.trim(),
-    linkedinUrl: linkedinUrl || undefined,
     githubUrl: githubUrl || undefined,
     portfolioUrl: portfolioUrl || undefined,
+    foundationSupportLevel,
+    outputReviewSupportLevel,
+    directionSupportLevel,
+    subjectResults: subjectResults.map((s) => ({
+      subjectCode: s.subjectCode,
+      subjectName: s.subjectName || undefined,
+      scoreValue: s.scoreValue,
+    })),
   });
+
+  const handleAddSubjectResult = () => {
+    if (!newSubjectCode.trim()) {
+      alert('Vui lòng điền mã môn học.');
+      return;
+    }
+    const score = parseFloat(newSubjectScore);
+    if (isNaN(score) || score < 0 || score > 10) {
+      alert('Điểm số phải từ 0.0 đến 10.0.');
+      return;
+    }
+    if (subjectResults.some(s => s.subjectCode.toUpperCase() === newSubjectCode.toUpperCase())) {
+      alert('Môn học này đã được thêm.');
+      return;
+    }
+
+    const newItem: MentorSubjectResult = {
+      subjectCode: newSubjectCode.toUpperCase(),
+      subjectName: newSubjectName.trim() || undefined,
+      scoreValue: score,
+    };
+    setSubjectResults(prev => [...prev, newItem]);
+    setNewSubjectCode('');
+    setNewSubjectName('');
+    setNewSubjectScore('');
+  };
+
+  const handleAddProject = async () => {
+    if (!newProjTitle.trim() || !newProjRole.trim() || !newProjDesc.trim()) {
+      alert('Vui lòng điền đầy đủ các thông tin bắt buộc (*)');
+      return;
+    }
+    setBusy(true);
+    try {
+      const created = await mentorProjectsApi.create({
+        title: newProjTitle.trim(),
+        content: newProjRole.trim(),
+        projectDescription: newProjDesc.trim(),
+        liveDemoUrl: newProjFigma.trim() || undefined,
+      });
+
+      let finalProject = created;
+      if (projectImageFile) {
+        finalProject = await mentorProjectsApi.uploadPicture(created.id, projectImageFile);
+      }
+
+      setPortfolios(prev => [...prev, {
+        id: finalProject.id,
+        title: finalProject.title,
+        role: finalProject.content || '',
+        description: finalProject.projectDescription || '',
+        imageUrl: finalProject.pictureUrl || '',
+        figmaUrl: finalProject.liveDemoUrl || '',
+      }]);
+
+      setNewProjTitle('');
+      setNewProjRole('');
+      setNewProjDesc('');
+      setNewProjFigma('');
+      setProjectImageFile(null);
+      setShowAddProjForm(false);
+      flash('Đã thêm dự án mới.');
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không thể tạo dự án tiêu biểu.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    if (id.startsWith('p_user_')) {
+      setPortfolios(prev => prev.filter(p => p.id !== id));
+      return;
+    }
+    setBusy(true);
+    try {
+      await mentorProjectsApi.delete(id);
+      setPortfolios(prev => prev.filter(p => p.id !== id));
+      flash('Đã xóa dự án.');
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không thể xóa dự án.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleAddAchievement = async () => {
+    if (!newAchTitle.trim() || !newAchDesc.trim()) {
+      alert('Vui lòng điền đầy đủ tiêu đề và mô tả.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const created = await mentorAchievementsApi.create({
+        title: newAchTitle.trim(),
+        awardDescription: newAchDesc.trim(),
+        achievedAt: newAchDate,
+      });
+      setAchievements(prev => [...prev, created]);
+      setNewAchTitle('');
+      setNewAchDesc('');
+      setNewAchDate('2026-01-01');
+      setShowAddAchForm(false);
+      flash('Đã thêm học vấn/giải thưởng.');
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không thể tạo học vấn/giải thưởng.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteAchievement = async (id: string) => {
+    setBusy(true);
+    try {
+      await mentorAchievementsApi.delete(id);
+      setAchievements(prev => prev.filter(a => a.id !== id));
+      flash('Đã xóa học vấn/giải thưởng.');
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không thể xóa học vấn/giải thưởng.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleAddBlog = async () => {
+    if (!newBlogTitle.trim() || !newBlogContent.trim() || !newBlogHelpTopicId) {
+      alert('Vui lòng điền đầy đủ thông tin bài viết và chọn chủ đề.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const created = await forumApi.createPost({
+        title: newBlogTitle.trim(),
+        content: newBlogContent.trim(),
+        helpTopicId: newBlogHelpTopicId,
+      });
+      setBlogs(prev => [created, ...prev]);
+      setNewBlogTitle('');
+      setNewBlogContent('');
+      setNewBlogHelpTopicId('');
+      flash('Đã đăng bài viết/blog thành công.');
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không thể tạo bài viết.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteBlog = async (postId: string) => {
+    setBusy(true);
+    try {
+      await forumApi.deletePost(postId);
+      setBlogs(prev => prev.filter(b => b.postId !== postId));
+      flash('Đã xóa bài viết.');
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không thể xóa bài viết.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const toggleHelpTopic = (id: string) => {
     clearPErr('helpTopics');
@@ -417,13 +609,12 @@ export const MentorPanel: React.FC = () => {
   // -------------------- actions --------------------
   const registerAsMentor = async () => {
     setBusy(true);
-    setError(null);
     try {
       const r = await mentorVerificationApi.createOrGetRequest();
       setReq(r);
       flash('Đã tạo hồ sơ — hãy hoàn thiện thông tin bên dưới.');
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Không thể đăng ký làm mentor lúc này.'));
+      alert(getErrorMessage(err, 'Không thể đăng ký làm mentor lúc này.'));
     } finally {
       setBusy(false);
     }
@@ -431,7 +622,6 @@ export const MentorPanel: React.FC = () => {
 
   const createNew = async () => {
     setBusy(true);
-    setError(null);
     try {
       clearDraft();
       const r = await mentorVerificationApi.createOrGetRequest();
@@ -439,7 +629,7 @@ export const MentorPanel: React.FC = () => {
       flash('Đã tạo hồ sơ xác thực mới.');
       load();
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Tạo hồ sơ mới thất bại.'));
+      alert(getErrorMessage(err, 'Tạo hồ sơ mới thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -448,29 +638,16 @@ export const MentorPanel: React.FC = () => {
   const saveDraft = async () => {
     if (!validateProfile()) return;
     setBusy(true);
-    setError(null);
     try {
       await mentorProfileApi.update(buildPayload());
-      
-      // Lưu thông tin bổ sung/mở rộng vào localStorage
-      const userId = user?.publicId || 'me';
-      saveExtendedMentorData(userId, {
-        yearsOfExperience,
-        company: company || 'Đại học FPT',
-        projectsCount,
-        achievements: achievementsText.split('\n').map(a => a.trim()).filter(Boolean),
-        portfolios,
-      });
-
       flash('Đã lưu bản nháp.');
-      // checklist (mentorProfileCompleted) có thể đổi sau khi lưu — đồng bộ lại với BE.
       try {
         const r = await mentorVerificationApi.getCurrent();
         r.timeline = req?.timeline;
         setReq(r);
-      } catch { /* giữ req hiện tại nếu fetch lỗi */ }
+      } catch { /* giữ req hiện tại */ }
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Lưu bản nháp thất bại.'));
+      alert(getErrorMessage(err, 'Lưu bản nháp thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -480,24 +657,11 @@ export const MentorPanel: React.FC = () => {
     if (!termsAccepted) return;
     if (!validateProfile()) return;
     setBusy(true);
-    setError(null);
     try {
       await mentorProfileApi.update(buildPayload());
-
-      // Lưu thông tin bổ sung/mở rộng vào localStorage
-      const userId = user?.publicId || 'me';
-      saveExtendedMentorData(userId, {
-        yearsOfExperience,
-        company: company || 'Đại học FPT',
-        projectsCount,
-        achievements: achievementsText.split('\n').map(a => a.trim()).filter(Boolean),
-        portfolios,
-      });
-
       const r = await mentorVerificationApi.submit({ submitNote, termsAccepted: true });
       setReq(r);
       clearDraft();
-      // Dispatch sự kiện hiển thị Toast thông báo nổi
       window.dispatchEvent(new CustomEvent('push-toast', {
         detail: {
           title: 'Nộp hồ sơ thành công',
@@ -505,14 +669,11 @@ export const MentorPanel: React.FC = () => {
           type: 'BOOKING_ACCEPTED'
         }
       }));
-
-      // Yêu cầu quả chuông tải lại danh sách thông báo và số đếm chưa đọc từ API
       window.dispatchEvent(new Event('refresh-notifications'));
-
       flash('🎉 Đã nộp hồ sơ thành công! Hồ sơ đang chờ admin duyệt.', 6000);
       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Nộp hồ sơ thất bại.'));
+      alert(getErrorMessage(err, 'Nộp hồ sơ thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -610,14 +771,13 @@ export const MentorPanel: React.FC = () => {
   const handleWithdraw = async () => {
     if (!req) return;
     setBusy(true);
-    setError(null);
     try {
       const r = await mentorVerificationApi.withdraw();
       setReq(r);
       clearDraft();
       flash('Đã rút hồ sơ.');
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Rút hồ sơ thất bại.'));
+      alert(getErrorMessage(err, 'Rút hồ sơ thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -626,13 +786,12 @@ export const MentorPanel: React.FC = () => {
   const saveApprovedProfile = async () => {
     if (!validateProfile()) return;
     setBusy(true);
-    setError(null);
     try {
       await mentorProfileApi.update(buildPayload());
       flash('Đã lưu thay đổi hồ sơ mentor.');
       setEditingApproved(false);
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Lưu thay đổi thất bại.'));
+      alert(getErrorMessage(err, 'Lưu thay đổi thất bại.'));
     } finally {
       setBusy(false);
     }
@@ -645,18 +804,12 @@ export const MentorPanel: React.FC = () => {
 
   const Notices = (
     <>
-      {error && (
-        <div className="flex items-start gap-3 bg-danger/10 border border-danger/20 text-danger p-4 rounded-field text-body font-semibold">
-          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
       {msg && <div className="flex items-center gap-2 bg-success/10 border border-success/20 text-success p-3 rounded-field text-body font-semibold"><CheckCircle2 className="w-4 h-4" />{msg}</div>}
     </>
   );
 
   // ---------- Chưa từng đăng ký làm mentor ----------
-  if (checked && !req) {
+  if (checked && !activeReq) {
     return (
       <div className="space-y-5">
         {Notices}
@@ -676,21 +829,20 @@ export const MentorPanel: React.FC = () => {
     );
   }
 
-  if (!req) return null;
-  const sm = STATUS_META[req.status];
-  const ui = STATE_UI[req.status];
+  if (!activeReq) return null;
+  const sm = STATUS_META[activeReq.status as VerificationStatus];
+  const ui = STATE_UI[activeReq.status as VerificationStatus];
 
   const heroDesc: Record<VerificationStatus, string> = {
     DRAFT: 'Hoàn thiện hồ sơ chuyên môn và tải tối thiểu 1 minh chứng liên kết FPTU rồi nộp để admin duyệt.',
     PENDING_REVIEW: 'Hồ sơ đã được nộp và đang trong hàng chờ. Bạn sẽ nhận thông báo ngay khi có kết quả.',
-    NEEDS_REVISION: req.reviewNote || 'Vui lòng cập nhật theo ghi chú của admin và nộp lại.',
+    NEEDS_REVISION: activeReq.reviewNote || 'Vui lòng cập nhật theo ghi chú của admin và nộp lại.',
     APPROVED: 'Chúc mừng! Bạn đã chính thức là Mentor và hồ sơ đã hiển thị công khai trong mục Khám phá.',
-    REJECTED: req.reviewNote || 'Hồ sơ chưa đạt yêu cầu. Tạo hồ sơ mới để nộp lại.',
+    REJECTED: activeReq.reviewNote || 'Hồ sơ chưa đạt yêu cầu. Tạo hồ sơ mới để nộp lại.',
     WITHDRAWN: 'Hồ sơ xác thực đã được rút lại. Bạn có thể tạo hồ sơ mới bất cứ lúc nào.',
   };
 
   const resolvedHelpTopics = helpTopicIds.map((id) => helpTopicsCatalog.find((t) => t.id === id)).filter((t): t is HelpTopic => !!t);
-  const supportingTags = supportingSubjects.split(/[\n,;\r]+/).map((s) => s.trim()).filter(Boolean);
   // Số tối đa hiển thị = min(giới hạn BE, số chủ đề thực có) để không hiện "/20" khi catalog ít hơn.
   const helpMax = Math.min(HELP_TOPICS_MAX, helpTopicsCatalog.length || HELP_TOPICS_MAX);
 
@@ -698,7 +850,9 @@ export const MentorPanel: React.FC = () => {
   const ProfileFields = (
     <>
       <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Settings className="w-5 h-5 text-primary" /> Mô tả năng lực</h3>
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+          <Settings className="w-5 h-5 text-primary" /> Mô tả năng lực
+        </h3>
         <div className="space-y-3">
           <div>
             <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Headline ({headline.length}/{HEADLINE_MAX})</label>
@@ -715,13 +869,6 @@ export const MentorPanel: React.FC = () => {
             <ErrorBubble msg={profileErrors.expertiseDescription} />
           </div>
           <div>
-            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Môn học hỗ trợ ({supportingSubjects.length}/{SUPPORTING_MAX}, không bắt buộc)</label>
-            <textarea rows={3} maxLength={SUPPORTING_MAX} value={supportingSubjects} onChange={(e) => { setSupportingSubjects(e.target.value); clearPErr('supportingSubjects'); }}
-              placeholder={"Nhập mỗi môn một dòng (Xuống dòng để phân tách).\nVí dụ:\nPRJ301\nSWP391\nEXE101"}
-              className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
-            <ErrorBubble msg={profileErrors.supportingSubjects} />
-          </div>
-          <div>
             <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Số điện thoại liên hệ <span className="text-danger">*</span></label>
             <input type="tel" value={phoneNumber} onChange={(e) => { setPhoneNumber(e.target.value); clearPErr('phoneNumber'); }}
               placeholder="VD: 0901234567"
@@ -731,53 +878,256 @@ export const MentorPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Điểm số các môn hỗ trợ (Peer Matching) */}
+      <div className="meetmind-card p-6 rounded-card space-y-4">
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+          <Award className="w-5 h-5 text-primary" /> Điểm số các môn hỗ trợ (Peer Matching)
+        </h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mã môn học *</label>
+            <input
+              type="text"
+              placeholder="Ví dụ: PRJ301"
+              value={newSubjectCode}
+              onChange={(e) => setNewSubjectCode(e.target.value.toUpperCase())}
+              className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold"
+            />
+          </div>
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Tên môn học (Tùy chọn)</label>
+            <input
+              type="text"
+              placeholder="Ví dụ: Java Web Application"
+              value={newSubjectName}
+              onChange={(e) => setNewSubjectName(e.target.value)}
+              className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold"
+            />
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Điểm số *</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="10"
+                placeholder="0.0 - 10.0"
+                value={newSubjectScore}
+                onChange={(e) => setNewSubjectScore(e.target.value)}
+                className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleAddSubjectResult}
+              className="bg-primary hover:bg-primary-hover text-white text-meta font-bold py-2 px-4 rounded-field cursor-pointer h-[38px] transition-all flex items-center justify-center shrink-0"
+            >
+              Thêm
+            </button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          {subjectResults.map((sub, idx) => (
+            <div key={idx} className="flex items-center justify-between p-3.5 bg-surface-muted/40 border border-line rounded-xl">
+              <div>
+                <span className="text-meta font-black text-primary bg-primary-soft/80 border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider text-[8px] inline-block mr-2">
+                  {sub.scoreValue.toFixed(1)} / 10
+                </span>
+                <span className="text-body font-bold text-fg">{sub.subjectCode}</span>
+                {sub.subjectName && <p className="text-meta text-fg-muted font-medium mt-0.5">{sub.subjectName}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubjectResults(prev => prev.filter((_, i) => i !== idx))}
+                className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {subjectResults.length === 0 && (
+            <p className="text-meta text-fg-faint font-semibold py-2">Chưa có môn học hỗ trợ nào được nhập.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Mức độ hỗ trợ kỹ năng chuyên sâu */}
+      <div className="meetmind-card p-6 rounded-card space-y-4">
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+          <Award className="w-5 h-5 text-primary" /> Mức độ hỗ trợ kỹ năng chuyên sâu
+        </h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mức hỗ trợ lấy gốc</label>
+            <select
+              value={foundationSupportLevel}
+              onChange={(e) => setFoundationSupportLevel(Number(e.target.value))}
+              className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+            >
+              {supportOptions?.foundationSupportLevels?.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              )) || [
+                <option key={1} value={1}>Cơ bản</option>,
+                <option key={2} value={2}>Trung bình</option>,
+                <option key={3} value={3}>Khá</option>,
+                <option key={4} value={4}>Chuyên sâu</option>
+              ]}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mức review bài/CV</label>
+            <select
+              value={outputReviewSupportLevel}
+              onChange={(e) => setOutputReviewSupportLevel(Number(e.target.value))}
+              className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+            >
+              {supportOptions?.outputReviewSupportLevels?.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              )) || [
+                <option key={1} value={1}>Cơ bản</option>,
+                <option key={2} value={2}>Trung bình</option>,
+                <option key={3} value={3}>Khá</option>,
+                <option key={4} value={4}>Chuyên sâu</option>
+              ]}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mức định hướng career</label>
+            <select
+              value={directionSupportLevel}
+              onChange={(e) => setDirectionSupportLevel(Number(e.target.value))}
+              className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+            >
+              {supportOptions?.directionSupportLevels?.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              )) || [
+                <option key={1} value={1}>Cơ bản</option>,
+                <option key={2} value={2}>Trung bình</option>,
+                <option key={3} value={3}>Khá</option>,
+                <option key={4} value={4}>Chuyên sâu</option>
+              ]}
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div className="meetmind-card p-6 rounded-card space-y-3">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Link2 className="w-5 h-5 text-primary" /> Liên kết (không bắt buộc)</h3>
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+          <Link2 className="w-5 h-5 text-primary" /> Liên kết (không bắt buộc)
+        </h3>
         <div className="space-y-3">
-          <input type="url" placeholder="LinkedIn URL" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-medium" />
           <input type="url" placeholder="GitHub URL" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-medium" />
           <input type="url" placeholder="Portfolio URL" value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-medium" />
         </div>
       </div>
 
-      {/* Thông tin chuyên môn mở rộng (Point 1) */}
+      {/* Giải thưởng & Học vấn (Achievements) */}
       <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Briefcase className="w-5 h-5 text-primary" /> Thông tin chuyên môn mở rộng</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Số năm kinh nghiệm</label>
-            <input type="number" min={0} value={yearsOfExperience} onChange={(e) => setYearsOfExperience(Number(e.target.value))} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
-          </div>
-          <div>
-            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Công ty / Nơi làm việc</label>
-            <input type="text" placeholder="VD: FPT Software, VNG..." value={company} onChange={(e) => setCompany(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
-          </div>
-          <div>
-            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Số dự án đã tham gia</label>
-            <input type="number" min={0} value={projectsCount} onChange={(e) => setProjectsCount(Number(e.target.value))} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 font-semibold" />
-          </div>
-        </div>
-      </div>
-
-      {/* Giải thưởng & Thành tích (Point 1) */}
-      <div className="meetmind-card p-6 rounded-card space-y-3">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Award className="w-5 h-5 text-primary" /> Giải thưởng &amp; Thành tích (Xuống dòng để nhập giải thưởng mới)</h3>
-        <textarea rows={4} placeholder={"Ví dụ:\nGiải nhất Nghiên cứu Khoa học FPTU 2025\nChứng chỉ TensorFlow Developer"} value={achievementsText} onChange={(e) => setAchievementsText(e.target.value)} className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 font-medium" />
-      </div>
-
-      {/* Quản lý danh sách Portfolio dự án (Point 2) */}
-      <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Monitor className="w-5 h-5 text-primary" /> Quản lý danh sách Portfolio dự án</h3>
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+          <Award className="w-5 h-5 text-primary" /> Học vấn & Giải thưởng
+        </h3>
         
+        {/* Achievements list */}
+        <div className="space-y-3">
+          {achievements.map((ach) => (
+            <div key={ach.id} className="flex items-center justify-between p-3.5 bg-surface border border-line rounded-xl">
+              <div>
+                <h4 className="text-body font-bold text-fg">{ach.title}</h4>
+                <p className="text-meta text-fg-muted font-medium mt-0.5">{ach.awardDescription}</p>
+                {ach.achievedAt && <span className="text-meta font-semibold text-fg-faint mt-1 block">Ngày đạt: {ach.achievedAt}</span>}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDeleteAchievement(ach.id)}
+                className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {achievements.length === 0 && (
+            <p className="text-meta text-fg-faint font-semibold py-2">Chưa cấu hình học vấn & giải thưởng.</p>
+          )}
+        </div>
+
+        {/* Add achievement form */}
+        {showAddAchForm ? (
+          <div className="p-5 border border-dashed border-line rounded-2xl space-y-4 bg-surface-muted/20">
+            <h4 className="text-body font-bold text-fg">Thêm học vấn/giải thưởng mới</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Tiêu đề *</label>
+                <input
+                  type="text"
+                  placeholder="VD: Thủ khoa ngành Kỹ thuật Phần mềm"
+                  value={newAchTitle}
+                  onChange={(e) => setNewAchTitle(e.target.value)}
+                  className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Ngày đạt *</label>
+                <input
+                  type="date"
+                  value={newAchDate}
+                  onChange={(e) => setNewAchDate(e.target.value)}
+                  className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mô tả chi tiết *</label>
+              <textarea
+                rows={3}
+                placeholder="Mô tả cụ thể về thành tích này..."
+                value={newAchDesc}
+                onChange={(e) => setNewAchDesc(e.target.value)}
+                className="w-full bg-surface border border-line rounded-field p-2.5 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold resize-none"
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button type="button" onClick={() => setShowAddAchForm(false)} className="py-1.5 px-4 bg-surface border border-line rounded-field text-meta font-bold text-fg hover:bg-surface-muted cursor-pointer">Hủy</button>
+              <button
+                type="button"
+                onClick={handleAddAchievement}
+                className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-white rounded-field text-meta font-bold cursor-pointer"
+              >
+                Lưu thành tích
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowAddAchForm(true)}
+            className="inline-flex items-center gap-1.5 text-meta text-primary hover:text-primary-hover font-bold border border-primary/25 border-dashed rounded-xl p-3 justify-center w-full bg-primary-soft/5 hover:bg-primary-soft/10 transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Thêm giải thưởng/học vấn
+          </button>
+        )}
+      </div>
+
+      {/* Portfolio dự án (Featured Projects) */}
+      <div className="meetmind-card p-6 rounded-card space-y-4">
+        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+          <Monitor className="w-5 h-5 text-primary" /> Quản lý danh sách Portfolio dự án
+        </h3>
+
         {/* Project List */}
         <div className="space-y-3">
           {portfolios.map((proj, idx) => (
-            <div key={proj.id || idx} className="flex items-center justify-between p-3.5 bg-surface-muted border border-line rounded-xl">
+            <div key={proj.id || idx} className="flex items-center justify-between p-3.5 bg-surface border border-line rounded-xl">
               <div>
                 <span className="text-meta font-black text-primary bg-primary-soft/80 border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider text-[8px] inline-block mr-2">{proj.role}</span>
                 <span className="text-body font-bold text-fg">{proj.title}</span>
               </div>
-              <button type="button" onClick={() => setPortfolios(prev => prev.filter(p => p.id !== proj.id))} className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer">
+              <button type="button" onClick={() => handleDeleteProject(proj.id)} className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer">
                 <Trash2 className="w-4 h-4" /> Xóa
               </button>
             </div>
@@ -793,42 +1143,36 @@ export const MentorPanel: React.FC = () => {
             <h4 className="text-body font-bold text-fg">Thêm dự án mới</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Tên dự án <span className="text-danger">*</span></label>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Tên dự án *</label>
                 <input type="text" placeholder="VD: App FinVibe" value={newProjTitle} onChange={(e) => setNewProjTitle(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
               </div>
               <div>
-                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Vai trò trong dự án <span className="text-danger">*</span></label>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Vai trò trong dự án *</label>
                 <input type="text" placeholder="VD: UI/UX Designer, Lead Developer" value={newProjRole} onChange={(e) => setNewProjRole(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
               </div>
             </div>
 
             <div>
-              <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mô tả dự án <span className="text-danger">*</span></label>
+              <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mô tả dự án *</label>
               <textarea rows={3} placeholder="Mô tả mục tiêu, cách thực hiện dự án của bạn..." value={newProjDesc} onChange={(e) => setNewProjDesc(e.target.value)} className="w-full bg-surface border border-line rounded-field p-2.5 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold resize-none" />
-            </div>
-
-            <div>
-              <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Kết quả đạt được (Không bắt buộc)</label>
-              <input type="text" placeholder="VD: Tiếp cận 1,000+ người dùng, điểm số đồ án 9.5" value={newProjOutcome} onChange={(e) => setNewProjOutcome(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Minh họa thiết kế / code</label>
-                <select value={newProjImgType} onChange={(e) => setNewProjImgType(e.target.value as any)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold">
-                  <option value="WEB">Mẫu Web/App Fullstack</option>
-                  <option value="AI">Mẫu Đồ thị / Thuật toán AI</option>
-                  <option value="UIUX">Mẫu Thiết kế Mobile UI/UX</option>
-                  <option value="MKT">Mẫu Biểu đồ Marketing</option>
-                </select>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Đường dẫn liên kết dự án (Tùy chọn)</label>
+                <input type="url" placeholder="GitHub hoặc Figma Link..." value={newProjFigma} onChange={(e) => setNewProjFigma(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
               </div>
-              <div className="space-y-3">
-                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Đường dẫn liên kết</label>
-                <div className="space-y-1">
-                  <input type="url" placeholder="GitHub Link (nếu có)" value={newProjGithub} onChange={(e) => setNewProjGithub(e.target.value)} className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
-                  <input type="url" placeholder="Figma Link (nếu có)" value={newProjFigma} onChange={(e) => setNewProjFigma(e.target.value)} className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
-                  <input type="url" placeholder="Behance Link (nếu có)" value={newProjBehance} onChange={(e) => setNewProjBehance(e.target.value)} className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
-                </div>
+              <div>
+                <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Ảnh minh họa dự án (Tệp JPG/PNG, tùy chọn)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setProjectImageFile(file);
+                  }}
+                  className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold"
+                />
               </div>
             </div>
 
@@ -836,41 +1180,7 @@ export const MentorPanel: React.FC = () => {
               <button type="button" onClick={() => setShowAddProjForm(false)} className="py-1.5 px-4 bg-surface border border-line rounded-field text-meta font-bold text-fg hover:bg-surface-muted cursor-pointer">Hủy</button>
               <button
                 type="button"
-                onClick={() => {
-                  if (!newProjTitle.trim() || !newProjRole.trim() || !newProjDesc.trim()) {
-                    alert('Vui lòng điền đầy đủ các thông tin bắt buộc (*)');
-                    return;
-                  }
-                  const svgMap = {
-                    AI: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=800&auto=format&fit=crop&q=60',
-                    WEB: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=60',
-                    UIUX: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=800&auto=format&fit=crop&q=60',
-                    MKT: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=60'
-                  };
-                  
-                  const newItem: MentorPortfolioItem = {
-                    id: `p_user_${Date.now()}`,
-                    title: newProjTitle,
-                    role: newProjRole,
-                    description: newProjDesc,
-                    outcome: newProjOutcome || undefined,
-                    imageUrl: svgMap[newProjImgType],
-                    figmaUrl: newProjFigma || undefined,
-                    githubUrl: newProjGithub || undefined,
-                    behanceUrl: newProjBehance || undefined
-                  };
-                  
-                  setPortfolios(prev => [...prev, newItem]);
-                  // Reset form fields
-                  setNewProjTitle('');
-                  setNewProjRole('');
-                  setNewProjDesc('');
-                  setNewProjOutcome('');
-                  setNewProjFigma('');
-                  setNewProjGithub('');
-                  setNewProjBehance('');
-                  setShowAddProjForm(false);
-                }}
+                onClick={handleAddProject}
                 className="py-1.5 px-4 bg-primary hover:bg-primary-hover text-white rounded-field text-meta font-bold cursor-pointer"
               >
                 Thêm dự án
@@ -904,109 +1214,231 @@ export const MentorPanel: React.FC = () => {
         <p className="text-meta text-fg-faint font-semibold pt-1">* Chọn từ 1 đến {helpMax} chủ đề bạn có thể hỗ trợ.</p>
         <ErrorBubble msg={profileErrors.helpTopics} />
       </div>
-
-      <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Monitor className="w-5 h-5 text-primary" /> Hình thức & thời lượng buổi học</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Hình thức</label>
-            <select value={teachingMode} onChange={(e) => setTeachingMode(e.target.value as TeachingMode)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold">
-              {TEACHING_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Thời lượng (phút)</label>
-            <select value={sessionDuration} onChange={(e) => setSessionDuration(Number(e.target.value) as SessionDuration)} className="w-full bg-surface border border-line rounded-field py-2.5 px-3 text-body text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold">
-              {SESSION_DURATIONS.map((d) => <option key={d} value={d}>{d} phút</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
     </>
   );
-
   // ---------- Xem trước hồ sơ (read-only) — dùng cho bước Nộp & trạng thái Chờ duyệt ----------
   const ProfileSummary = (
     <div className="meetmind-card p-7 rounded-card space-y-6 text-left">
-      <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><ShieldCheck className="w-5 h-5 text-primary" /> Hồ sơ chuyên môn</h3>
+      <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+        <ShieldCheck className="w-5 h-5 text-primary" /> Hồ sơ chuyên môn
+      </h3>
+      
       <div>
         <p className="text-body font-bold text-fg leading-snug">{headline || 'Chưa có headline'}</p>
         <p className="text-body text-fg-muted font-medium mt-2 leading-relaxed" style={{ textWrap: 'pretty' }}>{expertiseDescription || 'Chưa có mô tả chuyên môn.'}</p>
       </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-y border-line-soft py-4">
+        <div>
+          <span className="text-meta text-fg-muted block">Hỗ trợ lấy gốc:</span>
+          <span className="text-body font-extrabold text-primary">
+            {getLevelLabel(supportOptions?.foundationSupportLevels, foundationSupportLevel)}
+          </span>
+        </div>
+        <div>
+          <span className="text-meta text-fg-muted block">Review bài nộp / CV:</span>
+          <span className="text-body font-extrabold text-primary">
+            {getLevelLabel(supportOptions?.outputReviewSupportLevels, outputReviewSupportLevel)}
+          </span>
+        </div>
+        <div>
+          <span className="text-meta text-fg-muted block">Định hướng career / OJT:</span>
+          <span className="text-body font-extrabold text-primary">
+            {getLevelLabel(supportOptions?.directionSupportLevels, directionSupportLevel)}
+          </span>
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-body">
-        <span><span className="text-fg-muted font-semibold">Kinh nghiệm:</span> <span className="font-bold text-fg">{yearsOfExperience} năm ({company || 'Đại học FPT'})</span></span>
-        <span><span className="text-fg-muted font-semibold">Số dự án:</span> <span className="font-bold text-fg">{projectsCount} dự án</span></span>
-        <span><span className="text-fg-muted font-semibold">Hình thức:</span> <span className="font-bold text-fg">{TEACHING_MODE_LABELS[teachingMode]}</span></span>
-        <span><span className="text-fg-muted font-semibold">Thời lượng:</span> <span className="font-bold text-fg">{sessionDuration} phút/buổi</span></span>
         <span><span className="text-fg-muted font-semibold">Trạng thái:</span> <span className="font-bold text-fg">{isAvailable ? 'Đang nhận mentee' : 'Tạm ngưng'}</span></span>
         {phoneNumber && <span><span className="text-fg-muted font-semibold">SĐT:</span> <span className="font-bold text-fg">{phoneNumber}</span></span>}
       </div>
-      {supportingTags.length > 0 && (
+
+      {subjectResults.length > 0 && (
         <div>
-          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Môn học hỗ trợ</p>
-          <div className="flex flex-wrap gap-2">{supportingTags.map((t) => (<span key={t} className="py-1.5 px-3 rounded-pill bg-primary-soft text-primary border border-primary/15 text-meta font-extrabold">{t}</span>))}</div>
-        </div>
-      )}
-      {resolvedHelpTopics.length > 0 && (
-        <div>
-          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Chủ đề hỗ trợ</p>
-          <div className="flex flex-wrap gap-2">{resolvedHelpTopics.map((t) => (<span key={t.id} className="py-1.5 px-3 rounded-lg bg-surface border border-line text-fg-muted text-meta font-bold">{t.nameVi}</span>))}</div>
-        </div>
-      )}
-      {achievementsText.trim() && (
-        <div>
-          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Thành tích &amp; Giải thưởng</p>
-          <ul className="list-disc pl-5 space-y-1 text-body font-semibold text-fg-muted">
-            {achievementsText.split('\n').map(a => a.trim()).filter(Boolean).map((ach, i) => (
-              <li key={i}>{ach}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {portfolios.length > 0 && (
-        <div>
-          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Portfolio Dự án ({portfolios.length})</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {portfolios.map((proj, idx) => (
-              <div key={proj.id || idx} className="p-3.5 border border-line rounded-xl space-y-1.5 bg-surface-muted/10">
-                <span className="text-[8px] font-black text-primary bg-primary-soft/80 border border-primary/20 px-1.5 py-0.5 rounded-md uppercase tracking-wider inline-block">
-                  {proj.role}
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Môn học & điểm số hỗ trợ (Peer Matching)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {subjectResults.map((sub, idx) => (
+              <div key={idx} className="flex items-center gap-2 py-1 px-3.5 rounded-lg border border-line bg-surface text-fg-muted text-meta font-semibold">
+                <span className="text-[10px] font-black text-primary bg-primary-soft/80 border border-primary/20 px-1.5 py-0.5 rounded">
+                  {sub.scoreValue.toFixed(1)}
                 </span>
-                <h4 className="text-meta font-bold text-fg">{proj.title}</h4>
-                <p className="text-xs text-fg-muted line-clamp-2 leading-relaxed">{proj.description}</p>
+                <span>{sub.subjectCode} - {sub.subjectName || 'Môn học hỗ trợ'}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-      {(linkedinUrl || githubUrl || portfolioUrl) && (
+
+      {resolvedHelpTopics.length > 0 && (
+        <div>
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Chủ đề hỗ trợ</p>
+          <div className="flex flex-wrap gap-2">
+            {resolvedHelpTopics.map((t) => (
+              <span key={t.id} className="py-1.5 px-3 rounded-lg bg-surface border border-line text-fg-muted text-meta font-bold">
+                {t.nameVi}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Học vấn & Giải thưởng */}
+      <div>
+        <div className="flex items-center justify-between border-b border-line-soft pb-2 mb-2">
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">Học vấn & Giải thưởng</p>
+          <button
+            type="button"
+            onClick={() => setActiveAddModal('achievement')}
+            className="text-meta font-bold text-primary hover:text-primary-hover flex items-center gap-1 cursor-pointer bg-transparent border-0"
+          >
+            <Plus className="w-4 h-4" /> Thêm giải thưởng
+          </button>
+        </div>
+        <div className="space-y-2">
+          {achievements.map((ach) => (
+            <div key={ach.id} className="p-3 bg-surface-muted/30 border border-line rounded-lg text-meta flex items-center justify-between">
+              <div>
+                <div className="flex justify-between font-bold text-fg">
+                  <span>{ach.title}</span>
+                  {ach.achievedAt && <span className="text-fg-faint font-semibold ml-2">{ach.achievedAt}</span>}
+                </div>
+                <p className="text-fg-muted font-medium mt-1">{ach.awardDescription}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDeleteAchievement(ach.id)}
+                className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer shrink-0 ml-4"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {achievements.length === 0 && (
+            <p className="text-meta text-fg-faint font-semibold py-2">Chưa cấu hình học vấn & giải thưởng.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Dự án & Portfolio */}
+      <div>
+        <div className="flex items-center justify-between border-b border-line-soft pb-2 mb-2">
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">Dự án & Portfolio</p>
+          <button
+            type="button"
+            onClick={() => setActiveAddModal('project')}
+            className="text-meta font-bold text-primary hover:text-primary-hover flex items-center gap-1 cursor-pointer bg-transparent border-0"
+          >
+            <Plus className="w-4 h-4" /> Thêm dự án
+          </button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {portfolios.map((proj) => (
+            <div key={proj.id} className="p-3 bg-surface border border-line rounded-lg text-meta flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[8px] font-black text-primary bg-primary-soft/80 border border-primary/20 px-1 rounded uppercase tracking-wider">{proj.role}</span>
+                  <span className="font-bold text-fg">{proj.title}</span>
+                </div>
+                <p className="text-fg-muted font-medium mt-1 line-clamp-2">{proj.description}</p>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                {proj.figmaUrl ? (
+                  <a href={proj.figmaUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline">
+                    Xem chi tiết <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                ) : <span />}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteProject(proj.id)}
+                  className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+          {portfolios.length === 0 && (
+            <p className="text-meta text-fg-faint font-semibold py-2">Chưa có dự án nào trong portfolio.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Bài viết & Blog */}
+      <div>
+        <div className="flex items-center justify-between border-b border-line-soft pb-2 mb-2">
+          <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">Bài viết & Blog</p>
+          <button
+            type="button"
+            onClick={() => setActiveAddModal('blog')}
+            className="text-meta font-bold text-primary hover:text-primary-hover flex items-center gap-1 cursor-pointer bg-transparent border-0"
+          >
+            <Plus className="w-4 h-4" /> Thêm bài viết
+          </button>
+        </div>
+        <div className="space-y-3">
+          {blogs.map((b) => (
+            <div key={b.postId} className="p-4 bg-surface border border-line rounded-xl flex items-center justify-between text-meta">
+              <div className="space-y-1">
+                <h4 className="font-bold text-fg">{b.title}</h4>
+                <p className="text-fg-muted font-medium line-clamp-2">{b.content}</p>
+                {b.helpTopic && (
+                  <span className="text-[9px] font-black text-primary bg-primary-soft/80 border border-primary/20 px-1.5 py-0.5 rounded uppercase tracking-wider inline-block">
+                    {b.helpTopic.nameVi}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDeleteBlog(b.postId)}
+                className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer shrink-0 ml-4"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {blogs.length === 0 && (
+            <p className="text-meta text-fg-faint font-semibold py-2">Chưa có bài viết hay blog nào.</p>
+          )}
+        </div>
+      </div>
+
+      {(githubUrl || portfolioUrl) && (
         <div>
           <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-2">Liên kết</p>
           <div className="flex flex-wrap gap-2.5">
-            {[{ label: 'LinkedIn', url: linkedinUrl }, { label: 'GitHub', url: githubUrl }, { label: 'Portfolio', url: portfolioUrl }].filter((l) => l.url).map((l) => (
-              <a key={l.label} href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 py-2 px-3.5 rounded-field border border-line bg-surface text-body font-bold text-fg-muted hover:text-primary transition-all">{l.label}<ExternalLink className="w-3 h-3" /></a>
+            {[{ label: 'GitHub', url: githubUrl }, { label: 'Portfolio', url: portfolioUrl }].filter((l) => l.url).map((l) => (
+              <a key={l.label} href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 py-2 px-3.5 rounded-field border border-line bg-surface text-body font-bold text-fg-muted hover:text-primary transition-all">
+                {l.label}<ExternalLink className="w-3 h-3" />
+              </a>
             ))}
           </div>
         </div>
       )}
     </div>
   );
-
+  
   // ---------- APPROVED: hồ sơ mentor đã kích hoạt ----------
-  if (req.status === 'APPROVED' && !editingApproved) {
+  if (activeReq.status === 'APPROVED' && !editingApproved) {
     return (
       <div className="space-y-7">
         {Notices}
-        <div className="grid sm:grid-cols-3 gap-4">
-          <FactStat icon={<Monitor className="w-4.5 h-4.5" />} label="Hình thức" value={TEACHING_MODE_LABELS[teachingMode]} />
-          <FactStat icon={<Clock className="w-4.5 h-4.5" />} label="Thời lượng" value={`${sessionDuration} phút/buổi`} />
+        <div className="grid sm:grid-cols-2 gap-4">
           <FactStat icon={<Briefcase className="w-4.5 h-4.5" />} label="Trạng thái" value={isAvailable ? 'Đang nhận mentee' : 'Tạm ngưng'} tone={isAvailable ? 'success' : 'primary'} />
+          <FactStat icon={<ShieldCheck className="w-4.5 h-4.5" />} label="Mức độ tin cậy" value="Đã xác thực" tone="success" />
         </div>
 
         <div className="meetmind-card p-7 rounded-card space-y-6">
           <div className="flex items-center justify-between gap-3 border-b border-line-soft pb-2.5">
-            <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-success" /> Hồ sơ Mentor <span className={`ml-2 inline-flex items-center gap-1 text-meta font-extrabold py-0.5 px-2 rounded-lg border ${sm.cls}`}>{sm.icon}{sm.label}</span></h3>
-            <button onClick={() => setEditingApproved(true)} className="inline-flex items-center gap-1.5 bg-primary-soft text-primary hover:bg-primary/15 text-meta font-bold py-2 px-3 rounded-field cursor-pointer transition-all"><Pencil className="w-3.5 h-3.5" /> Cấu hình</button>
+            <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-success" /> Hồ sơ Mentor 
+              <span className={`ml-2 inline-flex items-center gap-1 text-meta font-extrabold py-0.5 px-2 rounded-lg border ${sm.cls}`}>
+                {sm.icon}{sm.label}
+              </span>
+            </h3>
+            <button onClick={() => setEditingApproved(true)} className="inline-flex items-center gap-1.5 bg-primary-soft text-primary hover:bg-primary/15 text-meta font-bold py-2 px-3 rounded-field cursor-pointer transition-all">
+              <Pencil className="w-3.5 h-3.5" /> Cấu hình
+            </button>
           </div>
 
           <div>
@@ -1014,14 +1446,38 @@ export const MentorPanel: React.FC = () => {
             <p className="text-body text-fg-muted font-medium mt-2 leading-relaxed" style={{ textWrap: 'pretty' }}>{expertiseDescription}</p>
           </div>
 
-          {supportingTags.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-y border-line-soft py-4">
             <div>
-              <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Môn học hỗ trợ</p>
-              <div className="flex flex-wrap gap-2">
-                {supportingTags.map((t) => (
-                  <span key={t} className="inline-flex items-center gap-2 py-2 px-3.5 rounded-pill bg-primary-soft text-primary border border-primary/15 text-meta font-extrabold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />{t}
-                  </span>
+              <span className="text-meta text-fg-muted block">Hỗ trợ lấy gốc:</span>
+              <span className="text-body font-extrabold text-primary">
+                {getLevelLabel(supportOptions?.foundationSupportLevels, foundationSupportLevel)}
+              </span>
+            </div>
+            <div>
+              <span className="text-meta text-fg-muted block">Review bài nộp / CV:</span>
+              <span className="text-body font-extrabold text-primary">
+                {getLevelLabel(supportOptions?.outputReviewSupportLevels, outputReviewSupportLevel)}
+              </span>
+            </div>
+            <div>
+              <span className="text-meta text-fg-muted block">Định hướng career / OJT:</span>
+              <span className="text-body font-extrabold text-primary">
+                {getLevelLabel(supportOptions?.directionSupportLevels, directionSupportLevel)}
+              </span>
+            </div>
+          </div>
+
+          {subjectResults.length > 0 && (
+            <div>
+              <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Môn học & điểm số hỗ trợ (Peer Matching)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {subjectResults.map((sub, idx) => (
+                  <div key={idx} className="flex items-center gap-2 py-1.5 px-3.5 rounded-lg border border-line bg-surface text-fg-muted text-meta font-semibold">
+                    <span className="text-[10px] font-black text-primary bg-primary-soft/80 border border-primary/20 px-1.5 py-0.5 rounded">
+                      {sub.scoreValue.toFixed(1)}
+                    </span>
+                    <span>{sub.subjectCode} - {sub.subjectName || 'Môn học hỗ trợ'}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -1029,46 +1485,168 @@ export const MentorPanel: React.FC = () => {
 
           {resolvedHelpTopics.length > 0 && (
             <div>
-              <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Chủ đề có thể hỗ trợ</p>
-              <div className="grid sm:grid-cols-2 gap-2.5">
+              <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Chủ đề hỗ trợ</p>
+              <div className="flex flex-wrap gap-2">
                 {resolvedHelpTopics.map((t) => (
-                  <div key={t.id} className="flex items-center gap-3 p-3 rounded-field border border-line bg-surface-muted/40">
-                    <div className="w-9 h-9 rounded-field bg-accent/12 text-accent flex items-center justify-center shrink-0"><Lightbulb className="w-4 h-4" /></div>
-                    <p className="text-body font-bold text-fg">{t.nameVi}</p>
-                  </div>
+                  <span key={t.id} className="py-1.5 px-3 rounded-lg bg-surface border border-line text-fg-muted text-meta font-bold">
+                    {t.nameVi}
+                  </span>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="pt-5 border-t border-line-soft">
-            <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Liên kết</p>
-            <div className="flex flex-wrap gap-2.5">
-              {[
-                { label: 'LinkedIn', url: linkedinUrl },
-                { label: 'GitHub', url: githubUrl },
-                { label: 'Portfolio', url: portfolioUrl },
-              ].filter((l) => l.url).map((l) => (
-                <a key={l.label} href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 py-2 px-3.5 rounded-field border border-line bg-surface text-body font-bold text-fg-muted hover:text-primary hover:border-primary/40 transition-all">
-                  {l.label}<ExternalLink className="w-3 h-3 text-fg-faint" />
-                </a>
+          {/* Học vấn & Giải thưởng */}
+          <div>
+            <div className="flex items-center justify-between border-b border-line-soft pb-2.5 mb-3">
+              <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">Học vấn & Giải thưởng</p>
+              <button
+                type="button"
+                onClick={() => setActiveAddModal('achievement')}
+                className="inline-flex items-center gap-1 text-meta font-bold text-primary hover:text-primary-hover bg-transparent border-0 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Thêm giải thưởng
+              </button>
+            </div>
+            <div className="space-y-3">
+              {achievements.map((ach) => (
+                <div key={ach.id} className="p-4 bg-surface-muted/30 border border-line rounded-xl text-meta flex items-center justify-between">
+                  <div>
+                    <div className="flex justify-between font-bold text-fg">
+                      <span>{ach.title}</span>
+                      {ach.achievedAt && <span className="text-fg-faint font-semibold ml-2">{ach.achievedAt}</span>}
+                    </div>
+                    <p className="text-fg-muted font-medium mt-1">{ach.awardDescription}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAchievement(ach.id)}
+                    className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer shrink-0 ml-4"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
-              {!linkedinUrl && !githubUrl && !portfolioUrl && <p className="text-meta text-fg-faint font-medium">Chưa cập nhật liên kết.</p>}
+              {achievements.length === 0 && (
+                <p className="text-meta text-fg-faint font-semibold py-2">Chưa cấu hình học vấn & giải thưởng.</p>
+              )}
             </div>
           </div>
+
+          {/* Dự án & Portfolio */}
+          <div>
+            <div className="flex items-center justify-between border-b border-line-soft pb-2.5 mb-3">
+              <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">Dự án & Portfolio</p>
+              <button
+                type="button"
+                onClick={() => setActiveAddModal('project')}
+                className="inline-flex items-center gap-1 text-meta font-bold text-primary hover:text-primary-hover bg-transparent border-0 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Thêm dự án
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {portfolios.map((proj) => (
+                <div key={proj.id} className="bg-surface border border-line rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                  {proj.imageUrl && (
+                    <div className="aspect-video w-full overflow-hidden bg-surface-muted border-b border-line relative">
+                      <img src={proj.imageUrl} alt={proj.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3 text-meta">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[8px] font-black text-primary bg-primary-soft/80 border border-primary/20 px-1 py-0.5 rounded uppercase tracking-wider">{proj.role}</span>
+                        <span className="font-bold text-fg">{proj.title}</span>
+                      </div>
+                      <p className="text-fg-muted font-medium line-clamp-2 mt-1">{proj.description}</p>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-line-soft">
+                      {proj.figmaUrl ? (
+                        <a href={proj.figmaUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline">
+                          Xem chi tiết <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      ) : <span />}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProject(proj.id)}
+                        className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Xóa
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {portfolios.length === 0 && (
+                <p className="text-meta text-fg-faint font-semibold py-2">Chưa có dự án nào trong portfolio.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Bài viết & Blog */}
+          <div>
+            <div className="flex items-center justify-between border-b border-line-soft pb-2.5 mb-3">
+              <p className="text-meta font-bold uppercase tracking-wide text-fg-faint">Bài viết & Blog</p>
+              <button
+                type="button"
+                onClick={() => setActiveAddModal('blog')}
+                className="inline-flex items-center gap-1 text-meta font-bold text-primary hover:text-primary-hover bg-transparent border-0 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Thêm bài viết
+              </button>
+            </div>
+            <div className="space-y-3">
+              {blogs.map((b) => (
+                <div key={b.postId} className="p-4 bg-surface border border-line rounded-xl flex items-center justify-between text-meta">
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-fg">{b.title}</h4>
+                    <p className="text-fg-muted font-medium line-clamp-2">{b.content}</p>
+                    {b.helpTopic && (
+                      <span className="text-[9px] font-black text-primary bg-primary-soft/80 border border-primary/20 px-1.5 py-0.5 rounded uppercase tracking-wider inline-block">
+                        {b.helpTopic.nameVi}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteBlog(b.postId)}
+                    className="text-meta text-danger hover:text-danger/80 font-bold flex items-center gap-1 cursor-pointer shrink-0 ml-4"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {blogs.length === 0 && (
+                <p className="text-meta text-fg-faint font-semibold py-2">Chưa có bài viết hay blog nào.</p>
+              )}
+            </div>
+          </div>
+
+          {(githubUrl || portfolioUrl) && (
+            <div>
+              <p className="text-meta font-bold uppercase tracking-wide text-fg-faint mb-3">Liên kết</p>
+              <div className="flex flex-wrap gap-2.5">
+                {[{ label: 'GitHub', url: githubUrl }, { label: 'Portfolio', url: portfolioUrl }].filter((l) => l.url).map((l) => (
+                  <a key={l.label} href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 py-2 px-3.5 rounded-field border border-line bg-surface text-body font-bold text-fg-muted hover:text-primary transition-all">
+                    {l.label}<ExternalLink className="w-3 h-3 text-fg-faint" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
-
+  
   // ---------- APPROVED + đang chỉnh sửa: chỉ sửa field hồ sơ, không qua bước nộp duyệt ----------
-  if (req.status === 'APPROVED' && editingApproved) {
+  if (activeReq.status === 'APPROVED' && editingApproved) {
     return (
       <div className="space-y-6">
         {Notices}
         <div className="flex items-center justify-between">
           <h3 className="text-title font-bold font-serif text-fg">Cấu hình hồ sơ Mentor</h3>
-          <button onClick={() => { setEditingApproved(false); setError(null); }} className="text-meta font-bold text-fg-muted hover:text-fg cursor-pointer">Huỷ</button>
         </div>
         {ProfileFields}
         <button disabled={busy} onClick={saveApprovedProfile} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-3 px-6 rounded-field cursor-pointer disabled:opacity-50 transition-all">
@@ -1079,11 +1657,11 @@ export const MentorPanel: React.FC = () => {
   }
 
   // ---------- PENDING_REVIEW: chỉ hiển thị trạng thái + nút xem trước & rút hồ sơ (KHÔNG cho sửa) ----------
-  if (req.status === 'PENDING_REVIEW') {
+  if (activeReq.status === 'PENDING_REVIEW') {
     return (
       <div className="space-y-7">
         {Notices}
-        <StatusHero req={req} sm={sm} ui={ui} heroDesc={heroDesc} extra={
+        <StatusHero req={activeReq} sm={sm} ui={ui} heroDesc={heroDesc} extra={
           <div className="mt-6 pt-6 border-t border-line-soft flex items-center gap-3 flex-wrap">
             <button onClick={() => setShowPreview((v) => !v)} className="inline-flex items-center gap-2 bg-primary-soft text-primary hover:bg-primary/15 text-body font-bold py-2.5 px-4 rounded-field cursor-pointer transition-all">
               <FileText className="w-4 h-4" /> {showPreview ? 'Ẩn hồ sơ đã nộp' : 'Xem hồ sơ đã nộp'}
@@ -1105,26 +1683,26 @@ export const MentorPanel: React.FC = () => {
               </div>
             )}
           </div>
-          <TimelinePanel req={req} />
+          <TimelinePanel req={activeReq} />
         </div>
       </div>
     );
   }
 
   // ---------- REJECTED / WITHDRAWN: xem + tạo mới ----------
-  if (req.status === 'REJECTED' || req.status === 'WITHDRAWN') {
+  if (activeReq.status === 'REJECTED' || activeReq.status === 'WITHDRAWN') {
     return (
       <div className="space-y-7">
         {Notices}
-        <StatusHero req={req} sm={sm} ui={ui} heroDesc={heroDesc} extra={
+        <StatusHero req={activeReq} sm={sm} ui={ui} heroDesc={heroDesc} extra={
           <div className="mt-6 pt-6 border-t border-line-soft flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-meta text-fg-muted font-medium">{req.status === 'REJECTED' ? 'Theo quy định, hồ sơ bị từ chối cần tạo mới để nộp lại.' : 'Tạo hồ sơ mới để bắt đầu lại quy trình xác thực.'}</p>
+            <p className="text-meta text-fg-muted font-medium">{activeReq.status === 'REJECTED' ? 'Theo quy định, hồ sơ bị từ chối cần tạo mới để nộp lại.' : 'Tạo hồ sơ mới để bắt đầu lại quy trình xác thực.'}</p>
             <button disabled={busy} onClick={createNew} className="inline-flex items-center gap-1.5 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-4 rounded-field cursor-pointer shadow-md shadow-primary/20 disabled:opacity-50 transition-all"><Plus className="w-4 h-4" /> Tạo hồ sơ mới</button>
           </div>
         } />
         <div className="grid lg:grid-cols-3 gap-7 items-start">
           <div className="lg:col-span-2"><DocumentsCard docs={docs} canUpload={false} /></div>
-          <TimelinePanel req={req} />
+          <TimelinePanel req={activeReq} />
         </div>
       </div>
     );
@@ -1134,7 +1712,7 @@ export const MentorPanel: React.FC = () => {
   return (
     <div className="space-y-7">
       {Notices}
-      <StatusHero req={req} sm={sm} ui={ui} heroDesc={heroDesc} />
+      <StatusHero req={activeReq} sm={sm} ui={ui} heroDesc={heroDesc} />
 
       <div className="grid lg:grid-cols-3 gap-7 items-start">
         <div className="lg:col-span-2 space-y-7">
@@ -1189,7 +1767,7 @@ export const MentorPanel: React.FC = () => {
               <DocumentsCard docs={docs} canUpload={false} />
 
               <div className="meetmind-card p-6 rounded-card space-y-4">
-                <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Send className="w-5 h-5 text-primary" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại hồ sơ' : 'Hoàn tất & nộp hồ sơ'}</h3>
+                <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Send className="w-5 h-5 text-primary" /> {activeReq.status === 'NEEDS_REVISION' ? 'Nộp lại hồ sơ' : 'Hoàn tất & nộp hồ sơ'}</h3>
                 <div>
                   <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Ghi chú gửi admin (tuỳ chọn)</label>
                   <textarea rows={2} value={submitNote} onChange={(e) => setSubmitNote(e.target.value)} placeholder="Ví dụ: Em bổ sung lại ảnh thẻ rõ nét và thêm chứng chỉ AWS…" className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
@@ -1204,15 +1782,134 @@ export const MentorPanel: React.FC = () => {
                 )}
                 <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
                   <button onClick={() => setComposeStep(2)} className="inline-flex items-center gap-2 bg-surface-muted hover:bg-line/40 text-fg text-body font-bold py-2.5 px-4 rounded-field cursor-pointer border border-line transition-all"><ArrowLeft className="w-4 h-4" /> Quay lại</button>
-                  <button disabled={busy || !termsAccepted || !allowedActions?.canSubmit} onClick={submitVerification} className="inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"><Send className="w-4 h-4" /> {req.status === 'NEEDS_REVISION' ? 'Nộp lại' : 'Nộp hồ sơ duyệt'}</button>
+                  <button disabled={busy || !termsAccepted || !allowedActions?.canSubmit} onClick={submitVerification} className="inline-flex items-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-2.5 px-5 rounded-field cursor-pointer active:scale-95 transition-all shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"><Send className="w-4 h-4" /> {activeReq.status === 'NEEDS_REVISION' ? 'Nộp lại' : 'Nộp hồ sơ duyệt'}</button>
                 </div>
               </div>
             </>
           )}
         </div>
 
-        <TimelinePanel req={req} />
+        <TimelinePanel req={activeReq} />
       </div>
+
+      {activeAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 relative shadow-2xl space-y-4 text-left">
+            <button
+              onClick={() => setActiveAddModal(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-surface-muted hover:opacity-80 text-fg-muted cursor-pointer transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            
+            {activeAddModal === 'project' && (
+              <div className="space-y-4">
+                <h3 className="text-title font-bold text-fg">Thêm dự án mới</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Tên dự án *</label>
+                    <input type="text" placeholder="VD: App FinVibe" value={newProjTitle} onChange={(e) => setNewProjTitle(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                  </div>
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Vai trò trong dự án *</label>
+                    <input type="text" placeholder="VD: Lead Developer" value={newProjRole} onChange={(e) => setNewProjRole(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mô tả dự án *</label>
+                  <textarea rows={3} placeholder="Mô tả mục tiêu, cách thực hiện dự án..." value={newProjDesc} onChange={(e) => setNewProjDesc(e.target.value)} className="w-full bg-surface border border-line rounded-field p-2.5 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold resize-none" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Link demo (Tùy chọn)</label>
+                    <input type="url" placeholder="GitHub hoặc Figma Link..." value={newProjFigma} onChange={(e) => setNewProjFigma(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                  </div>
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Ảnh minh họa (Tệp ảnh, tùy chọn)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setProjectImageFile(file);
+                      }}
+                      className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button type="button" onClick={() => setActiveAddModal(null)} className="py-2 px-4 bg-surface border border-line rounded-field text-meta font-bold text-fg hover:bg-surface-muted cursor-pointer">Hủy</button>
+                  <button type="button" onClick={async () => {
+                    await handleAddProject();
+                    setActiveAddModal(null);
+                  }} className="py-2 px-4 bg-primary hover:bg-primary-hover text-white rounded-field text-meta font-bold cursor-pointer">Thêm dự án</button>
+                </div>
+              </div>
+            )}
+
+            {activeAddModal === 'achievement' && (
+              <div className="space-y-4">
+                <h3 className="text-title font-bold text-fg">Thêm học vấn/giải thưởng mới</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Tiêu đề *</label>
+                    <input type="text" placeholder="VD: Thủ khoa FPTU" value={newAchTitle} onChange={(e) => setNewAchTitle(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                  </div>
+                  <div>
+                    <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Ngày đạt *</label>
+                    <input type="date" value={newAchDate} onChange={(e) => setNewAchDate(e.target.value)} className="w-full bg-surface border border-line rounded-field py-1.5 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Mô tả chi tiết *</label>
+                  <textarea rows={3} placeholder="Mô tả cụ thể..." value={newAchDesc} onChange={(e) => setNewAchDesc(e.target.value)} className="w-full bg-surface border border-line rounded-field p-2.5 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold resize-none" />
+                </div>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button type="button" onClick={() => setActiveAddModal(null)} className="py-2 px-4 bg-surface border border-line rounded-field text-meta font-bold text-fg hover:bg-surface-muted cursor-pointer">Hủy</button>
+                  <button type="button" onClick={async () => {
+                    await handleAddAchievement();
+                    setActiveAddModal(null);
+                  }} className="py-2 px-4 bg-primary hover:bg-primary-hover text-white rounded-field text-meta font-bold cursor-pointer">Lưu thành tích</button>
+                </div>
+              </div>
+            )}
+
+            {activeAddModal === 'blog' && (
+              <div className="space-y-4">
+                <h3 className="text-title font-bold text-fg">Thêm bài viết / Blog mới</h3>
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Tiêu đề bài viết *</label>
+                  <input type="text" placeholder="VD: Kinh nghiệm làm đồ án tốt nghiệp" value={newBlogTitle} onChange={(e) => setNewBlogTitle(e.target.value)} className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold" />
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Chủ đề bài viết *</label>
+                  <select
+                    value={newBlogHelpTopicId}
+                    onChange={(e) => setNewBlogHelpTopicId(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-field py-2 px-3 text-meta text-fg focus:outline-none focus:border-primary/50 cursor-pointer font-semibold"
+                  >
+                    <option value="">Chọn chủ đề</option>
+                    {helpTopicsCatalog.map((topic) => (
+                      <option key={topic.id} value={topic.id}>{topic.nameVi}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-meta font-bold text-fg-muted uppercase mb-1">Nội dung bài viết *</label>
+                  <textarea rows={5} placeholder="Nhập nội dung chia sẻ hoặc kinh nghiệm của bạn ở đây..." value={newBlogContent} onChange={(e) => setNewBlogContent(e.target.value)} className="w-full bg-surface border border-line rounded-field p-2.5 text-meta text-fg focus:outline-none focus:border-primary/50 font-semibold resize-none" />
+                </div>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button type="button" onClick={() => setActiveAddModal(null)} className="py-2 px-4 bg-surface border border-line rounded-field text-meta font-bold text-fg hover:bg-surface-muted cursor-pointer">Hủy</button>
+                  <button type="button" onClick={async () => {
+                    await handleAddBlog();
+                    setActiveAddModal(null);
+                  }} className="py-2 px-4 bg-primary hover:bg-primary-hover text-white rounded-field text-meta font-bold cursor-pointer">Đăng bài viết</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -322,6 +322,20 @@ export const Mentors: React.FC = () => {
       // Lấy cờ canRequestBooking (BE mới) song song với slots để gate sớm.
       const detail = await mentorsApi.getDetail(mentor.mentorUserId);
       const ext = getExtendedMentorData(detail.mentorUserId, detail.displayName, detail.specializationName);
+      
+      // Map backend featuredProjects to portfolios format
+      const rawProjects = detail.featuredProjects || [];
+      const mappedPortfolios = rawProjects.length > 0
+        ? rawProjects.map(p => ({
+            id: p.id,
+            title: p.title,
+            role: p.content || '',
+            description: p.projectDescription || '',
+            imageUrl: p.pictureUrl || '',
+            figmaUrl: p.liveDemoUrl || '',
+          }))
+        : ext.portfolios;
+
       const mergedDetail: MentorDetail = {
         ...detail,
         // achievements nay là object v2 do BE trả trực tiếp (không còn lấy từ mock).
@@ -329,7 +343,7 @@ export const Mentors: React.FC = () => {
         yearsOfExperience: detail.yearsOfExperience ?? ext.yearsOfExperience,
         company: detail.company ?? ext.company,
         projectsCount: detail.projectsCount ?? ext.projectsCount,
-        portfolios: detail.portfolios ?? ext.portfolios,
+        portfolios: mappedPortfolios,
       };
       setSelectedMentorDetail(mergedDetail);
       
