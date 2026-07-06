@@ -205,19 +205,59 @@ export interface MentorTag {
   primary?: boolean;
 }
 
-/** Card mentor trong danh sách khám phá — khớp MentorDiscoveryCardResponse. */
+/** Môn học + điểm của mentor — khớp MentorSubjectResultResponse (contract v2). */
+export interface MentorSubjectResult {
+  id?: string;
+  subjectCode: string;
+  subjectName?: string;
+  scoreValue: number;
+  displayOrder?: number;
+}
+
+/** Dự án tiêu biểu của mentor — khớp MentorFeaturedProjectResponse (contract v2). */
+export interface MentorFeaturedProject {
+  id: string;
+  title: string;
+  pictureUrl?: string;
+  content?: string;
+  projectDescription?: string;
+  liveDemoUrl?: string;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Học vấn/giải thưởng của mentor — khớp MentorAchievementResponse (contract v2). */
+export interface MentorAchievement {
+  id: string;
+  title: string;
+  awardDescription?: string;
+  achievedAt?: string;
+  productHeader?: string;
+  productDescription?: string;
+  demoUrl?: string;
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Card mentor trong danh sách khám phá — khớp MentorDiscoveryCardResponse (v2). */
 export interface MentorCard {
   mentorUserId: string;
   displayName: string;
   avatarUrl: string;
   headline: string;
   expertiseDescription?: string;
-  supportingSubjects?: string;
+  subjectResults?: MentorSubjectResult[];
+  foundationSupportLevel?: number;
+  outputReviewSupportLevel?: number;
+  directionSupportLevel?: number;
+  featuredProjects?: MentorFeaturedProject[];
+  achievements?: MentorAchievement[];
   isAvailable: boolean;
   ratingAverage: number;
   reviewCount: number;
   completedSessions: number;
-  teachingMode: TeachingMode;
   verifiedAt?: string;
   campusId?: string;
   campusName?: string;
@@ -262,14 +302,16 @@ export interface MentorDetail {
   headline: string;
   bio?: string;
   expertiseDescription?: string;
-  supportingSubjects?: string;
+  subjectResults?: MentorSubjectResult[];
+  foundationSupportLevel?: number;
+  outputReviewSupportLevel?: number;
+  directionSupportLevel?: number;
+  featuredProjects?: MentorFeaturedProject[];
   isAvailable: boolean;
   bookingSuspendedUntil?: string;
   ratingAverage: number;
   reviewCount: number;
   completedSessions: number;
-  teachingMode: TeachingMode;
-  defaultSessionDuration?: number;
   verifiedAt?: string;
   campusId?: string;
   campusName?: string;
@@ -280,7 +322,6 @@ export interface MentorDetail {
   semester?: number;
   alumni?: boolean;
   portfolioUrl?: string;
-  linkedinUrl?: string;
   githubUrl?: string;
   helpTopicTags: MentorTag[];
   services: MentorServiceItem[];
@@ -290,11 +331,12 @@ export interface MentorDetail {
   hasCompletedProfile?: boolean;
   /** Mentor có ít nhất 1 service đang active không. */
   hasActiveServices?: boolean;
-  // Các trường mở rộng theo phản hồi UI/UX
+  /** Học vấn/giải thưởng (contract v2 — object thay cho string[] cũ). */
+  achievements?: MentorAchievement[];
+  // Các trường mở rộng theo phản hồi UI/UX (hiện lấy từ mock, BE chưa trả)
   yearsOfExperience?: number;
   company?: string;
   projectsCount?: number;
-  achievements?: string[];
   portfolios?: MentorPortfolioItem[];
 }
 
@@ -374,7 +416,6 @@ export interface MentorSearchParams {
   tagIds?: string[];
   campusId?: string;
   specializationId?: string;
-  teachingMode?: TeachingMode;
 }
 
 // ---------- Bookings (luồng mới: candidates + lifecycle 2 phía) ----------

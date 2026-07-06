@@ -35,14 +35,6 @@ const Github = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const Linkedin = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-    <rect x="2" y="9" width="4" height="12" />
-    <circle cx="4" cy="4" r="2" />
-  </svg>
-);
-
 const WEEKDAYS = [
   { value: 'MONDAY', label: 'T2' },
   { value: 'TUESDAY', label: 'T3' },
@@ -310,10 +302,11 @@ export const Mentors: React.FC = () => {
       const ext = getExtendedMentorData(detail.mentorUserId, detail.displayName, detail.specializationName);
       const mergedDetail: MentorDetail = {
         ...detail,
+        // achievements nay là object v2 do BE trả trực tiếp (không còn lấy từ mock).
+        achievements: detail.achievements ?? [],
         yearsOfExperience: detail.yearsOfExperience ?? ext.yearsOfExperience,
         company: detail.company ?? ext.company,
         projectsCount: detail.projectsCount ?? ext.projectsCount,
-        achievements: detail.achievements ?? ext.achievements,
         portfolios: detail.portfolios ?? ext.portfolios,
       };
       setSelectedMentorDetail(mergedDetail);
@@ -521,17 +514,6 @@ export const Mentors: React.FC = () => {
 
             {/* Social Links */}
             <div className="flex gap-3 mt-6 justify-center shrink-0">
-              {selectedMentorDetail.linkedinUrl && (
-                <a
-                  href={selectedMentorDetail.linkedinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-primary transition-all duration-200 shadow-sm"
-                  title="LinkedIn"
-                >
-                  <Linkedin className="w-5 h-5" />
-                </a>
-              )}
               {selectedMentorDetail.githubUrl && (
                 <a
                   href={selectedMentorDetail.githubUrl}
@@ -677,10 +659,13 @@ export const Mentors: React.FC = () => {
                       <span>Giải thưởng &amp; Thành tích</span>
                     </h3>
                     <ul className="space-y-3">
-                      {selectedMentorDetail.achievements.map((ach, idx) => (
-                        <li key={idx} className="flex items-start gap-3 text-body text-slate-600 font-medium leading-relaxed">
+                      {selectedMentorDetail.achievements.map((ach) => (
+                        <li key={ach.id} className="flex items-start gap-3 text-body text-slate-600 font-medium leading-relaxed">
                           <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                          <span>{ach}</span>
+                          <span>
+                            <span className="font-bold text-slate-800">{ach.title}</span>
+                            {ach.awardDescription && <span className="text-slate-500"> — {ach.awardDescription}</span>}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -776,22 +761,51 @@ export const Mentors: React.FC = () => {
                   <span className="text-meta text-slate-400">Chuyên ngành chính</span>
                   <span className="text-slate-800">{selectedMentorDetail.specializationName}</span>
                 </div>
-                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Hình thức hỗ trợ</span>
-                  <span className="text-slate-800">
-                    {selectedMentorDetail.teachingMode === 'ONLINE'
-                      ? 'Trực tuyến (Online)'
-                      : selectedMentorDetail.teachingMode === 'OFFLINE'
-                        ? 'Trực tiếp (Offline)'
-                        : 'Hỗn hợp (Hybrid)'}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Thời lượng chuẩn 1 phiên</span>
-                  <span className="text-slate-800">{selectedMentorDetail.defaultSessionDuration || 60} phút</span>
-                </div>
+                {selectedMentorDetail.foundationSupportLevel != null && (
+                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                    <span className="text-meta text-slate-400">Hỗ trợ nền tảng</span>
+                    <span className="text-slate-800">Mức {selectedMentorDetail.foundationSupportLevel}/4</span>
+                  </div>
+                )}
+                {selectedMentorDetail.outputReviewSupportLevel != null && (
+                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                    <span className="text-meta text-slate-400">Review sản phẩm</span>
+                    <span className="text-slate-800">Mức {selectedMentorDetail.outputReviewSupportLevel}/4</span>
+                  </div>
+                )}
+                {selectedMentorDetail.directionSupportLevel != null && (
+                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                    <span className="text-meta text-slate-400">Định hướng</span>
+                    <span className="text-slate-800">Mức {selectedMentorDetail.directionSupportLevel}/4</span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Môn học thế mạnh (contract v2: subjectResults) */}
+            {selectedMentorDetail.subjectResults && selectedMentorDetail.subjectResults.length > 0 && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <BookOpen className="w-5 h-5 text-teal-600" />
+                  <span>Môn học thế mạnh</span>
+                </h3>
+                <div className="flex flex-wrap gap-2.5">
+                  {selectedMentorDetail.subjectResults
+                    .slice()
+                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                    .map((s) => (
+                      <span
+                        key={s.id ?? s.subjectCode}
+                        className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-meta font-bold px-3 py-1.5 rounded-lg"
+                        title={s.subjectName}
+                      >
+                        {s.subjectCode}
+                        <span className="text-brand-terracotta font-extrabold">{s.scoreValue.toFixed(1)}</span>
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
 
             {/* Lĩnh vực hỗ trợ */}
             {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 && (
@@ -1456,10 +1470,6 @@ export const Mentors: React.FC = () => {
                   <div className="flex items-center gap-2 text-meta font-semibold text-brand-text">
                     <span>Buổi đã hoàn thành:</span>
                     <span className="text-brand-terracotta font-bold">{drawerMentor.completedSessions}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-meta font-semibold text-brand-text">
-                    <span>Hình thức:</span>
-                    <span className="text-brand-blue font-bold">{drawerMentor.teachingMode}</span>
                   </div>
                 </div>
               </div>
