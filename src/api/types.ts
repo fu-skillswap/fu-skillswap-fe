@@ -336,6 +336,7 @@ export interface MentorDetail {
   alumni?: boolean;
   portfolioUrl?: string;
   githubUrl?: string;
+  linkedinUrl?: string;
   helpTopicTags: MentorTag[];
   services: MentorServiceItem[];
   /** Cờ BE mới: mentee có thể gửi yêu cầu đặt lịch cho mentor này không. */

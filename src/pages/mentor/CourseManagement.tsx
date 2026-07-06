@@ -180,6 +180,46 @@ export const CourseManagement: React.FC = () => {
   const [courseToHide, setCourseToHide] = useState<MentorServiceItem | null>(null);
   const [slotToDelete, setSlotToDelete] = useState<MentorAvailabilitySlot | null>(null);
 
+  // Load candidates for each slot to show on the timetable grid
+  const [allCandidatesMap, setAllCandidatesMap] = useState<Record<string, any[]>>({});
+
+  useEffect(() => {
+    if (!myUserId || slots.length === 0) {
+      setAllCandidatesMap({});
+      return;
+    }
+
+    let active = true;
+    const fetchAllCandidates = async () => {
+      try {
+        const promises = slots.map(async (slot) => {
+          const firstService = slot.services?.[0];
+          if (!firstService) return { slotId: slot.slotId, candidates: [] };
+          try {
+            const res = await mentorsApi.getSlotCandidates(myUserId, slot.slotId, firstService.serviceId);
+            return { slotId: slot.slotId, candidates: res.candidateServiceSlots || [] };
+          } catch {
+            return { slotId: slot.slotId, candidates: [] };
+          }
+        });
+        const results = await Promise.all(promises);
+        if (!active) return;
+        const mapping: Record<string, any[]> = {};
+        results.forEach((r) => {
+          mapping[r.slotId] = r.candidates;
+        });
+        setAllCandidatesMap(mapping);
+      } catch (err) {
+        console.warn('Lỗi khi tải chi tiết các khung giờ trống:', err);
+      }
+    };
+
+    fetchAllCandidates();
+    return () => {
+      active = false;
+    };
+  }, [slots, myUserId]);
+
   const triggerToast = (message: string, type: 'success' | 'danger') => {
     window.dispatchEvent(new CustomEvent('push-toast', {
       detail: {
@@ -981,7 +1021,7 @@ export const CourseManagement: React.FC = () => {
                                   <div className="mt-1.5 flex-1 overflow-y-auto scrollbar-thin">
                                     {candidatesList.length > 0 ? (
                                       <div className="grid grid-cols-2 gap-1">
-                                        {candidatesList.map((cand, candIdx) => {
+                                        {candidatesList.map((cand: any, candIdx: number) => {
                                           const candStartStr = formatLocalTime(cand.startTime);
                                           const isBlocked = !cand.isSelectable;
 

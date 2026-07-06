@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, Briefcase, LayoutGrid, ChevronLeft, ChevronRight, Info, BookOpen } from 'lucide-react';
+import { Sparkles, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown, Briefcase, LayoutGrid, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
 import { catalogApi } from '../api/catalog';
 import type {
@@ -8,9 +8,9 @@ import type {
   MentorPortfolioItem, MentorProfileOptions, SupportLevelOption,
 } from '../api/types';
 import { bookingsApi } from '../api/bookings';
-import { chatApi } from '../api/chat';
 import { onAvatarError } from '../lib/img';
 import { getExtendedMentorData } from '../lib/mockMentors';
+import { chatApi } from '../api/chat';
 
 
 
@@ -45,32 +45,9 @@ const Linkedin = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const WEEKDAYS = [
-  { value: 'MONDAY', label: 'T2' },
-  { value: 'TUESDAY', label: 'T3' },
-  { value: 'WEDNESDAY', label: 'T4' },
-  { value: 'THURSDAY', label: 'T5' },
-  { value: 'FRIDAY', label: 'T6' },
-  { value: 'SATURDAY', label: 'T7' },
-  { value: 'SUNDAY', label: 'CN' },
-];
 
-const getWeekDays = (offset = 0) => {
-  const start = new Date();
-  const day = start.getDay();
-  // Monday is 1, Sunday is 0. Adjust so Monday is first day of the week
-  const diff = start.getDate() - day + (day === 0 ? -6 : 1) + (offset * 7);
-  const monday = new Date(start.setDate(diff));
 
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const next = new Date(monday);
-    next.setDate(monday.getDate() + i);
-    days.push(next);
-  }
-  return days;
-};
-*/
+
 
 const formatDateISO = (d: Date) => {
   const yyyy = d.getFullYear();
@@ -79,11 +56,7 @@ const formatDateISO = (d: Date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-/*
-const formatDateDisplay = (d: Date) => {
-  return `${d.getDate()}/${d.getMonth() + 1}`;
-};
-*/
+
 
 const getLocalDateStr = (iso: string) => {
   const d = new Date(iso);
@@ -96,42 +69,9 @@ const getLocalDateStr = (iso: string) => {
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
-const getDaysInMonthGrid = (year: number, month: number) => {
-  const firstDay = new Date(year, month, 1);
-  const startDayOfWeek = firstDay.getDay();
-  const days: Date[] = [];
-  
-  const prevMonthLastDay = new Date(year, month, 0).getDate();
-  for (let i = startDayOfWeek - 1; i >= 0; i--) {
-    days.push(new Date(year, month - 1, prevMonthLastDay - i));
-  }
-  
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  for (let d = 1; d <= daysInMonth; d++) {
-    days.push(new Date(year, month, d));
-  }
-  
-  const totalCells = days.length > 35 ? 42 : 35;
-  const nextDaysNeeded = totalCells - days.length;
-  for (let d = 1; d <= nextDaysNeeded; d++) {
-    days.push(new Date(year, month + 1, d));
-  }
-  
-  return days;
-};
 
-/*
-const getDayNameLong = (date: Date) => {
-  const dayIndex = date.getDay();
-  const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-  return days[dayIndex];
-};
 
-const getSubjectCode = (fullTitle: string = '') => {
-  const match = fullTitle.match(/^\[(.*?)\]/);
-  return match ? match[1] : '';
-};
-*/
+
 
 // View-model gộp card + thông tin tương hợp (nếu có từ recommendations).
 interface MentorVM extends MentorCard {
@@ -158,6 +98,44 @@ const parseCandidateTime = (timeStr: string) => {
     return new Date(formatted);
   }
   return new Date(timeStr);
+};
+
+const getWeekDaysDetailed = (baseDate: Date) => {
+  const day = baseDate.getDay();
+  const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(baseDate);
+  monday.setDate(diff);
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const next = new Date(monday);
+    next.setDate(monday.getDate() + i);
+    days.push(next);
+  }
+  return days;
+};
+
+const getDaysInMonthGrid = (year: number, month: number) => {
+  const firstDay = new Date(year, month, 1);
+  const startDayOfWeek = firstDay.getDay();
+  const days: Date[] = [];
+  
+  const prevMonthLastDay = new Date(year, month, 0).getDate();
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    days.push(new Date(year, month - 1, prevMonthLastDay - i));
+  }
+  
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  for (let i = 1; i <= lastDay; i++) {
+    days.push(new Date(year, month, i));
+  }
+  
+  const remaining = 42 - days.length;
+  for (let i = 1; i <= remaining; i++) {
+    days.push(new Date(year, month + 1, i));
+  }
+  
+  return days;
 };
 
 export const Mentors: React.FC = () => {
@@ -193,6 +171,18 @@ export const Mentors: React.FC = () => {
   const [goalDescription, setGoalDescription] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
+  // Detailed scheduler states
+  const [isDetailedBookingMode, setIsDetailedBookingMode] = useState(false);
+  const [schedulerViewMode, setSchedulerViewMode] = useState<'week' | 'day'>('week');
+  const [visibleStartDate, setVisibleStartDate] = useState<Date>(new Date());
+  const [allCandidatesMap, setAllCandidatesMap] = useState<{ [slotId: string]: ServiceSlotCandidate[] }>({});
+  const [allCandidatesLoading, setAllCandidatesLoading] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<Date>(new Date());
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(formatDateISO(new Date()));
+  const [profileReviews, setProfileReviews] = useState<MentorReview[]>([]);
+  const [profileReviewsLoading, setProfileReviewsLoading] = useState(false);
+
   // Review Drawer State
   const [showReviewDrawer, setShowReviewDrawer] = useState(false);
   const [drawerMentor, setDrawerMentor] = useState<MentorVM | null>(null);
@@ -200,35 +190,8 @@ export const Mentors: React.FC = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // Custom Portfolio Tabs & Modal
+  const [activeDetailTab, setActiveDetailTab] = useState<'about' | 'portfolio'>('about');
   const [selectedProject, setSelectedProject] = useState<MentorPortfolioItem | null>(null);
-
-  const [profileReviews, setProfileReviews] = useState<MentorReview[]>([]);
-  const [profileReviewsLoading, setProfileReviewsLoading] = useState(false);
-  const [selectedDateStr, setSelectedDateStr] = useState<string>('');
-  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<Date>(new Date());
-  const [showAllSlotsModal, setShowAllSlotsModal] = useState(false);
-
-  const [isDetailedBookingMode, setIsDetailedBookingMode] = useState(false);
-  const [schedulerViewMode, setSchedulerViewMode] = useState<'day' | 'week'>('week');
-  const [visibleStartDate, setVisibleStartDate] = useState<Date>(new Date());
-  const [allCandidatesMap, setAllCandidatesMap] = useState<{ [slotId: string]: ServiceSlotCandidate[] }>({});
-  const [allCandidatesLoading, setAllCandidatesLoading] = useState(false);
-  const [showGoalModal, setShowGoalModal] = useState(false);
-
-  const getWeekDays = (baseDate: Date) => {
-    const day = baseDate.getDay();
-    const diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(baseDate);
-    monday.setDate(diff);
-
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const next = new Date(monday);
-      next.setDate(monday.getDate() + i);
-      days.push(next);
-    }
-    return days;
-  };
 
   // recommendations chỉ tải MỘT LẦN (dùng để ghép matchScore/reasons), không gọi lại mỗi lần gõ.
   useEffect(() => {
@@ -338,6 +301,10 @@ export const Mentors: React.FC = () => {
     return matchesSpecialization && matchesStatus && matchesExperience && matchesRating && matchesCampus && matchesPrice;
   });
 
+
+
+
+
   const handleViewProfile = async (mentor: MentorVM, shouldScrollToBooking = false) => {
     setActiveMentor(mentor);
     setBookingSuccess(false);
@@ -349,17 +316,8 @@ export const Mentors: React.FC = () => {
     setGoalTitle('');
     setGoalDescription('');
     setActiveSlots([]);
-    const today = new Date();
-    setSelectedDateStr(formatDateISO(today));
-    setCurrentCalendarMonth(today);
-    
-    setProfileReviews([]);
-    setProfileReviewsLoading(true);
-    mentorsApi.getReviews(mentor.mentorUserId, 0, 5)
-      .then((paged) => setProfileReviews(paged?.content ?? []))
-      .catch((err) => console.warn('Failed to load profile reviews', err))
-      .finally(() => setProfileReviewsLoading(false));
 
+    setActiveDetailTab('about');
     try {
       // Lấy cờ canRequestBooking (BE mới) song song với slots để gate sớm.
       const detail = await mentorsApi.getDetail(mentor.mentorUserId);
@@ -374,6 +332,15 @@ export const Mentors: React.FC = () => {
         portfolios: detail.portfolios ?? ext.portfolios,
       };
       setSelectedMentorDetail(mergedDetail);
+      
+      // Load recent reviews for the details page
+      setProfileReviews([]);
+      setProfileReviewsLoading(true);
+      mentorsApi.getReviews(mentor.mentorUserId, 0, 3)
+        .then((paged) => setProfileReviews(paged?.content ?? []))
+        .catch(() => setProfileReviews([]))
+        .finally(() => setProfileReviewsLoading(false));
+
       if (detail && detail.canRequestBooking === false) {
         setActiveSlots([]);
         setBookingError(
@@ -394,6 +361,8 @@ export const Mentors: React.FC = () => {
       }
     } catch (err: any) {
       setBookingError(err?.response?.data?.message || 'Không tải được thông tin đặt lịch của mentor.');
+    } finally {
+
     }
   };
 
@@ -440,41 +409,22 @@ export const Mentors: React.FC = () => {
     return () => { cancelled = true; };
   }, [activeMentor, selectedSlotId, selectedServiceId]);
 
-  // Parallel candidate fetching for visible slots in the detailed scheduler grid
+  // Load all candidates for the visible week/day grid in detailed scheduler mode
   useEffect(() => {
     if (!isDetailedBookingMode || !selectedMentorDetail || !selectedServiceId || activeSlots.length === 0) {
       setAllCandidatesMap({});
       return;
     }
 
-    const visibleDates: string[] = [];
-    if (schedulerViewMode === 'week') {
-      const weekDays = getWeekDays(visibleStartDate);
-      weekDays.forEach(d => visibleDates.push(formatDateISO(d)));
-    } else {
-      visibleDates.push(formatDateISO(visibleStartDate));
-    }
-
-    const visibleSlots = activeSlots.filter(slot => {
-      const slotDateStr = getLocalDateStr(slot.startTime);
-      return visibleDates.includes(slotDateStr);
-    });
-
-    if (visibleSlots.length === 0) {
-      setAllCandidatesMap({});
-      return;
-    }
-
     let active = true;
-    setAllCandidatesLoading(true);
-
     const fetchAll = async () => {
+      setAllCandidatesLoading(true);
       try {
-        const promises = visibleSlots.map(slot =>
+        const promises = activeSlots.map(slot =>
           mentorsApi.getSlotCandidates(selectedMentorDetail.mentorUserId, slot.slotId, selectedServiceId)
             .then(res => ({
               slotId: slot.slotId,
-              candidates: res.candidateServiceSlots || [],
+              candidates: res.candidateServiceSlots || []
             }))
             .catch(() => ({ slotId: slot.slotId, candidates: [] }))
         );
@@ -602,9 +552,9 @@ export const Mentors: React.FC = () => {
     if (!selectedMentorDetail) return null;
 
     const selectedService = selectedMentorDetail.services?.find(s => s.serviceId === selectedServiceId) || selectedMentorDetail.services?.[0] || null;
-    const serviceCode = selectedService ? selectedService.title.match(/^\[(.*?)\]/)?.[1] || 'Môn học' : 'Môn học';
+    const serviceCode = selectedService ? selectedService.title.match(/^\[(.*?)\]/)?.[1] || 'M├┤n hß╗ìc' : 'M├┤n hß╗ìc';
 
-    const visibleDays = schedulerViewMode === 'week' ? getWeekDays(visibleStartDate) : [visibleStartDate];
+    const visibleDays = schedulerViewMode === 'week' ? getWeekDaysDetailed(visibleStartDate) : [visibleStartDate];
 
     const getVisibleHours = () => {
       const hoursSet = new Set<string>();
@@ -644,27 +594,27 @@ export const Mentors: React.FC = () => {
       const uniqueMonths = Array.from(new Set(months));
       const year = visibleStartDate.getFullYear();
       if (uniqueMonths.length > 1) {
-        return `Tháng ${uniqueMonths[0]} - ${uniqueMonths[1]}, ${year}`;
+        return `Th├íng ${uniqueMonths[0]} - ${uniqueMonths[1]}, ${year}`;
       }
-      return `Tháng ${uniqueMonths[0]}, ${year}`;
+      return `Th├íng ${uniqueMonths[0]}, ${year}`;
     };
 
     const getSelectedDateDisplay = () => {
-      if (!selectedCandidateKey) return 'Chưa chọn';
+      if (!selectedCandidateKey) return 'Ch╞░a chß╗ìn';
       const [selStart] = selectedCandidateKey.split('|');
       const dateObj = new Date(selStart);
-      return `${dateObj.getDate()} Tháng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`;
+      return `${dateObj.getDate()} Th├íng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`;
     };
 
     const getSelectedTimeDisplay = () => {
-      if (!selectedCandidateKey) return 'Chưa chọn';
+      if (!selectedCandidateKey) return 'Ch╞░a chß╗ìn';
       const [selStart, selEnd] = selectedCandidateKey.split('|');
       return `${fmtTime(selStart)} - ${fmtTime(selEnd)}`;
     };
 
     const priceDisplay = selectedService
       ? selectedService.free
-        ? 'Miễn phí'
+        ? 'Miß╗àn ph├¡'
         : `${selectedService.priceScoin?.toLocaleString('en-US')} SCoin`
       : '0 SCoin';
 
@@ -698,9 +648,9 @@ export const Mentors: React.FC = () => {
           <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-md">
             <Check className="w-8 h-8 stroke-[3]" />
           </div>
-          <h3 className="text-slate-800 font-extrabold text-xl font-sans">Gửi yêu cầu đặt lịch thành công!</h3>
+          <h3 className="text-slate-800 font-extrabold text-xl font-sans">Gß╗¡i y├¬u cß║ºu ─æß║╖t lß╗ïch th├ánh c├┤ng!</h3>
           <p className="text-slate-500 text-sm font-semibold max-w-xs mx-auto leading-relaxed">
-            Hệ thống đã gửi yêu cầu tới {selectedMentorDetail.displayName}. Đang chuyển hướng...
+            Hß╗ç thß╗æng ─æ├ú gß╗¡i y├¬u cß║ºu tß╗¢i {selectedMentorDetail.displayName}. ─Éang chuyß╗ân h╞░ß╗¢ng...
           </p>
         </div>
       );
@@ -717,16 +667,16 @@ export const Mentors: React.FC = () => {
               setSelectedSlotId('');
             }}
             className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-800 transition-colors shadow-xs cursor-pointer active:scale-95"
-            title="Quay lại hồ sơ mentor"
+            title="Quay lß║íi hß╗ô s╞í mentor"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h2 className="text-headline-md text-[#151c29] font-bold leading-tight font-sans">
-              Chi tiết lịch hẹn – Mentor {selectedMentorDetail.displayName}
+              Chi tiß║┐t lß╗ïch hß║╣n ΓÇô Mentor {selectedMentorDetail.displayName}
             </h2>
             <p className="text-sm font-bold text-primary block mt-0.5 font-sans">
-              Lịch rảnh môn: {selectedService ? selectedService.title : 'Chưa chọn'}
+              Lß╗ïch rß║únh m├┤n: {selectedService ? selectedService.title : 'Ch╞░a chß╗ìn'}
             </p>
           </div>
         </div>
@@ -766,7 +716,7 @@ export const Mentors: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Ngày
+                  Ng├áy
                 </button>
                 <button
                   onClick={() => setSchedulerViewMode('week')}
@@ -776,7 +726,7 @@ export const Mentors: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Tuần
+                  Tuß║ºn
                 </button>
               </div>
             </div>
@@ -785,7 +735,7 @@ export const Mentors: React.FC = () => {
             {allCandidatesLoading ? (
               <div className="py-24 text-center space-y-3">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-                <span className="text-xs text-slate-400 font-semibold block font-sans">Đang tải lịch rảnh mentor...</span>
+                <span className="text-xs text-slate-400 font-semibold block font-sans">─Éang tß║úi lß╗ïch rß║únh mentor...</span>
               </div>
             ) : (
               <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-xs">
@@ -800,7 +750,7 @@ export const Mentors: React.FC = () => {
                   }}
                 >
                   <div className="p-3 text-center border-r border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center font-sans">
-                    Giờ
+                    Giß╗¥
                   </div>
                   {visibleDays.map((dayDate, idx) => {
                     const isToday = formatDateISO(new Date()) === formatDateISO(dayDate);
@@ -865,8 +815,8 @@ export const Mentors: React.FC = () => {
                                         className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-center items-center h-full min-h-[72px] text-center select-none"
                                       >
                                         <span className="text-[10px] font-bold text-slate-400 block font-sans">{cStartStr} - {cEndStr}</span>
-                                        <span className="text-[9px] text-slate-400 font-semibold mt-0.5 font-sans">Số lượng: 1/1</span>
-                                        <span className="text-xs font-black text-slate-400 mt-1 block uppercase tracking-wider font-sans">Đã đầy</span>
+                                        <span className="text-[9px] text-slate-400 font-semibold mt-0.5 font-sans">Sß╗æ l╞░ß╗úng: 1/1</span>
+                                        <span className="text-xs font-black text-slate-400 mt-1 block uppercase tracking-wider font-sans">─É├ú ─æß║ºy</span>
                                       </div>
                                     );
                                   }
@@ -885,8 +835,8 @@ export const Mentors: React.FC = () => {
                                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                                           <span className="text-[10px] font-bold block font-sans">{cStartStr} - {cEndStr}</span>
                                         </div>
-                                        <span className="text-[9px] text-blue-100 font-semibold mt-0.5 font-sans">Số lượng: 0/1</span>
-                                        <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">Đang chọn</span>
+                                        <span className="text-[9px] text-blue-100 font-semibold mt-0.5 font-sans">Sß╗æ l╞░ß╗úng: 0/1</span>
+                                        <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">─Éang chß╗ìn</span>
                                       </div>
                                     );
                                   }
@@ -902,8 +852,8 @@ export const Mentors: React.FC = () => {
                                       }}
                                     >
                                       <span className="text-[10px] font-bold block font-sans">{cStartStr} - {cEndStr}</span>
-                                      <span className="text-[9px] text-primary/80 font-semibold mt-0.5 font-sans">Số lượng: 0/1</span>
-                                      <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">Trống</span>
+                                      <span className="text-[9px] text-primary/80 font-semibold mt-0.5 font-sans">Sß╗æ l╞░ß╗úng: 0/1</span>
+                                      <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">Trß╗æng</span>
                                     </div>
                                   );
                                 });
@@ -926,20 +876,20 @@ export const Mentors: React.FC = () => {
             <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
               <h3 className="text-body font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 font-sans">
                 <Info className="w-5 h-5 text-primary" />
-                <span>Hướng dẫn đặt lịch</span>
+                <span>H╞░ß╗¢ng dß║½n ─æß║╖t lß╗ïch</span>
               </h3>
               <div className="space-y-4 text-xs text-slate-600 leading-relaxed font-sans font-semibold">
                 <div className="flex gap-3 items-start">
                   <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">1</span>
-                  <p>Chọn ngày rảnh cho môn <span className="font-extrabold text-slate-800">[{serviceCode}]</span> (ô màu xanh nhạt).</p>
+                  <p>Chß╗ìn ng├áy rß║únh cho m├┤n <span className="font-extrabold text-slate-800">[{serviceCode}]</span> (├┤ m├áu xanh nhß║ít).</p>
                 </div>
                 <div className="flex gap-3 items-start">
                   <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">2</span>
-                  <p>Chọn khung giờ phù hợp.</p>
+                  <p>Chß╗ìn khung giß╗¥ ph├╣ hß╗úp.</p>
                 </div>
                 <div className="flex gap-3 items-start">
                   <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">3</span>
-                  <p>Xác nhận thông tin và thanh toán bằng SCoin.</p>
+                  <p>X├íc nhß║¡n th├┤ng tin v├á thanh to├ín bß║▒ng SCoin.</p>
                 </div>
               </div>
             </div>
@@ -947,24 +897,24 @@ export const Mentors: React.FC = () => {
             {/* Booking Details Card */}
             <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-5 font-sans">
               <h3 className="text-body font-bold text-slate-800 border-b border-slate-100 pb-3 font-sans">
-                Thông tin đặt lịch
+                Th├┤ng tin ─æß║╖t lß╗ïch
               </h3>
 
               <div className="space-y-4 font-sans font-semibold">
                 {/* Service */}
                 <div className="flex items-start justify-between gap-3 text-xs">
                   <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4 text-slate-300" /> Môn học
+                    <BookOpen className="w-4 h-4 text-slate-300" /> M├┤n hß╗ìc
                   </span>
                   <span className="text-slate-800 font-extrabold text-right max-w-[200px]">
-                    {selectedService ? selectedService.title : 'Chưa chọn'}
+                    {selectedService ? selectedService.title : 'Ch╞░a chß╗ìn'}
                   </span>
                 </div>
 
                 {/* Date */}
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-slate-300" /> Ngày
+                    <Calendar className="w-4 h-4 text-slate-300" /> Ng├áy
                   </span>
                   <span className="text-slate-800 font-extrabold">
                     {getSelectedDateDisplay()}
@@ -974,14 +924,14 @@ export const Mentors: React.FC = () => {
                 {/* Time */}
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-slate-300" /> Thời gian
+                    <Clock className="w-4 h-4 text-slate-300" /> Thß╗¥i gian
                   </span>
                   {selectedCandidateKey ? (
                     <span className="bg-primary/10 text-primary px-3 py-1 rounded-full font-black text-[10px]">
                       {getSelectedTimeDisplay()}
                     </span>
                   ) : (
-                    <span className="text-slate-400 font-bold font-sans">Chưa chọn</span>
+                    <span className="text-slate-400 font-bold font-sans">Ch╞░a chß╗ìn</span>
                   )}
                 </div>
 
@@ -990,7 +940,7 @@ export const Mentors: React.FC = () => {
 
                 {/* SCoin Price */}
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-800 font-bold text-xs font-sans">Tổng chi phí</span>
+                  <span className="text-slate-800 font-bold text-xs font-sans">Tß╗òng chi ph├¡</span>
                   <div className="flex items-center gap-1.5">
                     {/* SCoin Blue Icon */}
                     <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-black shadow-xs">
@@ -1012,12 +962,12 @@ export const Mentors: React.FC = () => {
                 }}
                 className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-xs font-black uppercase tracking-wider py-3.5 px-4 rounded-xl cursor-pointer hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-primary/25 font-sans"
               >
-                <span>Xác nhận đặt lịch</span>
+                <span>X├íc nhß║¡n ─æß║╖t lß╗ïch</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
 
               <p className="text-[10px] text-slate-400 text-center font-medium font-sans leading-relaxed">
-                Bằng việc xác nhận, bạn đồng ý với chính sách hủy lịch của chúng tôi.
+                Bß║▒ng viß╗çc x├íc nhß║¡n, bß║ín ─æß╗ông ├╜ vß╗¢i ch├¡nh s├ích hß╗ºy lß╗ïch cß╗ºa ch├║ng t├┤i.
               </p>
             </div>
 
@@ -1027,130 +977,88 @@ export const Mentors: React.FC = () => {
       </div>
     );
   };
-
   const renderMentorProfile = () => {
     if (!selectedMentorDetail) return null;
+
     if (isDetailedBookingMode) {
       return renderDetailedBookingCalendar();
     }
-    const selectedSlot = activeSlots.find((s) => s.slotId === selectedSlotId) || null;
-    const slotServices = selectedSlot?.services || [];
-    
-    // Determine the featured service (either selected service or first available service)
-    const featuredService = selectedMentorDetail.services && selectedMentorDetail.services.length > 0
-      ? selectedMentorDetail.services.find(s => s.serviceId === selectedServiceId) || selectedMentorDetail.services[0]
-      : null;
+
+
 
     return (
-      <div data-theme="vibrant" className="vibrant-profile-theme space-y-6 animate-fadeIn text-left">
+      <div className="space-y-8 animate-fadeIn text-left">
+
         {/* Back Button */}
         <button
           onClick={() => {
             setSelectedMentorDetail(null);
             setActiveMentor(null);
           }}
-          className="relative z-10 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-primary cursor-pointer transition-colors"
+          className="relative z-10 flex items-center gap-2 text-body font-bold text-slate-400 hover:text-primary cursor-pointer transition-colors"
         >
-          <ArrowLeft className="w-4.5 h-4.5" />
+          <ArrowLeft className="w-4 h-4" />
           <span>Quay lại danh sách mentor</span>
         </button>
 
         {/* Cover Banner & Main Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-white border border-[#e8eeff] shadow-sm pb-6">
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100/80 shadow-md">
+          {/* Subtle brushed material texture / micro-mesh overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.03)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.03)_50%,rgba(255,255,255,0.03)_75%,transparent_75%,transparent)] bg-[length:4px_4px] opacity-60 pointer-events-none" />
+
           {/* Cover gradient layer */}
-          <div className="h-44 bg-gradient-to-r from-[#151c29] via-[#004493] to-[#0059bb] flex items-center justify-center relative">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#00e0ff]/10 via-transparent to-transparent opacity-60"></div>
-            {/* Cyber Grid lines pattern */}
-            <svg className="absolute inset-0 w-full h-full opacity-15" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="banner-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-                  <path d="M 24 0 L 0 0 0 24" fill="none" stroke="white" strokeWidth="0.5"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#banner-grid)" />
-            </svg>
-            <span className="text-white text-headline-xl font-bold tracking-widest opacity-35 select-none font-headline">MENTOR PROFILE DETAIL</span>
+          <div
+            className="h-40 bg-cover bg-center bg-no-repeat relative"
+            style={{ backgroundImage: "url('/background-mentor-profile.jpg')" }}
+          >
+            {/* Soft overlay blend to keep it polished */}
+            <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 to-transparent pointer-events-none" />
           </div>
 
           {/* Info Area (Centered avatar & text) */}
-          <div className="px-8 flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16 relative z-10">
+          <div className="p-8 pt-0 flex flex-col items-center justify-center -mt-20 relative z-10 text-center">
             {/* Centered Avatar with thick borders, shadow, and ring */}
-            <div className="relative shrink-0 group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-full blur-md opacity-45 group-hover:opacity-75 transition duration-500 pointer-events-none" />
+            <div className="relative group mb-4">
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 pointer-events-none" />
               <img
                 src={selectedMentorDetail.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
                 onError={onAvatarError}
                 alt={selectedMentorDetail.displayName}
-                className="relative w-32 h-32 rounded-full bg-white object-cover border-4 border-white shadow-lg transition-transform duration-300 hover:scale-[1.02]"
+                className="relative w-32 h-32 rounded-full bg-white object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-[1.02]"
               />
             </div>
 
-            <div className="flex-1 text-center md:text-left pb-1 space-y-1.5 md:pt-4">
-              <div className="flex flex-col md:flex-row md:items-center gap-3 justify-center md:justify-start">
-                <h2 className="text-headline-lg text-primary font-bold font-sans leading-tight">
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <h1 className="text-3xl font-black text-slate-800 font-serif leading-tight tracking-tight">
                   {selectedMentorDetail.displayName}
-                </h2>
-                <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-xs ${
-                  selectedMentorDetail.isAvailable
-                    ? 'bg-[#eafbf3] text-[#00a854] border border-[#c3f2d9]'
-                    : 'bg-rose-50 text-rose-800 border border-rose-200/50'
-                }`}>
+                </h1>
+                <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm ${selectedMentorDetail.isAvailable
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200/50'
+                  : 'bg-rose-100 text-rose-800 border border-rose-200/50'
+                  }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${selectedMentorDetail.isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                  {selectedMentorDetail.isAvailable ? 'Sẵn sàng ngay' : 'Đang bận'}
+                  {selectedMentorDetail.isAvailable ? 'Sẵn sàng' : 'Bận'}
                 </span>
               </div>
 
-              <p className="text-body-lg text-slate-500 font-medium">{selectedMentorDetail.headline || 'Mentor chia sẻ kỹ năng'}</p>
-            </div>
-          </div>
-        </div>
+              <div className="text-body font-bold text-primary bg-primary-soft/80 border border-primary/20 px-4 py-1.5 rounded-full shadow-[inset_0_1px_2px_rgba(255,255,255,0.9)] inline-block">
+                {selectedMentorDetail.headline || 'Mentor chia sẻ kỹ năng'}
+              </div>
 
-        {/* Horizontal Metrics Bar */}
-        <div className="bg-white border border-[#e8eeff] rounded-2xl p-6 shadow-sm grid grid-cols-2 md:grid-cols-5 gap-6 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-          <div className="flex flex-col items-center justify-center text-center p-2">
-            <div className="flex items-center gap-1 text-primary text-headline-md font-bold">
-              <Star className="w-5 h-5 fill-[#eab308] text-[#eab308]" />
-              <span>{(selectedMentorDetail.ratingAverage ?? 0).toFixed(1)}</span>
-            </div>
-            <span className="text-xs text-slate-400 font-semibold">{selectedMentorDetail.reviewCount || 0} Đánh giá</span>
-          </div>
-          
-          <div className="flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
-            <span className="text-primary text-headline-md font-bold">{selectedMentorDetail.completedSessions || 0}</span>
-            <span className="text-xs text-slate-400 font-semibold">Buổi mentoring</span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
-            <span className="text-primary text-headline-md font-bold">{selectedMentorDetail.yearsOfExperience || 0}+</span>
-            <span className="text-xs text-slate-400 font-semibold">Năm kinh nghiệm</span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
-            <span className="text-primary text-headline-md font-bold">{selectedMentorDetail.projectsCount || 0}+</span>
-            <span className="text-xs text-slate-400 font-semibold">Dự án</span>
-          </div>
-
-          <div className="col-span-2 md:col-span-1 flex flex-col items-center justify-center text-center p-2 pt-6 md:pt-2">
-            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Công tác tại</span>
-            <span className="text-slate-800 text-body-md font-bold mt-1 flex items-center justify-center gap-1.5 truncate max-w-full">
-              <Briefcase className="w-4 h-4 text-secondary shrink-0" />
-              {selectedMentorDetail.company || 'FPT Software'}
-            </span>
-          </div>
-        </div>
-
-        {/* Main Grid Layout (2 columns: left 7/12, right 5/12) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Bio & Information (col-span-7) */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Giới thiệu bản thân */}
-            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
-              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
-                <Award className="w-5 h-5 text-primary" />
-                <span>Giới thiệu bản thân</span>
-              </h3>
-              <p className="text-body-md text-slate-600 leading-relaxed whitespace-pre-line text-justify font-sans">
-                {selectedMentorDetail.bio || 'Chưa có thông tin giới thiệu.'}
+              <p className="text-meta text-slate-500 font-bold flex items-center justify-center gap-2 flex-wrap">
+                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">{selectedMentorDetail.programName}</span>
+                <span className="text-slate-300 font-normal">•</span>
+                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">{selectedMentorDetail.specializationName}</span>
+                <span className="text-slate-300 font-normal">•</span>
+                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">Học kỳ {selectedMentorDetail.semester}</span>
+                {selectedMentorDetail.alumni && (
+                  <>
+                    <span className="text-slate-300 font-normal">•</span>
+                    <span className="text-brand-terracotta font-black bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200/50">[Cựu sinh viên]</span>
+                  </>
+                )}
               </p>
             </div>
 
@@ -1291,10 +1199,7 @@ export const Mentors: React.FC = () => {
                       {selectedMentorDetail.bio}
                     </p>
                   </div>
-
                 )}
-              </div>
-            </div>
 
                 {/* Achievements Box (Point 1) */}
                 {selectedMentorDetail.achievements && selectedMentorDetail.achievements.length > 0 && (
@@ -1336,177 +1241,209 @@ export const Mentors: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {(selectedMentorDetail.portfolios ?? []).map((project) => (
                     <div key={project.id} className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:-translate-y-[1px]">
-
                       <div>
-                        {project.imageUrl ? (
-                          <div className="h-36 overflow-hidden bg-slate-50 border-b border-slate-100">
+                        {project.imageUrl && (
+                          <div className="h-40 overflow-hidden bg-slate-100 border-b border-line flex items-center justify-center">
                             <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
                           </div>
-                        ) : (
-                          <div className="h-36 bg-gradient-to-br from-slate-100 to-slate-200 border-b border-slate-100 flex items-center justify-center">
-                            <Briefcase className="w-8 h-8 text-slate-400" />
-                          </div>
                         )}
-                        <div className="p-4 space-y-2">
-                          <span className="inline-block text-[10px] font-bold text-secondary bg-secondary-container/10 px-2 py-0.5 rounded uppercase tracking-wider">
-                            Vai trò: {project.role || 'Developer'}
+                        <div className="p-5 space-y-2.5">
+                          <span className="text-[10px] font-extrabold text-primary bg-primary-soft/80 border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider inline-block">
+                            {project.role}
                           </span>
-                          <h4 className="text-body-md font-bold text-slate-800 line-clamp-1 font-headline">
+                          <h4 className="text-body font-bold text-slate-800 line-clamp-1">
                             {project.title}
                           </h4>
-                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                          <p className="text-meta text-slate-500 line-clamp-2 leading-relaxed">
                             {project.description}
                           </p>
                         </div>
                       </div>
-                      <div className="p-4 pt-0 flex items-center justify-between border-t border-slate-50 mt-2">
+                      <div className="p-5 pt-0 border-t border-slate-50 mt-3 flex items-center justify-between">
                         <button
                           onClick={() => setSelectedProject(project)}
-                          className="text-xs text-primary hover:text-primary-hover font-bold flex items-center gap-1 cursor-pointer"
+                          className="text-meta text-primary hover:text-primary-hover font-bold flex items-center gap-1 cursor-pointer"
                         >
                           <LayoutGrid className="w-3.5 h-3.5" />
                           <span>Xem chi tiết</span>
                         </button>
                         <div className="flex gap-2">
                           {project.figmaUrl && (
-                            <a href={project.figmaUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full hover:bg-slate-50 text-slate-400 hover:text-[#f24e1e]" title="Figma Prototype">
-                              <Figma className="w-3.5 h-3.5" />
+                            <a href={project.figmaUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-rose-500" title="Figma Prototype">
+                              <Figma className="w-4 h-4" />
                             </a>
                           )}
                           {project.githubUrl && (
-                            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full hover:bg-slate-50 text-slate-400 hover:text-slate-900" title="GitHub Code">
-                              <Github className="w-3.5 h-3.5" />
+                            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900" title="GitHub Code">
+                              <Github className="w-4 h-4" />
                             </a>
                           )}
                           {project.behanceUrl && (
-                            <a href={project.behanceUrl} target="_blank" rel="noopener noreferrer" className="p-1 rounded-full hover:bg-slate-50 text-slate-400 hover:text-[#1769ff]" title="Behance Project">
-                              <Behance className="w-3.5 h-3.5" />
+                            <a href={project.behanceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-blue-600" title="Behance Project">
+                              <Behance className="w-4 h-4" />
                             </a>
                           )}
                         </div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="col-span-2 py-8 text-center text-slate-400 italic">
-                    Chưa có dự án nào được cập nhật.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Học vấn & Giải thưởng */}
-            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
-              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
-                <Award className="w-5 h-5 text-primary" />
-                <span>Học vấn &amp; Giải thưởng</span>
-              </h3>
-              <div className="relative border-l border-slate-100 pl-5 ml-2.5 space-y-6 pt-2 text-left">
-                {/* Education block */}
-                <div className="relative">
-                  <span className="absolute -left-[26px] top-1.5 w-3 h-3 rounded-full bg-primary border-2 border-white ring-4 ring-primary-soft" />
-                  <h4 className="text-body-md font-bold text-slate-800 font-headline">Đại học FPT</h4>
-                  <span className="text-xs text-slate-400 font-semibold block">{selectedMentorDetail.programName} ({selectedMentorDetail.specializationName})</span>
-                  <p className="text-xs text-slate-500 mt-1">Cơ sở: {selectedMentorDetail.campusName} - Học kỳ: {selectedMentorDetail.semester}</p>
-                </div>
-
-                {/* Achievements block */}
-                {selectedMentorDetail.achievements && selectedMentorDetail.achievements.map((ach, idx) => (
-                  <div key={idx} className="relative">
-                    <span className="absolute -left-[26px] top-1.5 w-3 h-3 rounded-full bg-secondary border-2 border-white ring-4 ring-secondary-container/20" />
-                    <h4 className="text-body-md font-bold text-slate-800 font-headline">{ach}</h4>
-                    <span className="text-xs text-slate-400 font-semibold block">Thành tích nổi bật</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Các buổi chia sẻ khác */}
-            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
-              <h3 className="text-body-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3 font-headline">
-                <Calendar className="w-5 h-5 text-primary" />
-                <span>Các buổi chia sẻ khác</span>
-              </h3>
-              <div className="space-y-4 pt-2">
-                {selectedMentorDetail.services && selectedMentorDetail.services.length > 0 ? (
-                  selectedMentorDetail.services.map((srv) => (
-                    <div key={srv.serviceId} className="p-4 rounded-xl border border-slate-100 bg-[#f9f9ff]/50 space-y-3 relative hover:border-primary/30 transition-all text-left">
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded uppercase tracking-wider">
-                          {selectedMentorDetail.specializationName || 'Chuyên môn'}
-                        </span>
-                        <span className="text-xs font-black text-secondary whitespace-nowrap bg-secondary-container/10 border border-secondary/20 px-3 py-1 rounded-full font-headline">
-                          {srv.free ? 'Miễn phí' : `${srv.priceScoin?.toLocaleString('en-US')} SCoin / giờ`}
-                        </span>
-                      </div>
-                      <h4 className="text-body-md font-bold text-slate-800 font-headline">{srv.title}</h4>
-                      <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{srv.description}</p>
-                      <div className="flex justify-between items-center pt-2 border-t border-slate-100/60">
-                        <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-slate-300" /> {srv.durationMinutes} phút / buổi
-                        </span>
-                        <button
-                          onClick={() => {
-                            setSelectedServiceId(srv.serviceId);
-                            setIsDetailedBookingMode(true);
-                            setVisibleStartDate(new Date());
-                          }}
-                          className="text-xs text-primary hover:text-primary-hover font-bold hover:underline cursor-pointer"
-                        >
-                          Chọn lớp hỗ trợ
-                        </button>
-                      </div>
+                  ))}
+                  {(!selectedMentorDetail.portfolios || selectedMentorDetail.portfolios.length === 0) && (
+                    <div className="col-span-1 md:col-span-2 py-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <p className="text-body font-bold text-slate-400">Mentor này chưa cấu hình danh sách Portfolio dự án.</p>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-slate-400 italic">Chưa có dịch vụ chia sẻ khác.</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Featured Service & Booking Widget (col-span-5) */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Gói nổi bật */}
-            {featuredService && (
-              <div className="bg-gradient-to-b from-[#e8eeff]/50 to-white border border-[#c1c6d7] p-6 rounded-2xl shadow-sm space-y-4 text-left relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl pointer-events-none"></div>
-                <span className="inline-block text-[10px] font-black text-white bg-primary px-3 py-1 rounded-full uppercase tracking-wider font-headline">
-                  Gói nổi bật
-                </span>
-                <h3 className="text-body-lg font-bold text-[#151c29] font-headline leading-snug">
-                  {featuredService.title}
-                </h3>
-                <div className="flex items-baseline gap-1 text-primary">
-                  <span className="text-headline-lg font-extrabold font-headline">
-                    {featuredService.free ? 'Miễn phí' : featuredService.priceScoin?.toLocaleString('en-US')}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-400">
-                    {featuredService.free ? '' : 'SCoin / giờ'}
-                  </span>
-                </div>
-                
-                <div className="border-t border-slate-100 pt-4 space-y-2.5">
-                  <div className="flex items-start gap-2.5 text-xs text-[#414754] font-semibold">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <span>Thời lượng phiên: {featuredService.durationMinutes} phút</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-[#414754] font-semibold">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <span>Hỗ trợ trực tiếp 1-1 qua Google Meet / Teams</span>
-                  </div>
-                  <div className="flex items-start gap-2.5 text-xs text-[#414754] font-semibold">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <span>Học tập &amp; giải đáp vướng mắc thực tế</span>
-                  </div>
-                  {featuredService.description && (
-                    <p className="text-xs text-slate-500 italic mt-2 border-t border-dashed border-slate-100 pt-2 line-clamp-3">
-                      "{featuredService.description}"
-                    </p>
                   )}
                 </div>
               </div>
             )}
+
+            {/* Academic Information */}
+            <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <Globe className="w-5 h-5 text-teal-600" />
+                <span>Thông tin đào tạo &amp; Hỗ trợ</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-body font-semibold">
+                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                  <span className="text-meta text-slate-400">Cơ sở học tập</span>
+                  <span className="text-slate-800">{selectedMentorDetail.campusName}</span>
+                </div>
+                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                  <span className="text-meta text-slate-400">Chuyên ngành chính</span>
+                  <span className="text-slate-800">{selectedMentorDetail.specializationName}</span>
+                </div>
+                {selectedMentorDetail.foundationSupportLevel != null && (
+                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                    <span className="text-meta text-slate-400">Hỗ trợ nền tảng · Mức {selectedMentorDetail.foundationSupportLevel}/4</span>
+                    <span className="text-slate-800">{levelLabel(profileOptions?.foundationSupportLevels, selectedMentorDetail.foundationSupportLevel) ?? `Mức ${selectedMentorDetail.foundationSupportLevel}/4`}</span>
+                  </div>
+                )}
+                {selectedMentorDetail.outputReviewSupportLevel != null && (
+                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                    <span className="text-meta text-slate-400">Review sản phẩm · Mức {selectedMentorDetail.outputReviewSupportLevel}/4</span>
+                    <span className="text-slate-800">{levelLabel(profileOptions?.outputReviewSupportLevels, selectedMentorDetail.outputReviewSupportLevel) ?? `Mức ${selectedMentorDetail.outputReviewSupportLevel}/4`}</span>
+                  </div>
+                )}
+                {selectedMentorDetail.directionSupportLevel != null && (
+                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
+                    <span className="text-meta text-slate-400">Định hướng · Mức {selectedMentorDetail.directionSupportLevel}/4</span>
+                    <span className="text-slate-800">{levelLabel(profileOptions?.directionSupportLevels, selectedMentorDetail.directionSupportLevel) ?? `Mức ${selectedMentorDetail.directionSupportLevel}/4`}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Môn học thế mạnh (contract v2: subjectResults) */}
+            {selectedMentorDetail.subjectResults && selectedMentorDetail.subjectResults.length > 0 && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <BookOpen className="w-5 h-5 text-teal-600" />
+                  <span>Môn học thế mạnh</span>
+                </h3>
+                <div className="flex flex-wrap gap-2.5">
+                  {selectedMentorDetail.subjectResults
+                    .slice()
+                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                    .map((s) => (
+                      <span
+                        key={s.id ?? s.subjectCode}
+                        className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-meta font-bold px-3 py-1.5 rounded-lg"
+                        title={s.subjectName}
+                      >
+                        {s.subjectCode}
+                        <span className="text-brand-terracotta font-extrabold">{s.scoreValue.toFixed(1)}</span>
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dự án tiêu biểu (contract v2: featuredProjects) */}
+            {selectedMentorDetail.featuredProjects && selectedMentorDetail.featuredProjects.length > 0 && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <Briefcase className="w-5 h-5 text-teal-600" />
+                  <span>Dự án tiêu biểu</span>
+                </h3>
+                <div className="space-y-5">
+                  {selectedMentorDetail.featuredProjects
+                    .slice()
+                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                    .map((p) => (
+                      <div key={p.id} className="flex gap-4 items-start">
+                        {p.pictureUrl && (
+                          <img src={p.pictureUrl} alt={p.title} className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-body font-bold text-slate-800">{p.title}</p>
+                          {p.content && <p className="text-meta text-slate-500 mt-0.5">{p.content}</p>}
+                          {p.projectDescription && <p className="text-meta text-slate-600 mt-1 leading-relaxed">{p.projectDescription}</p>}
+                          {p.liveDemoUrl && (
+                            <a href={p.liveDemoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-meta font-bold text-primary hover:text-primary-hover mt-1.5">
+                              <Globe className="w-3.5 h-3.5" /> Xem demo
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lĩnh vực hỗ trợ */}
+            {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <Heart className="w-5 h-5 text-teal-600" />
+                  <span>Lĩnh vực hỗ trợ chủ đạo</span>
+                </h3>
+                <div className="flex flex-wrap gap-2.5">
+                  {selectedMentorDetail.helpTopicTags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="px-4 py-1.5 rounded-full text-body font-bold bg-slate-50 border border-slate-200/60 text-slate-700 shadow-sm shadow-slate-100 hover:border-teal-500/40 hover:text-teal-600 transition-colors"
+                    >
+                      {tag.nameVi}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Active Services & Month Booking Widget & Details (col-span-5) */}
+          <div className="lg:col-span-5 space-y-6">
+            
+            {/* Các môn hỗ trợ của Mentor */}
+            <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.955)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.955)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
+              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <BookOpen className="w-5 h-5 text-teal-600" />
+                <span>Các môn hỗ trợ của Mentor</span>
+              </h3>
+
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                {!selectedMentorDetail.services || selectedMentorDetail.services.length === 0 ? (
+                  <p className="text-body text-slate-400 italic text-center py-8">Mentor chưa cập nhật môn học hỗ trợ nào.</p>
+                ) : (
+                  selectedMentorDetail.services.map((srv) => (
+                    <div key={srv.serviceId} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 space-y-3 hover:shadow-sm hover:border-slate-200/80 transition-all text-left relative overflow-hidden group">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="text-body font-black text-slate-800 leading-snug group-hover:text-primary transition-colors">{srv.title}</span>
+                        <span className="text-meta font-black text-teal-700 whitespace-nowrap bg-teal-50 border border-teal-200/50 px-3 py-1 rounded-full shrink-0 shadow-2xs">
+                          {srv.free ? 'Miễn phí' : `${srv.priceScoin?.toLocaleString('en-US')} P`}
+                        </span>
+                      </div>
+                      <p className="text-meta text-slate-500 leading-relaxed font-semibold line-clamp-2">{srv.description}</p>
+                      <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-400 pt-2 border-t border-slate-100">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-slate-300" />
+                          Thời gian: {srv.durationMinutes} phút
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
             {/* Lên lịch hẹn hỗ trợ widget */}
             <div
@@ -1763,114 +1700,6 @@ export const Mentors: React.FC = () => {
               Kết nối với {selectedMentorDetail.displayName}
             </button>
 
-            {/* Mức độ hỗ trợ */}
-            {(selectedMentorDetail.foundationSupportLevel != null ||
-              selectedMentorDetail.outputReviewSupportLevel != null ||
-              selectedMentorDetail.directionSupportLevel != null) && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4 text-left">
-                <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3">
-                  Mức độ hỗ trợ của Mentor
-                </h3>
-                <div className="space-y-3.5">
-                  {selectedMentorDetail.foundationSupportLevel != null && (
-                    <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                      <span className="text-meta text-slate-400">Hỗ trợ nền tảng · Mức {selectedMentorDetail.foundationSupportLevel}/4</span>
-                      <span className="text-slate-800">{levelLabel(profileOptions?.foundationSupportLevels, selectedMentorDetail.foundationSupportLevel) ?? `Mức ${selectedMentorDetail.foundationSupportLevel}/4`}</span>
-                    </div>
-                  )}
-                  {selectedMentorDetail.outputReviewSupportLevel != null && (
-                    <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                      <span className="text-meta text-slate-400">Review sản phẩm · Mức {selectedMentorDetail.outputReviewSupportLevel}/4</span>
-                      <span className="text-slate-800">{levelLabel(profileOptions?.outputReviewSupportLevels, selectedMentorDetail.outputReviewSupportLevel) ?? `Mức ${selectedMentorDetail.outputReviewSupportLevel}/4`}</span>
-                    </div>
-                  )}
-                  {selectedMentorDetail.directionSupportLevel != null && (
-                    <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                      <span className="text-meta text-slate-400">Định hướng · Mức {selectedMentorDetail.directionSupportLevel}/4</span>
-                      <span className="text-slate-800">{levelLabel(profileOptions?.directionSupportLevels, selectedMentorDetail.directionSupportLevel) ?? `Mức ${selectedMentorDetail.directionSupportLevel}/4`}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Môn học thế mạnh */}
-            {selectedMentorDetail.subjectResults && selectedMentorDetail.subjectResults.length > 0 && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4 text-left">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <BookOpen className="w-5 h-5 text-teal-600" />
-                  <span>Môn học thế mạnh</span>
-                </h3>
-                <div className="flex flex-wrap gap-2.5">
-                  {selectedMentorDetail.subjectResults
-                    .slice()
-                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-                    .map((s) => (
-                      <span
-                        key={s.id ?? s.subjectCode}
-                        className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-meta font-bold px-3 py-1.5 rounded-lg"
-                        title={s.subjectName}
-                      >
-                        {s.subjectCode}
-                        <span className="text-brand-terracotta font-extrabold">{s.scoreValue.toFixed(1)}</span>
-                      </span>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Dự án tiêu biểu */}
-            {selectedMentorDetail.featuredProjects && selectedMentorDetail.featuredProjects.length > 0 && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4 text-left">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <Briefcase className="w-5 h-5 text-teal-600" />
-                  <span>Dự án tiêu biểu</span>
-                </h3>
-                <div className="space-y-5">
-                  {selectedMentorDetail.featuredProjects
-                    .slice()
-                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-                    .map((p) => (
-                      <div key={p.id} className="flex gap-4 items-start">
-                        {p.pictureUrl && (
-                          <img src={p.pictureUrl} alt={p.title} className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0" />
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-body font-bold text-slate-800">{p.title}</p>
-                          {p.content && <p className="text-meta text-slate-500 mt-0.5">{p.content}</p>}
-                          {p.projectDescription && <p className="text-meta text-slate-600 mt-1 leading-relaxed">{p.projectDescription}</p>}
-                          {p.liveDemoUrl && (
-                            <a href={p.liveDemoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-meta font-bold text-primary hover:text-primary-hover mt-1.5">
-                              <Globe className="w-3.5 h-3.5" /> Xem demo
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Lĩnh vực hỗ trợ */}
-            {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4 text-left">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <Heart className="w-5 h-5 text-teal-600" />
-                  <span>Lĩnh vực hỗ trợ chủ đạo</span>
-                </h3>
-                <div className="flex flex-wrap gap-2.5">
-                  {selectedMentorDetail.helpTopicTags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="px-4 py-1.5 rounded-full text-body font-bold bg-slate-50 border border-slate-200/60 text-slate-700 shadow-sm shadow-slate-100 hover:border-teal-500/40 hover:text-teal-600 transition-colors"
-                    >
-                      {tag.nameVi}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Kết nối với Mentor */}
             {(selectedMentorDetail.linkedinUrl || selectedMentorDetail.githubUrl || selectedMentorDetail.portfolioUrl) && (
               <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm text-center space-y-4">
@@ -1888,7 +1717,6 @@ export const Mentors: React.FC = () => {
                     >
                       <Linkedin className="w-5 h-5" />
                     </a>
-                  )}
                   )}
                   {selectedMentorDetail.githubUrl && (
                     <a
@@ -1921,6 +1749,7 @@ export const Mentors: React.FC = () => {
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h4 className="text-xs font-bold text-[#151c29] uppercase tracking-wider font-headline">Đánh giá gần đây</h4>
                 <button
+                  type="button"
                   onClick={() => handleOpenReviews(selectedMentorDetail)}
                   className="text-xs text-primary font-bold hover:underline cursor-pointer"
                 >
@@ -1965,97 +1794,14 @@ export const Mentors: React.FC = () => {
                 )}
               </div>
             </div>
+
           </div>
         </div>
-
-        {/* Modal: Chi tiết các khung giờ hoạt động */}
-        {showAllSlotsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn">
-            <div className="bg-white rounded-3xl border border-slate-100 p-6 max-w-md w-full shadow-2xl space-y-4 animate-scaleUp">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 className="text-body-lg font-bold text-slate-900 font-headline">Lịch hoạt động của Mentor</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowAllSlotsModal(false)}
-                  className="p-1 hover:bg-slate-100 rounded-full cursor-pointer text-slate-400 hover:text-slate-700"
-                >
-                  <X className="w-4.5 h-4.5" />
-                </button>
-              </div>
-              
-              <div className="max-h-[350px] overflow-y-auto space-y-3 pr-1 text-left">
-                {activeSlots.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic text-center py-6">Mentor chưa thiết lập lịch rảnh nào.</p>
-                ) : (
-                  (() => {
-                    const grouped: { [dateStr: string]: MentorAvailabilitySlot[] } = {};
-                    activeSlots.forEach(s => {
-                      const dStr = getLocalDateStr(s.startTime);
-                      if (!grouped[dStr]) grouped[dStr] = [];
-                      grouped[dStr].push(s);
-                    });
-                    
-                    return Object.entries(grouped).sort((a,b) => a[0].localeCompare(b[0])).map(([dStr, slots]) => {
-                      const dateObj = new Date(dStr);
-                      const formattedDate = dateObj.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' });
-                      
-                      return (
-                        <div key={dStr} className="space-y-1.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                          <span className="text-xs font-bold text-primary block uppercase tracking-wide">{formattedDate}</span>
-                          <div className="grid grid-cols-1 gap-1.5">
-                            {slots.map(s => {
-                              const start = fmtTime(s.startTime);
-                              const end = fmtTime(s.endTime);
-                              const active = s.services && s.services.length > 0;
-                              return (
-                                <div key={s.slotId} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                                  <span className="font-semibold text-slate-700">{start} - {end}</span>
-                                  {active ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedDateStr(dStr);
-                                        handleSelectSlot(s.slotId);
-                                        setShowAllSlotsModal(false);
-                                      }}
-                                      className="bg-primary/10 text-primary hover:bg-primary hover:text-white px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
-                                    >
-                                      Chọn slot này
-                                    </button>
-                                  ) : (
-                                    <span className="text-rose-500 bg-rose-50 px-2 py-0.5 rounded font-bold">Bận</span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()
-                )}
-              </div>
-              
-              <button
-                type="button"
-                onClick={() => setShowAllSlotsModal(false)}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl cursor-pointer transition-all"
-              >
-                Đóng lại
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
 
-  /*
-  const getBookingDaySlots = (dayDate: Date) => {
-    const targetStr = formatDateISO(dayDate);
-    return activeSlots.filter(s => getLocalDateStr(s.startTime) === targetStr);
-  };
-  */
+
 
   return (
     <div className="space-y-8 text-left relative min-h-screen pb-16">
@@ -2515,6 +2261,7 @@ export const Mentors: React.FC = () => {
           </div>
         </div>
       )}
+
       {showGoalModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl border border-slate-100 p-8 max-w-md w-full shadow-2xl space-y-5 animate-scaleUp text-left font-sans">
@@ -2544,7 +2291,7 @@ export const Mentors: React.FC = () => {
                   required
                   value={goalTitle}
                   onChange={(e) => setGoalTitle(e.target.value)}
-                  placeholder="Ví dụ: Cần hỗ trợ cấu trúc database bài Lab 3"
+                  placeholder="Ví dụ: Cần support cấu trúc database bài Lab 3"
                   className="w-full bg-[#f9f9ff] border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold placeholder-slate-400 font-sans"
                 />
               </div>
