@@ -579,27 +579,27 @@ export const Mentors: React.FC = () => {
             </div>
           </div>
 
-          {/* Detailed Mentor Info Badges (Point 1) */}
+          {/* Số liệu thật của mentor (thay cho dữ liệu mock trước đây) */}
           <div className="border-t border-slate-100 bg-surface grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-4.5">
             <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Kinh nghiệm làm việc</span>
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Buổi đã hoàn thành</span>
               <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
                 <Briefcase className="w-4 h-4 text-primary" />
-                {selectedMentorDetail.yearsOfExperience ? `${selectedMentorDetail.yearsOfExperience} Năm` : 'Chưa cập nhật'}
+                {selectedMentorDetail.completedSessions ?? 0} buổi
               </span>
             </div>
             <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Công ty / Tổ chức</span>
-              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none px-4 truncate max-w-full">
-                <Globe className="w-4 h-4 text-teal-600" />
-                {selectedMentorDetail.company || 'Đại học FPT'}
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Điểm đánh giá</span>
+              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                {selectedMentorDetail.reviewCount ? selectedMentorDetail.ratingAverage.toFixed(1) : 'Chưa có'}
               </span>
             </div>
             <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Dự án đã tham gia</span>
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Lượt đánh giá</span>
               <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
                 <Award className="w-4 h-4 text-rose-500" />
-                {selectedMentorDetail.projectsCount ? `${selectedMentorDetail.projectsCount}+ Dự án` : 'Chưa cập nhật'}
+                {selectedMentorDetail.reviewCount ?? 0} lượt
               </span>
             </div>
           </div>
