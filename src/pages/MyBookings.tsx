@@ -140,8 +140,16 @@ export const MyBookings: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Theo dõi cục bộ các booking đã gửi feedback (BE không trả cờ này trong list).
-  const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
+  // Theo dõi các booking đã gửi feedback (BE chưa trả cờ này trong list).
+  // Lưu localStorage để trạng thái "đã đánh giá" không bị mất khi F5/refetch.
+  const [reviewedIds, setReviewedIds] = useState<Set<string>>(() => {
+    try { return new Set<string>(JSON.parse(localStorage.getItem('reviewedBookingIds') || '[]')); }
+    catch { return new Set<string>(); }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('reviewedBookingIds', JSON.stringify([...reviewedIds])); }
+    catch { /* bỏ qua nếu storage lỗi */ }
+  }, [reviewedIds]);
 
   const [activeMentorBooking, setActiveMentorBooking] = useState<Booking | null>(null);
   const [showLinkModal, setShowLinkModal] = useState(false);
