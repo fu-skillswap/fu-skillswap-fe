@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sparkles, Send, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown, Briefcase, LayoutGrid } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
+import { catalogApi } from '../api/catalog';
 import type {
   MentorCard, MentorRecommendation, MentorReview,
   MentorAvailabilitySlot, ServiceSlotCandidate, MentorDetail,
-  MentorPortfolioItem,
+  MentorPortfolioItem, MentorProfileOptions, SupportLevelOption,
 } from '../api/types';
 import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
@@ -133,6 +134,7 @@ export const Mentors: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true); // chỉ hiện skeleton lần đầu
   const [searching, setSearching] = useState(false);          // các lần tìm sau: giữ list cũ + spinner nhẹ
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [profileOptions, setProfileOptions] = useState<MentorProfileOptions | null>(null);
   const recMapRef = useRef<Map<string, MentorRecommendation>>(new Map());
   const didInitRef = useRef(false);
 
@@ -175,6 +177,21 @@ export const Mentors: React.FC = () => {
       })
       .catch(() => { /* không bắt buộc */ });
   }, []);
+
+  // Nhãn 3 nhóm support level (không hard-code — lấy từ catalog). Fail-safe: ẩn nhãn nếu lỗi.
+  useEffect(() => {
+    let alive = true;
+    catalogApi.getMentorProfileOptions()
+      .then((o) => { if (alive) setProfileOptions(o); })
+      .catch(() => { /* fallback: hiển thị "Mức X/4" */ });
+    return () => { alive = false; };
+  }, []);
+
+  // Tra nhãn theo value trong 1 nhóm support level.
+  const levelLabel = (list: SupportLevelOption[] | undefined, value?: number): string | null => {
+    if (value == null) return null;
+    return list?.find((o) => o.value === value)?.label ?? null;
+  };
 
   // Tải danh sách mentor từ BE (search). Lần đầu -> skeleton; các lần sau -> giữ list cũ.
   const loadMentors = useCallback(async (keyword: string) => {
@@ -763,20 +780,20 @@ export const Mentors: React.FC = () => {
                 </div>
                 {selectedMentorDetail.foundationSupportLevel != null && (
                   <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                    <span className="text-meta text-slate-400">Hỗ trợ nền tảng</span>
-                    <span className="text-slate-800">Mức {selectedMentorDetail.foundationSupportLevel}/4</span>
+                    <span className="text-meta text-slate-400">Hỗ trợ nền tảng · Mức {selectedMentorDetail.foundationSupportLevel}/4</span>
+                    <span className="text-slate-800">{levelLabel(profileOptions?.foundationSupportLevels, selectedMentorDetail.foundationSupportLevel) ?? `Mức ${selectedMentorDetail.foundationSupportLevel}/4`}</span>
                   </div>
                 )}
                 {selectedMentorDetail.outputReviewSupportLevel != null && (
                   <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                    <span className="text-meta text-slate-400">Review sản phẩm</span>
-                    <span className="text-slate-800">Mức {selectedMentorDetail.outputReviewSupportLevel}/4</span>
+                    <span className="text-meta text-slate-400">Review sản phẩm · Mức {selectedMentorDetail.outputReviewSupportLevel}/4</span>
+                    <span className="text-slate-800">{levelLabel(profileOptions?.outputReviewSupportLevels, selectedMentorDetail.outputReviewSupportLevel) ?? `Mức ${selectedMentorDetail.outputReviewSupportLevel}/4`}</span>
                   </div>
                 )}
                 {selectedMentorDetail.directionSupportLevel != null && (
                   <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                    <span className="text-meta text-slate-400">Định hướng</span>
-                    <span className="text-slate-800">Mức {selectedMentorDetail.directionSupportLevel}/4</span>
+                    <span className="text-meta text-slate-400">Định hướng · Mức {selectedMentorDetail.directionSupportLevel}/4</span>
+                    <span className="text-slate-800">{levelLabel(profileOptions?.directionSupportLevels, selectedMentorDetail.directionSupportLevel) ?? `Mức ${selectedMentorDetail.directionSupportLevel}/4`}</span>
                   </div>
                 )}
               </div>

@@ -241,6 +241,19 @@ export interface MentorAchievement {
   updatedAt?: string;
 }
 
+/** 1 mức hỗ trợ (value 1..4 + label) — GET /api/catalog/mentor-profile-options. */
+export interface SupportLevelOption {
+  value: number;
+  label: string;
+}
+
+/** Nhãn cho 3 nhóm support level — không hard-code ở FE, lấy từ catalog. */
+export interface MentorProfileOptions {
+  foundationSupportLevels: SupportLevelOption[];
+  outputReviewSupportLevels: SupportLevelOption[];
+  directionSupportLevels: SupportLevelOption[];
+}
+
 /** Card mentor trong danh sách khám phá — khớp MentorDiscoveryCardResponse (v2). */
 export interface MentorCard {
   mentorUserId: string;

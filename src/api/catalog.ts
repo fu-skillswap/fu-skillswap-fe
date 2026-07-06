@@ -2,9 +2,13 @@
 // src/api/catalog.ts — Academic Catalog (4.3)
 // =====================================================================
 import { http } from './http';
-import type { Campus, AcademicProgram, Specialization } from './types';
+import type { Campus, AcademicProgram, Specialization, MentorProfileOptions } from './types';
 
 export const catalogApi = {
+  /** GET /api/catalog/mentor-profile-options — nhãn 3 nhóm support level (1..4). */
+  getMentorProfileOptions: () =>
+    http.get<MentorProfileOptions>('/api/catalog/mentor-profile-options'),
+
   /** GET /api/campuses */
   getCampuses: () => http.get<Campus[]>('/api/campuses'),
 
