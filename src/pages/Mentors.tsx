@@ -824,6 +824,38 @@ export const Mentors: React.FC = () => {
               </div>
             )}
 
+            {/* Dự án tiêu biểu (contract v2: featuredProjects) */}
+            {selectedMentorDetail.featuredProjects && selectedMentorDetail.featuredProjects.length > 0 && (
+              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4">
+                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                  <Briefcase className="w-5 h-5 text-teal-600" />
+                  <span>Dự án tiêu biểu</span>
+                </h3>
+                <div className="space-y-5">
+                  {selectedMentorDetail.featuredProjects
+                    .slice()
+                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                    .map((p) => (
+                      <div key={p.id} className="flex gap-4 items-start">
+                        {p.pictureUrl && (
+                          <img src={p.pictureUrl} alt={p.title} className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-body font-bold text-slate-800">{p.title}</p>
+                          {p.content && <p className="text-meta text-slate-500 mt-0.5">{p.content}</p>}
+                          {p.projectDescription && <p className="text-meta text-slate-600 mt-1 leading-relaxed">{p.projectDescription}</p>}
+                          {p.liveDemoUrl && (
+                            <a href={p.liveDemoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-meta font-bold text-primary hover:text-primary-hover mt-1.5">
+                              <Globe className="w-3.5 h-3.5" /> Xem demo
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
             {/* Lĩnh vực hỗ trợ */}
             {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 && (
               <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
