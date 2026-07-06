@@ -847,7 +847,7 @@ export default function AdminMentorVerificationDetailPage() {
       {showApproveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
           <div 
-            className="bg-surface-container-lowest border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            className="bg-white border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -885,7 +885,7 @@ export default function AdminMentorVerificationDetailPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-container-low border-t border-surface-border">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-surface-border">
               <button
                 onClick={() => setShowApproveModal(false)}
                 className="px-4 py-2 border border-surface-border rounded-lg bg-surface text-text-main hover:bg-surface-container transition-colors font-label-md text-xs font-semibold cursor-pointer"
@@ -908,7 +908,7 @@ export default function AdminMentorVerificationDetailPage() {
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
           <div 
-            className="bg-surface-container-lowest border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            className="bg-white border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -946,7 +946,7 @@ export default function AdminMentorVerificationDetailPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-container-low border-t border-surface-border">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-surface-border">
               <button
                 onClick={() => setShowRejectModal(false)}
                 className="px-4 py-2 border border-surface-border rounded-lg bg-surface text-text-main hover:bg-surface-container transition-colors font-label-md text-xs font-semibold cursor-pointer"
@@ -969,7 +969,7 @@ export default function AdminMentorVerificationDetailPage() {
       {showRevisionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
           <div 
-            className="bg-surface-container-lowest border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
+            className="bg-white border border-surface-border rounded-xl shadow-xl w-full max-w-[500px] overflow-hidden transform scale-100 transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -1007,7 +1007,7 @@ export default function AdminMentorVerificationDetailPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-container-low border-t border-surface-border">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-surface-border">
               <button
                 onClick={() => setShowRevisionModal(false)}
                 className="px-4 py-2 border border-surface-border rounded-lg bg-surface text-text-main hover:bg-surface-container transition-colors font-label-md text-xs font-semibold cursor-pointer"

@@ -108,6 +108,111 @@
   --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
+/* ── Vibrant Exchange (mentor profile redesign) ────────────────────── */
+[data-theme="vibrant"] {
+  --app-bg:        #f9f9ff;
+  --surface:       #ffffff;
+  --surface-muted: #f1f3ff;
+  --line:          #c1c6d7;
+  --line-soft:     #e8eeff;
+  --fg:            #151c29;
+  --fg-muted:      #414754;
+  --fg-faint:      #717786;
+  --primary:       #0059bb; 
+  --primary-hover: #0070ea; 
+  --primary-soft:  rgba(0, 89, 187, 0.08);
+  --action:        #0059bb; 
+  --action-hover:  #0070ea;
+  --accent:        #00e0ff;
+  --on-action:     #ffffff;
+  --shadow-card:   0 4px 20px rgba(0, 0, 0, 0.05);
+
+  /* Specific design system properties */
+  --surface-dim:                 #d3daec;
+  --surface-bright:              #f9f9ff;
+  --surface-container-lowest:    #ffffff;
+  --surface-container-low:       #f1f3ff;
+  --surface-container:           #e8eeff;
+  --surface-container-high:      #e1e8fb;
+  --surface-container-highest:   #dce2f5;
+  --on-surface:                  #151c29;
+  --on-surface-variant:          #414754;
+  --inverse-surface:             #2a303e;
+  --inverse-on-surface:          #ecf0ff;
+  --outline:                     #717786;
+  --outline-variant:             #c1c6d7;
+  --surface-tint:                #005bc0;
+  
+  --secondary:                   #006877;
+  --on-secondary:                #ffffff;
+  --secondary-container:         #00e0ff;
+  --on-secondary-container:      #005f6d;
+  
+  --tertiary:                    #6634df;
+  --on-tertiary:                 #ffffff;
+  --tertiary-container:          #8053fa;
+  --on-tertiary-container:       #fffbff;
+  
+  --error:                       #ba1a1a;
+  --on-error:                    #ffffff;
+  --error-container:             #ffdad6;
+  --on-error-container:          #93000a;
+}
+
+/* Typography styles for Vibrant Exchange */
+.vibrant-profile-theme {
+  font-family: 'Hanken Grotesk', 'Inter', sans-serif !important;
+}
+.vibrant-profile-theme h1,
+.vibrant-profile-theme h2,
+.vibrant-profile-theme h3,
+.vibrant-profile-theme h4,
+.vibrant-profile-theme h5,
+.vibrant-profile-theme h6,
+.vibrant-profile-theme .font-headline {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.vibrant-profile-theme .text-headline-xl {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 48px;
+  letter-spacing: -0.02em;
+}
+.vibrant-profile-theme .text-headline-lg {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+  letter-spacing: -0.02em;
+}
+.vibrant-profile-theme .text-headline-md {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+}
+.vibrant-profile-theme .text-body-lg {
+  font-family: 'Hanken Grotesk', sans-serif !important;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+}
+.vibrant-profile-theme .text-body-md {
+  font-family: 'Hanken Grotesk', sans-serif !important;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+.vibrant-profile-theme .text-label-md {
+  font-family: 'Hanken Grotesk', sans-serif !important;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0.05em;
+}
+
 /* =====================================================================
    @theme inline — biến semantic ở trên thành utility Tailwind.
    "inline" = utility tham chiếu var() trực tiếp ⇒ đổi data-theme runtime

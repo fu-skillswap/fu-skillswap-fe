@@ -11,15 +11,19 @@ export const availabilityApi = {
     return { slotId, startTime: '', endTime: '', active: true, services: [] };
   },
 
+  /** GET /api/me/availability-slots — Lấy danh sách các slot rảnh của mentor hiện tại */
+  listSlots: (fromDate?: string, toDate?: string) =>
+    http.get<ManagedAvailabilitySlot[]>('/api/me/availability-slots', {
+      params: { fromDate, toDate, _t: Date.now() },
+    }),
+
   /** POST /api/me/availability-slots — Tạo mới slot rảnh lớn */
   createSlot: (payload: { startTime: string; endTime: string; note?: string; serviceIds: string[] }) =>
     http.post<ManagedAvailabilitySlot>('/api/me/availability-slots', payload),
 
-  /** TODO: Nối API PUT /api/me/availability-slots/{slotId} để cập nhật slot rảnh */
-  updateSlot: async (slotId: string, payload: { startTime: string; endTime: string; note?: string; serviceIds: string[] }): Promise<ManagedAvailabilitySlot> => {
-    console.log('Mock PUT /api/me/availability-slots/' + slotId, payload);
-    return { slotId, startTime: payload.startTime, endTime: payload.endTime, active: true, note: payload.note, services: [] };
-  },
+  /** PUT /api/me/availability-slots/{slotId} — Cập nhật slot rảnh */
+  updateSlot: (slotId: string, payload: { startTime: string; endTime: string; note?: string; serviceIds: string[] }) =>
+    http.put<ManagedAvailabilitySlot>(`/api/me/availability-slots/${slotId}`, payload),
 
   /** DELETE /api/me/availability-slots/{slotId} để xóa/hủy slot rảnh của mentor */
   deleteSlot: (slotId: string) =>

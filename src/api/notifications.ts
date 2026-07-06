@@ -25,9 +25,9 @@ export const notificationsApi = {
   unreadCount: () =>
     http.get<UnreadCountResponse>('/api/me/notifications/unread-count', { params: { _t: Date.now() } }),
 
-  /** PUT /api/me/notifications/{id}/read — đánh dấu 1 thông báo đã đọc. */
-  markAsRead: (id: string) => http.put<void>(`/api/me/notifications/${id}/read`),
+  /** PATCH /api/me/notifications/{id}/read — đánh dấu 1 thông báo đã đọc. */
+  markAsRead: (id: string) => http.patch<void>(`/api/me/notifications/${id}/read`),
 
-  /** PUT /api/me/notifications/read-all — đánh dấu tất cả đã đọc. */
-  markAllAsRead: () => http.put<void>('/api/me/notifications/read-all'),
+  /** PATCH /api/me/notifications/read-all — đánh dấu tất cả đã đọc. */
+  markAllAsRead: () => http.patch<void>('/api/me/notifications/read-all'),
 };

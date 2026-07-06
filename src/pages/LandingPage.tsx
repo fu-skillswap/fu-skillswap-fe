@@ -149,11 +149,11 @@ export const LandingPage: React.FC = () => {
 
             <div className="space-y-4">
               <p className="text-slate-100 text-lg sm:text-xl font-medium max-w-2xl leading-relaxed">
-                SkillSwap là nền tảng kết nối <strong className="text-white font-extrabold">Alumni (Cựu sinh viên)</strong> và <strong className="text-white font-extrabold">Sinh viên FPT University</strong>. Chia sẻ kiến thức và kinh nghiệm thực tế hoàn toàn miễn phí.
+                SkillSwap là nền tảng kết nối <strong className="text-white font-extrabold">Alumni (Cựu sinh viên)</strong> và <strong className="text-white font-extrabold">Sinh viên FPT University</strong>. Chia sẻ kiến thức và kinh nghiệm thực tế với giá trị cao.
               </p>
               <div className="bg-white/5 border border-white/10 p-6 rounded-2xl max-w-2xl text-base text-slate-200 font-medium space-y-3 backdrop-blur-xs">
                 <p className="text-lg font-bold text-brand-secondary flex items-center gap-2">
-                  <span>🎯</span> DÀNH CHO AI &amp; LỢI ÍCH GÌ?
+                  <span></span> DÀNH CHO AI &amp; LỢI ÍCH GÌ?
                 </p>
                 <div className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-brand-secondary shrink-0 mt-0.5" />
