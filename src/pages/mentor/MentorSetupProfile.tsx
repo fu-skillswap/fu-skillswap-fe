@@ -137,7 +137,7 @@ export const MentorSetupProfile: React.FC = () => {
     <div className="space-y-6 text-left">
       {/* Title */}
       <div className="space-y-1">
-        <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight flex items-center gap-2">
+        <h1 className="text-3xl font-extrabold text-brand-text font-sans tracking-tight flex items-center gap-2">
           <Settings className="w-8 h-8 text-brand-terracotta" /> Cấu hình hồ sơ mentor
         </h1>
         <p className="text-brand-text-muted text-body font-medium">
@@ -161,7 +161,7 @@ export const MentorSetupProfile: React.FC = () => {
 
       <div className="space-y-6">
           <div className="meetmind-card p-6 rounded-card space-y-4">
-            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+            <h3 className="text-body font-bold font-sans text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Settings className="w-4.5 h-4.5 text-brand-terracotta" /> 1. Mô tả năng lực
             </h3>
 
@@ -222,7 +222,7 @@ export const MentorSetupProfile: React.FC = () => {
 
           {/* Links */}
           <div className="meetmind-card p-6 rounded-card space-y-3">
-            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+            <h3 className="text-body font-bold font-sans text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Link2 className="w-4.5 h-4.5 text-brand-blue" /> 2. Liên kết (không bắt buộc)
             </h3>
             <div className="space-y-3">
@@ -251,7 +251,7 @@ export const MentorSetupProfile: React.FC = () => {
           </div>
 
           <div className="meetmind-card p-6 rounded-card space-y-3">
-            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+            <h3 className="text-body font-bold font-sans text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Tags className="w-4.5 h-4.5 text-brand-blue" /> 3. Chủ đề hỗ trợ ({helpTopicIds.length}/{HELP_TOPICS_MAX})
             </h3>
 
@@ -284,7 +284,7 @@ export const MentorSetupProfile: React.FC = () => {
           </div>
 
           <div className="meetmind-card p-6 rounded-card space-y-4">
-            <h3 className="text-body font-bold font-serif text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
+            <h3 className="text-body font-bold font-sans text-brand-text flex items-center gap-2 border-b border-brand-border pb-2">
               <Settings className="w-4.5 h-4.5 text-brand-terracotta" /> 4. Hình thức & thời lượng buổi học
             </h3>
 

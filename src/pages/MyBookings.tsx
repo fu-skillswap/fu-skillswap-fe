@@ -471,7 +471,7 @@ export const MyBookings: React.FC = () => {
       {/* Title & View Toggle */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight flex items-center gap-2">
+          <h1 className="text-3xl font-extrabold text-brand-text font-sans tracking-tight flex items-center gap-2">
             <Bookmark className="w-8 h-8 text-brand-terracotta" /> Lịch của tôi
           </h1>
           <p className="text-brand-text-muted text-body font-medium">
@@ -1006,7 +1006,7 @@ export const MyBookings: React.FC = () => {
 
             <form onSubmit={handleAcceptSubmit} className="space-y-4">
               <div className="text-left">
-                <h3 className="text-lg font-bold font-serif text-brand-text">
+                <h3 className="text-lg font-bold font-sans text-brand-text">
                   {activeMentorBooking.status === 'ACCEPTED' ? 'Cập nhật liên kết phòng học' : 'Cung cấp liên kết phòng học'}
                 </h3>
                 <p className="text-brand-text-muted text-body font-medium mt-0.5">
@@ -1065,7 +1065,7 @@ export const MyBookings: React.FC = () => {
 
             <form onSubmit={handleRejectSubmit} className="space-y-4">
               <div className="text-left">
-                <h3 className="text-lg font-bold font-serif text-brand-text">Từ chối yêu cầu đặt lịch</h3>
+                <h3 className="text-lg font-bold font-sans text-brand-text">Từ chối yêu cầu đặt lịch</h3>
                 <p className="text-brand-text-muted text-body font-semibold mt-0.5">
                   Vui lòng cung cấp lý do cho sinh viên.
                 </p>
@@ -1109,7 +1109,7 @@ export const MyBookings: React.FC = () => {
             </button>
             <form onSubmit={handleSubmitIssue} className="space-y-4">
               <div className="text-left">
-                <h3 className="text-lg font-bold font-serif text-brand-text">Báo sự cố buổi học</h3>
+                <h3 className="text-lg font-bold font-sans text-brand-text">Báo sự cố buổi học</h3>
                 <p className="text-brand-text-muted text-body font-medium mt-0.5">
                   Mô tả vấn đề (mentor vắng mặt, chất lượng, lý do khác). Admin sẽ xem xét.
                 </p>
@@ -1148,7 +1148,7 @@ export const MyBookings: React.FC = () => {
             </button>
 
             <div className="text-left space-y-1 border-b border-brand-border pb-3">
-              <h3 className="text-xl font-bold font-serif text-brand-text">Đánh giá & Góp ý buổi học</h3>
+              <h3 className="text-xl font-bold font-sans text-brand-text">Đánh giá & Góp ý buổi học</h3>
               <p className="text-brand-text-muted text-body font-medium">
                 Chia sẻ trải nghiệm học tập cùng Mentor{' '}
                 <span className="font-bold text-brand-text">{activeMenteeBooking.mentorDisplayName}</span>
@@ -1263,7 +1263,7 @@ export const MyBookings: React.FC = () => {
 
             <form onSubmit={handleCancelSubmit} className="space-y-4">
               <div className="text-left">
-                <h3 className="text-lg font-bold font-serif text-brand-text">Xác nhận hủy lịch hẹn</h3>
+                <h3 className="text-lg font-bold font-sans text-brand-text">Xác nhận hủy lịch hẹn</h3>
                 <p className="text-brand-text-muted text-body font-medium mt-0.5">
                   Vui lòng cung cấp lý do hủy để thông báo cho đối phương.
                 </p>
@@ -1317,7 +1317,7 @@ export const MyBookings: React.FC = () => {
               return (
                 <div className="space-y-4 text-left animate-scaleUp">
                   <div className="border-b border-brand-border pb-3">
-                    <h3 className="text-lg font-bold font-serif text-brand-text">Chi tiết lịch hẹn</h3>
+                    <h3 className="text-lg font-bold font-sans text-brand-text">Chi tiết lịch hẹn</h3>
                     <p className="text-brand-text-muted text-meta font-extrabold uppercase tracking-wider mt-0.5">
                       Vai trò: {isUserMentor ? 'Mentor (Bạn dạy)' : 'Mentee (Bạn học)'}
                     </p>

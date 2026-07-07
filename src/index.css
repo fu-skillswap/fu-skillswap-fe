@@ -220,7 +220,7 @@
    ===================================================================== */
 @theme inline {
   --font-sans: var(--font-brand);
-  --font-serif: var(--font-brand); /* dự án dùng 1 font duy nhất; .font-serif = sans */
+  --font-sans: var(--font-brand); /* dự án dùng 1 font duy nhất; .font-sans = sans */
 
   /* Bề mặt & viền */
   --color-app:           var(--app-bg);
@@ -340,7 +340,7 @@ body {
 .meetmind-sidebar-item { transition: all .2s ease; }
 .meetmind-sidebar-item:hover { background: var(--surface-muted); color: var(--fg); }
 .meetmind-sidebar-item-active { background: var(--surface-muted); color: var(--fg) !important; font-weight: 700; }
-.font-serif { font-family: var(--font-brand) !important; }
+.font-sans { font-family: var(--font-brand) !important; }
 
 /* Nổi bật tiêu đề và đầu mục */
 h1, h2, h3, h4, h5, h6, .text-head, .text-title, .text-display {

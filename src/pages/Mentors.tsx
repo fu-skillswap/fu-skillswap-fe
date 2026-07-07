@@ -670,7 +670,7 @@ export const Mentors: React.FC = () => {
     if (!selectedMentorDetail) return null;
 
     const selectedService = selectedMentorDetail.services?.find(s => s.serviceId === selectedServiceId) || selectedMentorDetail.services?.[0] || null;
-    const serviceCode = selectedService ? selectedService.title.match(/^\[(.*?)\]/)?.[1] || 'M├┤n hß╗ìc' : 'M├┤n hß╗ìc';
+    const serviceCode = selectedService ? selectedService.title.match(/^\[(.*?)\]/)?.[1] || 'Môn học' : 'Môn học';
 
     const visibleDays = schedulerViewMode === 'week' ? getWeekDaysDetailed(visibleStartDate) : [visibleStartDate];
 
@@ -712,27 +712,27 @@ export const Mentors: React.FC = () => {
       const uniqueMonths = Array.from(new Set(months));
       const year = visibleStartDate.getFullYear();
       if (uniqueMonths.length > 1) {
-        return `Th├íng ${uniqueMonths[0]} - ${uniqueMonths[1]}, ${year}`;
+        return `Tháng ${uniqueMonths[0]} - ${uniqueMonths[1]}, ${year}`;
       }
-      return `Th├íng ${uniqueMonths[0]}, ${year}`;
+      return `Tháng ${uniqueMonths[0]}, ${year}`;
     };
 
     const getSelectedDateDisplay = () => {
-      if (!selectedCandidateKey) return 'Ch╞░a chß╗ìn';
+      if (!selectedCandidateKey) return 'Chưa chọn';
       const [selStart] = selectedCandidateKey.split('|');
       const dateObj = new Date(selStart);
-      return `${dateObj.getDate()} Th├íng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`;
+      return `${dateObj.getDate()} Tháng ${dateObj.getMonth() + 1}, ${dateObj.getFullYear()}`;
     };
 
     const getSelectedTimeDisplay = () => {
-      if (!selectedCandidateKey) return 'Ch╞░a chß╗ìn';
+      if (!selectedCandidateKey) return 'Chưa chọn';
       const [selStart, selEnd] = selectedCandidateKey.split('|');
       return `${fmtTime(selStart)} - ${fmtTime(selEnd)}`;
     };
 
     const priceDisplay = selectedService
       ? selectedService.free
-        ? 'Miß╗àn ph├¡'
+        ? 'Miễn phí'
         : `${selectedService.priceScoin?.toLocaleString('en-US')} SCoin`
       : '0 SCoin';
 
@@ -766,9 +766,9 @@ export const Mentors: React.FC = () => {
           <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-md">
             <Check className="w-8 h-8 stroke-[3]" />
           </div>
-          <h3 className="text-slate-800 font-extrabold text-xl font-sans">Gß╗¡i y├¬u cß║ºu ─æß║╖t lß╗ïch th├ánh c├┤ng!</h3>
+          <h3 className="text-slate-800 font-extrabold text-xl font-sans">Gửi yêu cầu đặt lịch thành công!</h3>
           <p className="text-slate-500 text-sm font-semibold max-w-xs mx-auto leading-relaxed">
-            Hß╗ç thß╗æng ─æ├ú gß╗¡i y├¬u cß║ºu tß╗¢i {selectedMentorDetail.displayName}. ─Éang chuyß╗ân h╞░ß╗¢ng...
+            Hệ thống đã gửi yêu cầu tới {selectedMentorDetail.displayName}. Đang chuyển hướng...
           </p>
         </div>
       );
@@ -785,16 +785,16 @@ export const Mentors: React.FC = () => {
               setSelectedSlotId('');
             }}
             className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-800 transition-colors shadow-xs cursor-pointer active:scale-95"
-            title="Quay lß║íi hß╗ô s╞í mentor"
+            title="Quay lại hồ sơ mentor"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h2 className="text-headline-md text-[#151c29] font-bold leading-tight font-sans">
-              Chi tiß║┐t lß╗ïch hß║╣n ΓÇô Mentor {selectedMentorDetail.displayName}
+              Chi tiết lịch hẹn – Cô Mentor {selectedMentorDetail.displayName}
             </h2>
             <p className="text-sm font-bold text-primary block mt-0.5 font-sans">
-              Lß╗ïch rß║únh m├┤n: {selectedService ? selectedService.title : 'Ch╞░a chß╗ìn'}
+              Lịch rảnh môn: {selectedService ? selectedService.title : 'Chưa chọn'}
             </p>
           </div>
         </div>
@@ -834,7 +834,7 @@ export const Mentors: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Ng├áy
+                  Ngày
                 </button>
                 <button
                   onClick={() => setSchedulerViewMode('week')}
@@ -844,7 +844,7 @@ export const Mentors: React.FC = () => {
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Tuß║ºn
+                  Tuần
                 </button>
               </div>
             </div>
@@ -853,7 +853,7 @@ export const Mentors: React.FC = () => {
             {allCandidatesLoading ? (
               <div className="py-24 text-center space-y-3">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-                <span className="text-xs text-slate-400 font-semibold block font-sans">─Éang tß║úi lß╗ïch rß║únh mentor...</span>
+                <span className="text-xs text-slate-400 font-semibold block font-sans">Đang tải lịch rảnh mentor...</span>
               </div>
             ) : (
               <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-xs">
@@ -868,7 +868,7 @@ export const Mentors: React.FC = () => {
                   }}
                 >
                   <div className="p-3 text-center border-r border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center font-sans">
-                    Giß╗¥
+                    Giờ
                   </div>
                   {visibleDays.map((dayDate, idx) => {
                     const isToday = formatDateISO(new Date()) === formatDateISO(dayDate);
@@ -933,8 +933,8 @@ export const Mentors: React.FC = () => {
                                         className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-center items-center h-full min-h-[72px] text-center select-none"
                                       >
                                         <span className="text-[10px] font-bold text-slate-400 block font-sans">{cStartStr} - {cEndStr}</span>
-                                        <span className="text-[9px] text-slate-400 font-semibold mt-0.5 font-sans">Sß╗æ l╞░ß╗úng: 1/1</span>
-                                        <span className="text-xs font-black text-slate-400 mt-1 block uppercase tracking-wider font-sans">─É├ú ─æß║ºy</span>
+                                        <span className="text-[9px] text-slate-400 font-semibold mt-0.5 font-sans">Số lượng: 1/1</span>
+                                        <span className="text-xs font-black text-slate-400 mt-1 block uppercase tracking-wider font-sans">Đã đầy</span>
                                       </div>
                                     );
                                   }
@@ -953,8 +953,8 @@ export const Mentors: React.FC = () => {
                                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                                           <span className="text-[10px] font-bold block font-sans">{cStartStr} - {cEndStr}</span>
                                         </div>
-                                        <span className="text-[9px] text-blue-100 font-semibold mt-0.5 font-sans">Sß╗æ l╞░ß╗úng: 0/1</span>
-                                        <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">─Éang chß╗ìn</span>
+                                        <span className="text-[9px] text-blue-100 font-semibold mt-0.5 font-sans">Số lượng: 0/1</span>
+                                        <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">Đang chọn</span>
                                       </div>
                                     );
                                   }
@@ -970,8 +970,8 @@ export const Mentors: React.FC = () => {
                                       }}
                                     >
                                       <span className="text-[10px] font-bold block font-sans">{cStartStr} - {cEndStr}</span>
-                                      <span className="text-[9px] text-primary/80 font-semibold mt-0.5 font-sans">Sß╗æ l╞░ß╗úng: 0/1</span>
-                                      <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">Trß╗æng</span>
+                                      <span className="text-[9px] text-primary/80 font-semibold mt-0.5 font-sans">Số lượng: 0/1</span>
+                                      <span className="text-xs font-black mt-1 block uppercase tracking-wider font-sans">Trống</span>
                                     </div>
                                   );
                                 });
@@ -994,20 +994,20 @@ export const Mentors: React.FC = () => {
             <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
               <h3 className="text-body font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 font-sans">
                 <Info className="w-5 h-5 text-primary" />
-                <span>H╞░ß╗¢ng dß║½n ─æß║╖t lß╗ïch</span>
+                <span>Hướng dẫn đặt lịch</span>
               </h3>
               <div className="space-y-4 text-xs text-slate-600 leading-relaxed font-sans font-semibold">
                 <div className="flex gap-3 items-start">
                   <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">1</span>
-                  <p>Chß╗ìn ng├áy rß║únh cho m├┤n <span className="font-extrabold text-slate-800">[{serviceCode}]</span> (├┤ m├áu xanh nhß║ít).</p>
+                  <p>Chọn ngày rảnh cho môn <span className="font-extrabold text-slate-800">[{serviceCode}]</span> (ô màu xanh nhạt).</p>
                 </div>
                 <div className="flex gap-3 items-start">
                   <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">2</span>
-                  <p>Chß╗ìn khung giß╗¥ ph├╣ hß╗úp.</p>
+                  <p>Chọn khung giờ phù hợp.</p>
                 </div>
                 <div className="flex gap-3 items-start">
                   <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">3</span>
-                  <p>X├íc nhß║¡n th├┤ng tin v├á thanh to├ín bß║▒ng SCoin.</p>
+                  <p>Xác nhận thông tin và thanh toán bằng SCoin.</p>
                 </div>
               </div>
             </div>
@@ -1015,24 +1015,24 @@ export const Mentors: React.FC = () => {
             {/* Booking Details Card */}
             <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-5 font-sans">
               <h3 className="text-body font-bold text-slate-800 border-b border-slate-100 pb-3 font-sans">
-                Th├┤ng tin ─æß║╖t lß╗ïch
+                Thông tin đặt lịch
               </h3>
 
               <div className="space-y-4 font-sans font-semibold">
                 {/* Service */}
                 <div className="flex items-start justify-between gap-3 text-xs">
                   <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4 text-slate-300" /> M├┤n hß╗ìc
+                    <BookOpen className="w-4 h-4 text-slate-300" /> Môn học
                   </span>
                   <span className="text-slate-800 font-extrabold text-right max-w-[200px]">
-                    {selectedService ? selectedService.title : 'Ch╞░a chß╗ìn'}
+                    {selectedService ? selectedService.title : 'Chưa chọn'}
                   </span>
                 </div>
 
                 {/* Date */}
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-slate-300" /> Ng├áy
+                    <Calendar className="w-4 h-4 text-slate-300" /> Ngày
                   </span>
                   <span className="text-slate-800 font-extrabold">
                     {getSelectedDateDisplay()}
@@ -1042,14 +1042,14 @@ export const Mentors: React.FC = () => {
                 {/* Time */}
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-bold flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-slate-300" /> Thß╗¥i gian
+                    <Clock className="w-4 h-4 text-slate-300" /> Thời gian
                   </span>
                   {selectedCandidateKey ? (
                     <span className="bg-primary/10 text-primary px-3 py-1 rounded-full font-black text-[10px]">
                       {getSelectedTimeDisplay()}
                     </span>
                   ) : (
-                    <span className="text-slate-400 font-bold font-sans">Ch╞░a chß╗ìn</span>
+                    <span className="text-slate-400 font-bold font-sans">Chưa chọn</span>
                   )}
                 </div>
 
@@ -1058,7 +1058,7 @@ export const Mentors: React.FC = () => {
 
                 {/* SCoin Price */}
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-800 font-bold text-xs font-sans">Tß╗òng chi ph├¡</span>
+                  <span className="text-slate-800 font-bold text-xs font-sans">Tổng chi phí</span>
                   <div className="flex items-center gap-1.5">
                     {/* SCoin Blue Icon */}
                     <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-black shadow-xs">
@@ -1080,12 +1080,12 @@ export const Mentors: React.FC = () => {
                 }}
                 className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-xs font-black uppercase tracking-wider py-3.5 px-4 rounded-xl cursor-pointer hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-primary/25 font-sans"
               >
-                <span>X├íc nhß║¡n ─æß║╖t lß╗ïch</span>
+                <span>Xác nhận đặt lịch</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
 
               <p className="text-[10px] text-slate-400 text-center font-medium font-sans leading-relaxed">
-                Bß║▒ng viß╗çc x├íc nhß║¡n, bß║ín ─æß╗ông ├╜ vß╗¢i ch├¡nh s├ích hß╗ºy lß╗ïch cß╗ºa ch├║ng t├┤i.
+                Bằng việc xác nhận, bạn đồng ý với chính sách hủy lịch của chúng tôi.
               </p>
             </div>
 
@@ -1149,7 +1149,7 @@ export const Mentors: React.FC = () => {
 
             <div className="space-y-3 max-w-2xl">
               <div className="flex items-center justify-center gap-3 flex-wrap">
-                <h1 className="text-3xl font-black text-slate-800 font-serif leading-tight tracking-tight">
+                <h1 className="text-3xl font-black text-slate-800 font-sans leading-tight tracking-tight">
                   {selectedMentorDetail.displayName}
                 </h1>
                 <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm ${selectedMentorDetail.isAvailable
@@ -1573,7 +1573,7 @@ export const Mentors: React.FC = () => {
                   <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-md">
                     <Check className="w-8 h-8 stroke-[3]" />
                   </div>
-                  <h3 className="text-slate-800 font-bold text-lg font-serif">Gửi yêu cầu đặt lịch thành công!</h3>
+                  <h3 className="text-slate-800 font-bold text-lg font-sans">Gửi yêu cầu đặt lịch thành công!</h3>
                   <p className="text-slate-500 text-body-md font-medium max-w-xs mx-auto">Hệ thống đã gửi yêu cầu tới {activeMentor?.displayName}. Đang chuyển hướng...</p>
                 </div>
               ) : (
@@ -1933,7 +1933,7 @@ export const Mentors: React.FC = () => {
             <span className="inline-flex items-center gap-1 bg-brand-terracotta/15 text-brand-terracotta text-body font-bold py-1 px-3 rounded-full border border-brand-terracotta/25">
               <Link2 className="w-3.5 h-3.5" /> Kết nối kỹ năng FPT
             </span>
-            <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight">
+            <h1 className="text-3xl font-extrabold text-brand-text font-sans tracking-tight">
               Tìm kiếm Mentor & Bạn cùng tiến
             </h1>
             <p className="text-brand-text-muted text-body max-w-2xl font-medium">
@@ -2208,7 +2208,7 @@ export const Mentors: React.FC = () => {
               {/* Header */}
               <div className="flex items-center justify-between border-b border-brand-border pb-4">
                 <div>
-                  <h3 className="text-lg font-bold font-serif text-brand-text">Đánh giá từ sinh viên</h3>
+                  <h3 className="text-lg font-bold font-sans text-brand-text">Đánh giá từ sinh viên</h3>
                   <p className="text-body text-brand-text-muted font-medium mt-0.5">Phản hồi công khai cho Mentor {drawerMentor.displayName}</p>
                 </div>
                 <button
@@ -2222,7 +2222,7 @@ export const Mentors: React.FC = () => {
               {/* Summary Stats */}
               <div className="flex items-center gap-4 bg-brand-bg/40 border border-brand-border p-4 rounded-card">
                 <div className="text-center shrink-0 pr-4 border-r border-brand-border">
-                  <span className="text-3xl font-extrabold text-brand-text font-serif">{(drawerMentor.ratingAverage ?? 0).toFixed(1)}</span>
+                  <span className="text-3xl font-extrabold text-brand-text font-sans">{(drawerMentor.ratingAverage ?? 0).toFixed(1)}</span>
                   <div className="flex justify-center gap-0.5 text-amber-500 mt-1">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star key={i} className={`w-3 h-3 ${i < Math.floor(drawerMentor.ratingAverage ?? 0) ? 'fill-amber-500' : 'text-brand-border'}`} />
@@ -2472,7 +2472,7 @@ export const Mentors: React.FC = () => {
             </button>
 
             <div className="space-y-1 pr-6">
-              <h3 className="text-xl font-bold font-serif text-brand-text flex items-center gap-2">
+              <h3 className="text-xl font-bold font-sans text-brand-text flex items-center gap-2">
                 <Compass className="w-5 h-5 text-brand-terracotta" />
                 Khám phá Mentor phù hợp
               </h3>

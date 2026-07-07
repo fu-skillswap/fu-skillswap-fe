@@ -90,7 +90,7 @@ export default function ReviewActionModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="text-left">
-            <h3 className="text-lg font-bold font-serif text-brand-text">
+            <h3 className="text-lg font-bold font-sans text-brand-text">
               {getActionLabel()}
             </h3>
             <p className="text-brand-text-muted text-body font-semibold mt-0.5">

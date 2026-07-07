@@ -161,7 +161,7 @@ export const UserManagement: React.FC = () => {
 
       {/* Title */}
       <div className="space-y-1">
-        <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight">
+        <h1 className="text-3xl font-extrabold text-brand-text font-sans tracking-tight">
           Quản lý người dùng
         </h1>
         <p className="text-brand-text-muted text-body font-medium">
