@@ -573,6 +573,11 @@ export const Mentors: React.FC = () => {
   useEffect(() => {
     if (!selectedMentorDetail) return;
 
+    if (selectedMentorDetail.canRequestBooking === false) {
+      setActiveSlots([]);
+      return;
+    }
+
     const year = currentCalendarMonth.getFullYear();
     const month = currentCalendarMonth.getMonth();
     
@@ -617,7 +622,6 @@ export const Mentors: React.FC = () => {
     setBookingError(null);
     try {
       await bookingsApi.create({
-        mentorUserId: activeMentor.mentorUserId,
         availabilitySlotId: selectedSlotId,
         serviceId: selectedServiceId,
         selectedStartTime: selStart,
@@ -759,6 +763,22 @@ export const Mentors: React.FC = () => {
           <h3 className="text-slate-800 font-extrabold text-xl font-sans">Gửi yêu cầu đặt lịch thành công!</h3>
           <p className="text-slate-500 text-sm font-semibold max-w-xs mx-auto leading-relaxed">
             Hệ thống đã gửi yêu cầu tới {selectedMentorDetail.displayName}. Đang chuyển hướng...
+          </p>
+        </div>
+      );
+    }
+
+    if (selectedMentorDetail.canRequestBooking === false) {
+      return (
+        <div className="space-y-6 animate-fadeIn text-center py-24 bg-white border border-[#e8eeff] rounded-3xl p-8 max-w-md mx-auto shadow-sm my-12 font-sans">
+          <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto border border-rose-200 shadow-md">
+            <AlertCircle className="w-8 h-8 stroke-[3]" />
+          </div>
+          <h3 className="text-slate-800 font-extrabold text-xl font-sans">Không thể đặt lịch</h3>
+          <p className="text-slate-500 text-sm font-semibold max-w-xs mx-auto leading-relaxed">
+            {selectedMentorDetail.hasActiveServices === false
+              ? 'Mentor này hiện chưa mở dịch vụ nào để đặt lịch.'
+              : 'Mentor này hiện chưa nhận yêu cầu đặt lịch. Vui lòng quay lại sau.'}
           </p>
         </div>
       );
@@ -1490,176 +1510,189 @@ export const Mentors: React.FC = () => {
                     )}
                   </div>
 
-                  {bookingError && (
-                    <div className="flex items-start gap-2 bg-rose-500/5 border border-rose-200 text-rose-600 p-3 rounded-xl text-xs font-semibold text-left">
+                  {selectedMentorDetail.canRequestBooking === false ? (
+                    <div className="flex items-start gap-2.5 bg-rose-500/5 border border-rose-200 text-rose-600 p-4 rounded-xl text-xs font-semibold text-left font-sans">
                       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{bookingError}</span>
-                    </div>
-                  )}
-
-                  {/* Monthly Calendar View */}
-                  <div className="bg-[#f0f4ff]/30 p-4.5 rounded-2xl border border-[#e8eeff] space-y-3">
-                    {/* Month Picker Header */}
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-xs font-extrabold text-[#151c29] uppercase tracking-wide">
-                        {`Tháng ${currentCalendarMonth.getMonth() + 1}, ${currentCalendarMonth.getFullYear()}`}
+                      <span>
+                        {selectedMentorDetail.hasActiveServices === false
+                          ? 'Mentor này hiện chưa mở dịch vụ nào để đặt lịch.'
+                          : 'Mentor này hiện chưa nhận yêu cầu đặt lịch. Vui lòng quay lại sau.'}
                       </span>
-                      <div className="flex gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCurrentCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-                          }}
-                          className="p-1 hover:bg-slate-200/55 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCurrentCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-                          }}
-                          className="p-1 hover:bg-slate-200/55 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
                     </div>
+                  ) : (
+                    <>
+                      {bookingError && (
+                        <div className="flex items-start gap-2 bg-rose-500/5 border border-rose-200 text-rose-600 p-3 rounded-xl text-xs font-semibold text-left">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span>{bookingError}</span>
+                        </div>
+                      )}
 
-                    {/* Weekday Labels */}
-                    <div className="grid grid-cols-7 gap-1 text-center">
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, idx) => (
-                        <span key={idx} className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                          {dayLabel}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Monthly Days Grid */}
-                    <div className="grid grid-cols-7 gap-1.5 text-center">
-                      {getDaysInMonthGrid(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth()).map((dayDate, idx) => {
-                        const dateStr = formatDateISO(dayDate);
-                        const isSelected = selectedDateStr === dateStr;
-                        const isCurrentMonth = dayDate.getMonth() === currentCalendarMonth.getMonth();
-                        const isToday = formatDateISO(new Date()) === dateStr;
-                        const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === dateStr);
-                        const hasSlots = daySlots.some(s => s.services && s.services.length > 0);
-
-                        let cellClass = "w-8 h-8 mx-auto flex items-center justify-center rounded-full text-xs font-semibold transition-all relative border ";
-                        
-                        if (!isCurrentMonth) {
-                          cellClass += "border-transparent text-slate-300 pointer-events-none";
-                        } else if (isSelected) {
-                          cellClass += "bg-primary border-primary text-white font-bold shadow-sm cursor-pointer";
-                        } else if (hasSlots) {
-                          cellClass += "bg-[#e8eeff] border-primary/20 text-primary hover:bg-primary/10 cursor-pointer";
-                        } else {
-                          cellClass += "border-transparent text-slate-500 hover:bg-slate-50 cursor-pointer";
-                        }
-
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setSelectedDateStr(dateStr);
-                              if (daySlots.length > 0) {
-                                handleSelectSlot(daySlots[0].slotId);
-                              } else {
-                                setSelectedSlotId('');
-                                setCandidates([]);
-                                setSelectedCandidateKey('');
-                              }
-                            }}
-                            className={cellClass}
-                          >
-                            <span>{dayDate.getDate()}</span>
-                            {hasSlots && !isSelected && (
-                              <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                            )}
-                            {isToday && !isSelected && !hasSlots && (
-                              <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Selected Day Status & Booking Flow */}
-                  {(() => {
-                    const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === selectedDateStr);
-                    
-                    return (
-                      <div className="space-y-4 pt-1">
-                        {/* Chọn khung giờ */}
-                        <div className="space-y-1.5 text-left">
-                          <label className="block text-[10px] font-extrabold text-[#414754] uppercase tracking-wider font-sans">Chọn khung giờ học</label>
-                          {daySlots.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic py-3 text-center bg-slate-50 border border-slate-100 rounded-xl font-sans">
-                              Không có lịch rảnh nào trong ngày này.
-                            </p>
-                          ) : !selectedServiceId ? (
-                            <p className="text-xs text-slate-400 italic py-1 font-sans">Vui lòng chọn môn học ở cột bên trái.</p>
-                          ) : candidatesLoading ? (
-                            <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold py-2">
-                              <Loader2 className="w-4.5 h-4.5 animate-spin text-primary" /> Đang kiểm tra slot...
-                            </div>
-                          ) : candidates.length === 0 ? (
-                            <p className="text-xs text-rose-600 font-semibold py-1 font-sans">Khung lịch này hiện đã kín, vui lòng chọn lại.</p>
-                          ) : (
-                            <select
-                              value={selectedCandidateKey}
-                              onChange={(e) => setSelectedCandidateKey(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23717786%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_10px_center] bg-no-repeat font-sans"
+                      {/* Monthly Calendar View */}
+                      <div className="bg-[#f0f4ff]/30 p-4.5 rounded-2xl border border-[#e8eeff] space-y-3">
+                        {/* Month Picker Header */}
+                        <div className="flex justify-between items-center px-1">
+                          <span className="text-xs font-extrabold text-[#151c29] uppercase tracking-wide">
+                            {`Tháng ${currentCalendarMonth.getMonth() + 1}, ${currentCalendarMonth.getFullYear()}`}
+                          </span>
+                          <div className="flex gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCurrentCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+                              }}
+                              className="p-1 hover:bg-slate-200/55 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
                             >
-                              <option value="" disabled className="text-slate-400">-- Chọn khung giờ học --</option>
-                              {candidates.map((c) => {
-                                const key = `${c.startTime}|${c.endTime}`;
-                                const dateObj = parseCandidateTime(c.startTime);
-                                const startStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                                return (
-                                  <option key={key} value={key} className="text-slate-800 font-semibold font-sans">
-                                    {startStr}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          )}
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCurrentCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+                              }}
+                              className="p-1 hover:bg-slate-200/55 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Booking Form Details */}
-                        <div className="space-y-3 pt-3 border-t border-slate-100">
-                          {/* "Xem chi tiết các khung giờ" Button */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsDetailedBookingMode(true);
-                              setVisibleStartDate(selectedDateStr ? new Date(selectedDateStr) : new Date());
-                            }}
-                            className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-[#414754] hover:bg-slate-50 text-xs font-bold py-2.5 px-4 rounded-xl cursor-pointer hover:shadow-xs transition-all active:scale-[0.99] font-sans"
-                          >
-                            <Calendar className="w-4 h-4 text-slate-400" />
-                            <span>Xem chi tiết các khung giờ</span>
-                          </button>
+                        {/* Weekday Labels */}
+                        <div className="grid grid-cols-7 gap-1 text-center">
+                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, idx) => (
+                            <span key={idx} className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              {dayLabel}
+                            </span>
+                          ))}
+                        </div>
 
-                          {/* "Đặt lịch học ngay" Button */}
-                          <button
-                            type="button"
-                            disabled={!selectedSlotId || !selectedServiceId || !selectedCandidateKey}
-                            onClick={() => {
-                              setGoalTitle('');
-                              setGoalDescription('');
-                              setShowGoalModal(true);
-                            }}
-                            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-primary/20 font-sans"
-                          >
-                            <span>Đặt lịch học ngay</span>
-                          </button>
+                        {/* Monthly Days Grid */}
+                        <div className="grid grid-cols-7 gap-1.5 text-center">
+                          {getDaysInMonthGrid(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth()).map((dayDate, idx) => {
+                            const dateStr = formatDateISO(dayDate);
+                            const isSelected = selectedDateStr === dateStr;
+                            const isCurrentMonth = dayDate.getMonth() === currentCalendarMonth.getMonth();
+                            const isToday = formatDateISO(new Date()) === dateStr;
+                            const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === dateStr);
+                            const hasSlots = daySlots.some(s => s.services && s.services.length > 0);
+
+                            let cellClass = "w-8 h-8 mx-auto flex items-center justify-center rounded-full text-xs font-semibold transition-all relative border ";
+                            
+                            if (!isCurrentMonth) {
+                              cellClass += "border-transparent text-slate-300 pointer-events-none";
+                            } else if (isSelected) {
+                              cellClass += "bg-primary border-primary text-white font-bold shadow-sm cursor-pointer";
+                            } else if (hasSlots) {
+                              cellClass += "bg-[#e8eeff] border-primary/20 text-primary hover:bg-primary/10 cursor-pointer";
+                            } else {
+                              cellClass += "border-transparent text-slate-500 hover:bg-slate-50 cursor-pointer";
+                            }
+
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDateStr(dateStr);
+                                  if (daySlots.length > 0) {
+                                    handleSelectSlot(daySlots[0].slotId);
+                                  } else {
+                                    setSelectedSlotId('');
+                                    setCandidates([]);
+                                    setSelectedCandidateKey('');
+                                  }
+                                }}
+                                className={cellClass}
+                              >
+                                <span>{dayDate.getDate()}</span>
+                                {hasSlots && !isSelected && (
+                                  <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                )}
+                                {isToday && !isSelected && !hasSlots && (
+                                  <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })()}
+
+                      {/* Selected Day Status & Booking Flow */}
+                      {(() => {
+                        const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === selectedDateStr);
+                        
+                        return (
+                          <div className="space-y-4 pt-1">
+                            {/* Chọn khung giờ */}
+                            <div className="space-y-1.5 text-left">
+                              <label className="block text-[10px] font-extrabold text-[#414754] uppercase tracking-wider font-sans">Chọn khung giờ học</label>
+                              {daySlots.length === 0 ? (
+                                <p className="text-xs text-slate-400 italic py-3 text-center bg-slate-50 border border-slate-100 rounded-xl font-sans">
+                                  Không có lịch rảnh nào trong ngày này.
+                                </p>
+                              ) : !selectedServiceId ? (
+                                <p className="text-xs text-slate-400 italic py-1 font-sans">Vui lòng chọn môn học ở cột bên trái.</p>
+                              ) : candidatesLoading ? (
+                                <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold py-2">
+                                  <Loader2 className="w-4.5 h-4.5 animate-spin text-primary" /> Đang kiểm tra slot...
+                                </div>
+                              ) : candidates.length === 0 ? (
+                                <p className="text-xs text-rose-600 font-semibold py-1 font-sans">Khung lịch này hiện đã kín, vui lòng chọn lại.</p>
+                              ) : (
+                                <select
+                                  value={selectedCandidateKey}
+                                  onChange={(e) => setSelectedCandidateKey(e.target.value)}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23717786%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_10px_center] bg-no-repeat font-sans"
+                                >
+                                  <option value="" disabled className="text-slate-400">-- Chọn khung giờ học --</option>
+                                  {candidates.map((c) => {
+                                    const key = `${c.startTime}|${c.endTime}`;
+                                    const dateObj = parseCandidateTime(c.startTime);
+                                    const startStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                    return (
+                                      <option key={key} value={key} className="text-slate-800 font-semibold font-sans">
+                                        {startStr}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              )}
+                            </div>
+
+                            {/* Booking Form Details */}
+                            <div className="space-y-3 pt-3 border-t border-slate-100">
+                              {/* "Xem chi tiết các khung giờ" Button */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsDetailedBookingMode(true);
+                                  setVisibleStartDate(selectedDateStr ? new Date(selectedDateStr) : new Date());
+                                }}
+                                className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-[#414754] hover:bg-slate-50 text-xs font-bold py-2.5 px-4 rounded-xl cursor-pointer hover:shadow-xs transition-all active:scale-[0.99] font-sans"
+                              >
+                                <Calendar className="w-4 h-4 text-slate-400" />
+                                <span>Xem chi tiết các khung giờ</span>
+                              </button>
+
+                              {/* "Đặt lịch học ngay" Button */}
+                              <button
+                                type="button"
+                                disabled={!selectedSlotId || !selectedServiceId || !selectedCandidateKey}
+                                onClick={() => {
+                                  setGoalTitle('');
+                                  setGoalDescription('');
+                                  setShowGoalModal(true);
+                                }}
+                                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-primary/20 font-sans"
+                              >
+                                <span>Đặt lịch học ngay</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
                 </div>
               )}
             </div>

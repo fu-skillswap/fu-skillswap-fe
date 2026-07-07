@@ -736,9 +736,9 @@ export const MentorPanel: React.FC = () => {
     setUploading(true);
     setUploadingType(type);
     try {
-      const doc = await mentorVerificationApi.uploadDocument({ documentType: type, file: fileToUpload });
+      const updatedReq = await mentorVerificationApi.uploadDocument({ documentType: type, file: fileToUpload });
       // cập nhật lạc quan + làm mới ngầm (giữ nguyên vị trí cuộn, không remount panel)
-      setReq((prev) => (prev ? { ...prev, documents: [...prev.documents, doc] } : prev));
+      setReq(updatedReq);
       flash('Đã tải lên minh chứng.');
       await refreshRequest();
     } catch (err: any) {

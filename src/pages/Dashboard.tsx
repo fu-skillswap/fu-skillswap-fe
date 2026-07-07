@@ -21,6 +21,12 @@ export const Dashboard: React.FC = () => {
   const programName = profile?.program?.nameVi || '';
 
   useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      setNeedsMentoring(false);
+      return;
+    }
+
     let active = true;
     studentProfileApi.get()
       .then((p) => { if (active) setProfile(p); })
@@ -30,7 +36,7 @@ export const Dashboard: React.FC = () => {
       .then((s) => { if (active) setNeedsMentoring(s.mentoringNeedsCompleted === false); })
       .catch(() => { /* ẩn banner nếu lỗi/không có quyền */ });
     return () => { active = false; };
-  }, []);
+  }, [user]);
 
   return (
     <div className="space-y-6 text-left relative">
