@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown, Briefcase, LayoutGrid, Info, ChevronLeft, ChevronRight, Compass, Link2 } from 'lucide-react';
+import { Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Briefcase, LayoutGrid, Info, ChevronLeft, ChevronRight, Compass, Link2 } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
 import { catalogApi } from '../api/catalog';
 import type {
@@ -192,7 +192,7 @@ export const Mentors: React.FC = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // Custom Portfolio Tabs & Modal
-  const [activeDetailTab, setActiveDetailTab] = useState<'about' | 'portfolio'>('about');
+
   const [selectedProject, setSelectedProject] = useState<MentorPortfolioItem | null>(null);
 
   // Matching Profile States
@@ -421,7 +421,7 @@ export const Mentors: React.FC = () => {
     setGoalDescription('');
     setActiveSlots([]);
 
-    setActiveDetailTab('about');
+
     try {
       // Lấy cờ canRequestBooking (BE mới) song song với slots để gate sớm.
       const detail = await mentorsApi.getDetail(mentor.mentorUserId);
@@ -1102,10 +1102,17 @@ export const Mentors: React.FC = () => {
       return renderDetailedBookingCalendar();
     }
 
+    const selectedService = selectedMentorDetail.services?.find(s => s.serviceId === selectedServiceId) || selectedMentorDetail.services?.[0] || null;
+    const priceDisplay = selectedService
+      ? selectedService.free
+        ? 'Miễn phí'
+        : `${selectedService.priceScoin?.toLocaleString('en-US')} SCoin`
+      : '0 SCoin';
+
 
 
     return (
-      <div className="space-y-8 animate-fadeIn text-left">
+      <div className="space-y-8 animate-fadeIn text-left font-sans">
 
         {/* Back Button */}
         <button
@@ -1119,468 +1126,378 @@ export const Mentors: React.FC = () => {
           <span>Quay lại danh sách mentor</span>
         </button>
 
-        {/* Cover Banner & Main Header */}
-        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100/80 shadow-md">
-          {/* Subtle brushed material texture / micro-mesh overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.03)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.03)_50%,rgba(255,255,255,0.03)_75%,transparent_75%,transparent)] bg-[length:4px_4px] opacity-60 pointer-events-none" />
-
-          {/* Cover gradient layer */}
+        {/* Top Banner (New Premium Layout) */}
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-[#e8eeff] shadow-sm">
+          {/* Cover gradient layer (Brushed network pattern) */}
           <div
-            className="h-40 bg-cover bg-center bg-no-repeat relative"
-            style={{ backgroundImage: "url('/background-mentor-profile.jpg')" }}
+            className="h-44 bg-cover bg-center bg-no-repeat relative flex items-center justify-center"
+            style={{ 
+              backgroundImage: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
+            }}
           >
-            {/* Soft overlay blend to keep it polished */}
-            <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 to-transparent pointer-events-none" />
+            {/* Mesh overlay */}
+            <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+            <div className="text-center space-y-1">
+              <span className="text-[10px] font-black text-white/50 tracking-[0.3em] uppercase block">SkillSwap Platform</span>
+              <h2 className="text-sm font-black text-white/90 tracking-widest uppercase flex items-center justify-center gap-2">
+                <Award className="w-4 h-4 text-primary" /> Mentor Profile Detail
+              </h2>
+            </div>
           </div>
 
-          {/* Info Area (Centered avatar & text) */}
-          <div className="p-8 pt-0 flex flex-col items-center justify-center -mt-20 relative z-10 text-center">
-            {/* Centered Avatar with thick borders, shadow, and ring */}
-            <div className="relative group mb-4">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-full blur-md opacity-50 group-hover:opacity-85 transition duration-500 pointer-events-none" />
-              <img
-                src={selectedMentorDetail.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
-                onError={onAvatarError}
-                alt={selectedMentorDetail.displayName}
-                className="relative w-32 h-32 rounded-full bg-white object-cover border-4 border-white shadow-xl transition-transform duration-300 hover:scale-[1.02]"
-              />
-            </div>
-
-            <div className="space-y-3 max-w-2xl">
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <h1 className="text-3xl font-black text-slate-800 font-sans leading-tight tracking-tight">
+          {/* Info Area (Aligned Left Avatar & Details) */}
+          <div className="px-8 pb-6 flex flex-col md:flex-row items-center md:items-end gap-6 -mt-14 relative z-10">
+            <img
+              src={selectedMentorDetail.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg'}
+              onError={onAvatarError}
+              alt={selectedMentorDetail.displayName}
+              className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-white object-cover border-4 border-white shadow-md hover:scale-[1.02] transition-transform duration-300"
+            />
+            
+            <div className="flex-1 text-center md:text-left space-y-2 pb-1">
+              <div className="flex flex-col md:flex-row md:items-center gap-2.5">
+                <h1 className="text-2xl font-black text-slate-800 leading-tight">
                   {selectedMentorDetail.displayName}
                 </h1>
-                <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm ${selectedMentorDetail.isAvailable
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200/50'
-                  : 'bg-rose-100 text-rose-800 border border-rose-200/50'
-                  }`}>
+                <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider mx-auto md:mx-0 ${
+                  selectedMentorDetail.isAvailable
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200/40'
+                    : 'bg-rose-100 text-rose-800 border border-rose-200/40'
+                }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${selectedMentorDetail.isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                  {selectedMentorDetail.isAvailable ? 'Sẵn sàng' : 'Bận'}
+                  {selectedMentorDetail.isAvailable ? 'Sẵn sàng ngay' : 'Bận'}
                 </span>
               </div>
-
-              <div className="text-body font-bold text-primary bg-primary-soft/80 border border-primary/20 px-4 py-1.5 rounded-full shadow-[inset_0_1px_2px_rgba(255,255,255,0.9)] inline-block">
-                {selectedMentorDetail.headline || 'Mentor chia sẻ kỹ năng'}
-              </div>
-
-              <p className="text-meta text-slate-500 font-bold flex items-center justify-center gap-2 flex-wrap">
-                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">{selectedMentorDetail.programName}</span>
-                <span className="text-slate-300 font-normal">•</span>
-                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">{selectedMentorDetail.specializationName}</span>
-                <span className="text-slate-300 font-normal">•</span>
-                <span className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50">Học kỳ {selectedMentorDetail.semester}</span>
-                {selectedMentorDetail.alumni && (
-                  <>
-                    <span className="text-slate-300 font-normal">•</span>
-                    <span className="text-brand-terracotta font-black bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200/50">[Cựu sinh viên]</span>
-                  </>
-                )}
+              <p className="text-xs font-bold text-primary bg-[#f0f4ff]/70 border border-primary/10 px-3 py-1 rounded-full inline-block">
+                {selectedMentorDetail.headline || 'Chuyên gia chia sẻ kỹ năng'}
               </p>
             </div>
-
-            {/* Social Links */}
-            <div className="flex gap-3 mt-6 justify-center shrink-0">
-              {selectedMentorDetail.githubUrl && (
-                <a
-                  href={selectedMentorDetail.githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all duration-200 shadow-sm"
-                  title="GitHub"
-                >
-                  <Github className="w-5 h-5" />
-                </a>
-              )}
-              {selectedMentorDetail.portfolioUrl && (
-                <a
-                  href={selectedMentorDetail.portfolioUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-teal-600 transition-all duration-200 shadow-sm"
-                  title="Portfolio Website"
-                >
-                  <Globe className="w-5 h-5" />
-                </a>
-              )}
-            </div>
           </div>
 
-          {/* Stats Row */}
-          <div className="border-t border-slate-100 bg-slate-50/50 grid grid-cols-3 divide-x divide-slate-100 text-center py-6 shadow-[inset_0_4px_8px_rgba(0,0,0,0.015)]">
-            <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Đánh giá trung bình</span>
-              <span className="text-xl font-black text-slate-800 flex items-center justify-center gap-1.5 leading-none">
-                <Star className="w-5 h-5 fill-amber-400 text-amber-500 drop-shadow-[0_1.5px_3px_rgba(245,158,11,0.4)] stroke-[1.8]" />
-                {(selectedMentorDetail.ratingAverage ?? 0).toFixed(1)}
+          {/* Stats Bar (Row of light background column statistics) */}
+          <div className="border-t border-[#e8eeff] bg-slate-50/50 grid grid-cols-2 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-slate-100 text-center py-4 gap-2 md:gap-0">
+            <div className="py-2 md:py-0 space-y-0.5">
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Đánh giá</span>
+              <span className="text-sm font-extrabold text-slate-800 flex items-center justify-center gap-1">
+                ★ {(selectedMentorDetail.ratingAverage ?? 5.0).toFixed(1)}
+                <span className="text-[10px] text-slate-400 font-semibold">({selectedMentorDetail.reviewCount || 0})</span>
               </span>
             </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Số lượt đánh giá</span>
-              <span className="text-xl font-black text-slate-800 leading-none">
-                {selectedMentorDetail.reviewCount || 0}
+            <div className="py-2 md:py-0 space-y-0.5">
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Mentoring</span>
+              <span className="text-sm font-extrabold text-slate-800">
+                {selectedMentorDetail.completedSessions || 0} buổi
               </span>
             </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Số buổi mentoring</span>
-              <span className="text-xl font-black text-slate-800 leading-none">
-                {selectedMentorDetail.completedSessions || 0}
+            <div className="py-2 md:py-0 space-y-0.5 px-2 truncate">
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Chuyên ngành</span>
+              <span className="text-xs font-extrabold text-slate-800 block truncate" title={selectedMentorDetail.specializationName}>
+                {selectedMentorDetail.specializationName || 'Kỹ năng'}
+              </span>
+            </div>
+            <div className="py-2 md:py-0 space-y-0.5">
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Dự án</span>
+              <span className="text-sm font-extrabold text-slate-800">
+                {selectedMentorDetail.portfolios?.length || 0}+ dự án
+              </span>
+            </div>
+            <div className="py-2 md:py-0 space-y-0.5 px-2 truncate">
+              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Cơ sở đào tạo</span>
+              <span className="text-xs font-extrabold text-slate-800 block truncate" title={selectedMentorDetail.campusName}>
+                {selectedMentorDetail.campusName || 'FPT University'}
               </span>
             </div>
           </div>
-
-          {/* Số liệu thật của mentor (thay cho dữ liệu mock trước đây) */}
-          <div className="border-t border-slate-100 bg-surface grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-center py-4.5">
-            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Buổi đã hoàn thành</span>
-              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
-                <Briefcase className="w-4 h-4 text-primary" />
-                {selectedMentorDetail.completedSessions ?? 0} buổi
-              </span>
-            </div>
-            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Điểm đánh giá</span>
-              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                {selectedMentorDetail.reviewCount ? selectedMentorDetail.ratingAverage.toFixed(1) : 'Chưa có'}
-              </span>
-            </div>
-            <div className="py-2.5 sm:py-0 space-y-1.5 flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Lượt đánh giá</span>
-              <span className="text-body font-bold text-slate-800 flex items-center gap-1.5 leading-none">
-                <Award className="w-4 h-4 text-rose-500" />
-                {selectedMentorDetail.reviewCount ?? 0} lượt
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll down indicator */}
-        <div className="flex flex-col items-center justify-center py-2.5">
-          <button
-            onClick={() => {
-              bookingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center gap-1.5 text-xs font-black text-primary hover:text-primary-hover animate-bounce cursor-pointer group transition-all duration-300"
-          >
-            <span>Đặt lịch học phía dưới</span>
-            <ChevronDown className="w-5 h-5 group-hover:scale-110 transition-transform stroke-[3.5]" />
-          </button>
-        </div>
-
-        {/* Tab Navigator (Point 2) */}
-        <div className="flex border-b border-line-soft gap-6">
-          <button
-            onClick={() => setActiveDetailTab('about')}
-            className={`pb-4 text-body font-extrabold transition-all relative cursor-pointer ${
-              activeDetailTab === 'about'
-                ? 'text-primary'
-                : 'text-fg-faint hover:text-fg-muted'
-            }`}
-          >
-            Thông tin giới thiệu
-            {activeDetailTab === 'about' && (
-              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full animate-fadeIn" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveDetailTab('portfolio')}
-            className={`pb-4 text-body font-extrabold transition-all relative cursor-pointer ${
-              activeDetailTab === 'portfolio'
-                ? 'text-primary'
-                : 'text-fg-faint hover:text-fg-muted'
-            }`}
-          >
-            Dự án &amp; Portfolio ({selectedMentorDetail.portfolios?.length || 0})
-            {activeDetailTab === 'portfolio' && (
-              <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full animate-fadeIn" />
-            )}
-          </button>
         </div>
 
         {/* Main 2-column details & courses layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Bio & Information (col-span-7) */}
-          <div className="lg:col-span-7 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Left Column: Bio, Skills, Projects, Education, etc. (col-span-8) */}
+          <div className="lg:col-span-8 space-y-6">
             
-            {activeDetailTab === 'about' ? (
-              <>
-                {/* Bio Box */}
-                {selectedMentorDetail.bio && (
-                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                      <Award className="w-5 h-5 text-teal-600" />
-                      <span>Giới thiệu bản thân</span>
-                    </h3>
-                    <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
-                      {selectedMentorDetail.bio}
-                    </p>
-                  </div>
-                )}
-
-                {/* Achievements Box (Point 1) */}
-                {selectedMentorDetail.achievements && selectedMentorDetail.achievements.length > 0 && (
-                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04)] hover:-translate-y-[1px] transition-all duration-300 space-y-4">
-                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                      <Award className="w-5 h-5 text-amber-500 fill-amber-500/10" />
-                      <span>Giải thưởng &amp; Thành tích</span>
-                    </h3>
-                    <ul className="space-y-3">
-                      {selectedMentorDetail.achievements.map((ach) => (
-                        <li key={ach.id} className="flex items-start gap-3 text-body text-slate-600 font-medium leading-relaxed">
-                          <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                          <span>
-                            <span className="font-bold text-slate-800">{ach.title}</span>
-                            {ach.awardDescription && <span className="text-slate-500"> — {ach.awardDescription}</span>}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Expertise box */}
-                {selectedMentorDetail.expertiseDescription && (
-                  <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-                    <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                      <BookOpen className="w-5 h-5 text-teal-600" />
-                      <span>Kinh nghiệm &amp; Chuyên môn</span>
-                    </h3>
-                    <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
-                      {selectedMentorDetail.expertiseDescription}
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              /* Portfolios Tab View (Point 2) */
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {(selectedMentorDetail.portfolios ?? []).map((project) => (
-                    <div key={project.id} className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between hover:-translate-y-[1px]">
-                      <div>
-                        {project.imageUrl && (
-                          <div className="h-40 overflow-hidden bg-slate-100 border-b border-line flex items-center justify-center">
-                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                        <div className="p-5 space-y-2.5">
-                          <span className="text-[10px] font-extrabold text-primary bg-primary-soft/80 border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider inline-block">
-                            {project.role}
-                          </span>
-                          <h4 className="text-body font-bold text-slate-800 line-clamp-1">
-                            {project.title}
-                          </h4>
-                          <p className="text-meta text-slate-500 line-clamp-2 leading-relaxed">
-                            {project.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="p-5 pt-0 border-t border-slate-50 mt-3 flex items-center justify-between">
-                        <button
-                          onClick={() => setSelectedProject(project)}
-                          className="text-meta text-primary hover:text-primary-hover font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <LayoutGrid className="w-3.5 h-3.5" />
-                          <span>Xem chi tiết</span>
-                        </button>
-                        <div className="flex gap-2">
-                          {project.figmaUrl && (
-                            <a href={project.figmaUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-rose-500" title="Figma Prototype">
-                              <Figma className="w-4 h-4" />
-                            </a>
-                          )}
-                          {project.githubUrl && (
-                            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900" title="GitHub Code">
-                              <Github className="w-4 h-4" />
-                            </a>
-                          )}
-                          {project.behanceUrl && (
-                            <a href={project.behanceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-blue-600" title="Behance Project">
-                              <Behance className="w-4 h-4" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {(!selectedMentorDetail.portfolios || selectedMentorDetail.portfolios.length === 0) && (
-                    <div className="col-span-1 md:col-span-2 py-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                      <p className="text-body font-bold text-slate-400">Mentor này chưa cấu hình danh sách Portfolio dự án.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Academic Information */}
-            <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                <Globe className="w-5 h-5 text-teal-600" />
-                <span>Thông tin đào tạo &amp; Hỗ trợ</span>
+            {/* Card 1: Giới thiệu bản thân */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
+              <h3 className="text-body font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Info className="w-5 h-5 text-primary" />
+                <span>Giới thiệu bản thân</span>
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-body font-semibold">
-                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Cơ sở học tập</span>
-                  <span className="text-slate-800">{selectedMentorDetail.campusName}</span>
-                </div>
-                <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                  <span className="text-meta text-slate-400">Chuyên ngành chính</span>
-                  <span className="text-slate-800">{selectedMentorDetail.specializationName}</span>
-                </div>
-                {selectedMentorDetail.foundationSupportLevel != null && (
-                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                    <span className="text-meta text-slate-400">Hỗ trợ nền tảng · Mức {selectedMentorDetail.foundationSupportLevel}/4</span>
-                    <span className="text-slate-800">{levelLabel(profileOptions?.foundationSupportLevels, selectedMentorDetail.foundationSupportLevel) ?? `Mức ${selectedMentorDetail.foundationSupportLevel}/4`}</span>
-                  </div>
-                )}
-                {selectedMentorDetail.outputReviewSupportLevel != null && (
-                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                    <span className="text-meta text-slate-400">Review sản phẩm · Mức {selectedMentorDetail.outputReviewSupportLevel}/4</span>
-                    <span className="text-slate-800">{levelLabel(profileOptions?.outputReviewSupportLevels, selectedMentorDetail.outputReviewSupportLevel) ?? `Mức ${selectedMentorDetail.outputReviewSupportLevel}/4`}</span>
-                  </div>
-                )}
-                {selectedMentorDetail.directionSupportLevel != null && (
-                  <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]">
-                    <span className="text-meta text-slate-400">Định hướng · Mức {selectedMentorDetail.directionSupportLevel}/4</span>
-                    <span className="text-slate-800">{levelLabel(profileOptions?.directionSupportLevels, selectedMentorDetail.directionSupportLevel) ?? `Mức ${selectedMentorDetail.directionSupportLevel}/4`}</span>
-                  </div>
-                )}
-              </div>
+              <p className="text-body text-slate-600 leading-relaxed font-medium whitespace-pre-line text-justify">
+                {selectedMentorDetail.bio || 'Chưa cấu hình thông tin giới thiệu.'}
+              </p>
             </div>
 
-            {/* Môn học thế mạnh (contract v2: subjectResults) */}
-            {selectedMentorDetail.subjectResults && selectedMentorDetail.subjectResults.length > 0 && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <BookOpen className="w-5 h-5 text-teal-600" />
-                  <span>Môn học thế mạnh</span>
-                </h3>
-                <div className="flex flex-wrap gap-2.5">
-                  {selectedMentorDetail.subjectResults
-                    .slice()
-                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-                    .map((s) => (
-                      <span
-                        key={s.id ?? s.subjectCode}
-                        className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-meta font-bold px-3 py-1.5 rounded-lg"
-                        title={s.subjectName}
-                      >
-                        {s.subjectCode}
-                        <span className="text-brand-terracotta font-extrabold">{s.scoreValue.toFixed(1)}</span>
-                      </span>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Dự án tiêu biểu (contract v2: featuredProjects) */}
-            {selectedMentorDetail.featuredProjects && selectedMentorDetail.featuredProjects.length > 0 && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02)] space-y-4">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <Briefcase className="w-5 h-5 text-teal-600" />
-                  <span>Dự án tiêu biểu</span>
-                </h3>
-                <div className="space-y-5">
-                  {selectedMentorDetail.featuredProjects
-                    .slice()
-                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-                    .map((p) => (
-                      <div key={p.id} className="flex gap-4 items-start">
-                        {p.pictureUrl && (
-                          <img src={p.pictureUrl} alt={p.title} className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0" />
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-body font-bold text-slate-800">{p.title}</p>
-                          {p.content && <p className="text-meta text-slate-500 mt-0.5">{p.content}</p>}
-                          {p.projectDescription && <p className="text-meta text-slate-600 mt-1 leading-relaxed">{p.projectDescription}</p>}
-                          {p.liveDemoUrl && (
-                            <a href={p.liveDemoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-meta font-bold text-primary hover:text-primary-hover mt-1.5">
-                              <Globe className="w-3.5 h-3.5" /> Xem demo
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Lĩnh vực hỗ trợ */}
-            {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 && (
-              <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-                <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                  <Heart className="w-5 h-5 text-teal-600" />
-                  <span>Lĩnh vực hỗ trợ chủ đạo</span>
-                </h3>
-                <div className="flex flex-wrap gap-2.5">
-                  {selectedMentorDetail.helpTopicTags.map((tag) => (
+            {/* Card 2: Kỹ năng chuyên môn */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
+              <h3 className="text-body font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Compass className="w-5 h-5 text-primary" />
+                <span>Kỹ năng chuyên môn</span>
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedMentorDetail.helpTopicTags && selectedMentorDetail.helpTopicTags.length > 0 ? (
+                  selectedMentorDetail.helpTopicTags.map((tag) => (
                     <span
                       key={tag.id}
-                      className="px-4 py-1.5 rounded-full text-body font-bold bg-slate-50 border border-slate-200/60 text-slate-700 shadow-sm shadow-slate-100 hover:border-teal-500/40 hover:text-teal-600 transition-colors"
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#f0f4ff]/50 border border-primary/15 text-primary hover:bg-[#f0f4ff] transition-colors"
                     >
                       {tag.nameVi}
                     </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right Column: Active Services & Month Booking Widget & Details (col-span-5) */}
-          <div className="lg:col-span-5 space-y-6">
-            
-            {/* Các môn hỗ trợ của Mentor */}
-            <div className="bg-white border border-slate-100/80 p-8 rounded-3xl shadow-[0_10px_25px_rgba(0,0,0,0.02),inset_0_2px_4px_rgba(255,255,255,0.955)] hover:shadow-[0_16px_35px_rgba(0,0,0,0.04),inset_0_2px_4px_rgba(255,255,255,0.955)] hover:-translate-y-[1px] transition-all duration-300 relative overflow-hidden bg-[radial-gradient(rgba(0,56,224,0.012)_1px,transparent_1px)] [background-size:12px_12px] space-y-4">
-              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                <BookOpen className="w-5 h-5 text-teal-600" />
-                <span>Các môn hỗ trợ của Mentor</span>
-              </h3>
-
-              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
-                {!selectedMentorDetail.services || selectedMentorDetail.services.length === 0 ? (
-                  <p className="text-body text-slate-400 italic text-center py-8">Mentor chưa cập nhật môn học hỗ trợ nào.</p>
-                ) : (
-                  selectedMentorDetail.services.map((srv) => (
-                    <div key={srv.serviceId} className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 space-y-3 hover:shadow-sm hover:border-slate-200/80 transition-all text-left relative overflow-hidden group">
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="text-body font-black text-slate-800 leading-snug group-hover:text-primary transition-colors">{srv.title}</span>
-                        <span className="text-meta font-black text-teal-700 whitespace-nowrap bg-teal-50 border border-teal-200/50 px-3 py-1 rounded-full shrink-0 shadow-2xs">
-                          {srv.free ? 'Miễn phí' : `${srv.priceScoin?.toLocaleString('en-US')} P`}
-                        </span>
-                      </div>
-                      <p className="text-meta text-slate-500 leading-relaxed font-semibold line-clamp-2">{srv.description}</p>
-                      <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-400 pt-2 border-t border-slate-100">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-slate-300" />
-                          Thời gian: {srv.durationMinutes} phút
-                        </span>
-                      </div>
-                    </div>
                   ))
+                ) : (
+                  <span className="text-meta text-slate-400 italic">Chưa cấu hình kỹ năng chuyên môn.</span>
+                )}
+              </div>
+
+              {/* Support Levels Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 text-xs font-semibold">
+                {selectedMentorDetail.foundationSupportLevel != null && (
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-meta text-slate-400 block mb-0.5">Hỗ trợ nền tảng</span>
+                    <span className="text-slate-800 font-bold">{levelLabel(profileOptions?.foundationSupportLevels, selectedMentorDetail.foundationSupportLevel)}</span>
+                  </div>
+                )}
+                {selectedMentorDetail.outputReviewSupportLevel != null && (
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-meta text-slate-400 block mb-0.5">Review sản phẩm</span>
+                    <span className="text-slate-800 font-bold">{levelLabel(profileOptions?.outputReviewSupportLevels, selectedMentorDetail.outputReviewSupportLevel)}</span>
+                  </div>
+                )}
+                {selectedMentorDetail.directionSupportLevel != null && (
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-meta text-slate-400 block mb-0.5">Định hướng sự nghiệp</span>
+                    <span className="text-slate-800 font-bold">{levelLabel(profileOptions?.directionSupportLevels, selectedMentorDetail.directionSupportLevel)}</span>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Lên lịch hẹn hỗ trợ widget */}
+            {/* Card 3: Dự án tiêu biểu & Portfolio */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
+              <h3 className="text-body font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Briefcase className="w-5 h-5 text-primary" />
+                <span>Dự án tiêu biểu &amp; Portfolio</span>
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {(selectedMentorDetail.portfolios ?? []).map((project) => (
+                  <div key={project.id} className="bg-white border border-[#e8eeff] rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between hover:-translate-y-[1px]">
+                    <div>
+                      {project.imageUrl && (
+                        <div className="h-40 overflow-hidden bg-slate-100 border-b border-slate-100 flex items-center justify-center">
+                          <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="p-4 space-y-2">
+                        <span className="text-[10px] font-extrabold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider inline-block">
+                          {project.role}
+                        </span>
+                        <h4 className="text-body font-bold text-slate-800 line-clamp-1">
+                          {project.title}
+                        </h4>
+                        <p className="text-meta text-slate-500 line-clamp-2 leading-relaxed font-semibold">
+                          {project.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-4 pt-0 border-t border-slate-50 mt-3 flex items-center justify-between">
+                      <button
+                        onClick={() => setSelectedProject(project)}
+                        className="text-meta text-primary hover:text-primary-hover font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span>Xem chi tiết</span>
+                      </button>
+                      <div className="flex gap-2">
+                        {project.figmaUrl && (
+                          <a href={project.figmaUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-rose-500" title="Figma Prototype">
+                            <Figma className="w-4 h-4" />
+                          </a>
+                        )}
+                        {project.githubUrl && (
+                          <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900" title="GitHub Code">
+                            <Github className="w-4 h-4" />
+                          </a>
+                        )}
+                        {project.behanceUrl && (
+                          <a href={project.behanceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-blue-600" title="Behance Project">
+                            <Behance className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {(!selectedMentorDetail.portfolios || selectedMentorDetail.portfolios.length === 0) && (
+                  <div className="col-span-2 py-8 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 text-meta text-slate-400 font-semibold">
+                    Mentor này chưa cấu hình danh sách Portfolio dự án.
+                  </div>
+                )}
+              </div>
+
+              {/* Môn học thế mạnh (subjectResults) */}
+              {selectedMentorDetail.subjectResults && selectedMentorDetail.subjectResults.length > 0 && (
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider block font-sans">Môn học thế mạnh</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedMentorDetail.subjectResults
+                      .slice()
+                      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                      .map((s) => (
+                        <span
+                          key={s.id ?? s.subjectCode}
+                          className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-meta font-bold px-3 py-1.5 rounded-lg"
+                          title={s.subjectName}
+                        >
+                          {s.subjectCode}
+                          <span className="text-brand-terracotta font-extrabold">{s.scoreValue.toFixed(1)}</span>
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Card 4: Học vấn & Giải thưởng */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
+              <h3 className="text-body font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Award className="w-5 h-5 text-primary" />
+                <span>Học vấn &amp; Giải thưởng</span>
+              </h3>
+              {selectedMentorDetail.achievements && selectedMentorDetail.achievements.length > 0 ? (
+                <div className="relative pl-6 border-l border-primary/20 space-y-5">
+                  {selectedMentorDetail.achievements.map((ach) => (
+                    <div key={ach.id} className="relative group text-left">
+                      {/* Dot decoration */}
+                      <span className="absolute -left-[30px] top-1.5 w-3.5 h-3.5 rounded-full bg-white border-2 border-primary flex items-center justify-center transition-all group-hover:scale-110">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      </span>
+                      <h4 className="text-xs font-extrabold text-slate-800 leading-snug">
+                        {ach.title}
+                      </h4>
+                      {ach.awardDescription && (
+                        <p className="text-meta text-slate-500 font-semibold leading-relaxed mt-1 text-justify">
+                          {ach.awardDescription}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-meta text-slate-400 italic font-semibold text-center py-4">Mentor chưa cấu hình học vấn &amp; giải thưởng.</p>
+              )}
+            </div>
+
+            {/* Card 5: Các buổi chia sẻ khác */}
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
+              <h3 className="text-body font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <span>Các buổi chia sẻ khác</span>
+              </h3>
+              <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
+                {!selectedMentorDetail.services || selectedMentorDetail.services.length === 0 ? (
+                  <p className="text-meta text-slate-400 italic text-center py-8">Mentor chưa cập nhật môn học hỗ trợ nào.</p>
+                ) : (
+                  selectedMentorDetail.services.map((srv) => {
+                    const isCurrent = srv.serviceId === selectedServiceId;
+                    return (
+                      <div
+                        key={srv.serviceId}
+                        className={`p-4.5 border rounded-2xl space-y-3 transition-all text-left relative overflow-hidden group flex flex-col justify-between sm:flex-row sm:items-center sm:gap-4 ${
+                          isCurrent
+                            ? 'bg-primary/5 border-primary/30 shadow-xs'
+                            : 'bg-slate-50/50 border-[#e8eeff] hover:bg-slate-50 hover:shadow-xs'
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-black text-slate-800 leading-snug group-hover:text-primary transition-colors">
+                              {srv.title}
+                            </span>
+                            <span className="text-[9px] font-black text-teal-700 whitespace-nowrap bg-teal-50 border border-teal-200/50 px-2 py-0.5 rounded-full shrink-0 shadow-2xs">
+                              {srv.free ? 'Miễn phí' : `${srv.priceScoin?.toLocaleString('en-US')} SCoin / giờ`}
+                            </span>
+                          </div>
+                          <p className="text-meta text-slate-500 leading-relaxed font-semibold line-clamp-2 pr-4">
+                            {srv.description}
+                          </p>
+                          <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 pt-1">
+                            <Clock className="w-3.5 h-3.5 text-slate-300" />
+                            <span>Thời lượng: {srv.durationMinutes} phút</span>
+                          </div>
+                        </div>
+                        
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedServiceId(srv.serviceId);
+                            bookingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                            
+                            window.dispatchEvent(new CustomEvent('push-toast', {
+                              detail: {
+                                title: 'Chọn gói thành công',
+                                message: `Đã chọn gói: ${srv.title}. Bạn có thể chọn ngày giờ học ở cột bên phải.`,
+                                type: 'INFO'
+                              }
+                            }));
+                          }}
+                          className={`py-2 px-4 rounded-xl text-meta font-extrabold cursor-pointer transition-all shrink-0 mt-3 sm:mt-0 ${
+                            isCurrent
+                              ? 'bg-primary text-white border border-primary shadow-xs'
+                              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-primary hover:border-primary/50'
+                          }`}
+                        >
+                          {isCurrent ? 'Đang chọn' : 'Xem chi tiết'}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column: Outstanding Service Booking Widget & Social Links & Recent Reviews (col-span-4) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Booking Card */}
             <div
               ref={bookingSectionRef}
-              className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4 text-left relative overflow-hidden"
+              className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-5 text-left relative overflow-hidden"
             >
               {bookingSuccess ? (
-                <div className="py-12 text-center space-y-4 animate-fadeIn">
+                <div className="py-16 text-center space-y-4 animate-fadeIn">
                   <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200 shadow-md">
                     <Check className="w-8 h-8 stroke-[3]" />
                   </div>
                   <h3 className="text-slate-800 font-bold text-lg font-sans">Gửi yêu cầu đặt lịch thành công!</h3>
-                  <p className="text-slate-500 text-body-md font-medium max-w-xs mx-auto">Hệ thống đã gửi yêu cầu tới {activeMentor?.displayName}. Đang chuyển hướng...</p>
+                  <p className="text-slate-500 text-body-md font-medium max-w-xs mx-auto leading-relaxed">
+                    Hệ thống đã gửi yêu cầu tới {selectedMentorDetail.displayName}. Đang chuyển hướng...
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-body-lg font-bold text-slate-900 font-headline">Đặt lịch hẹn hỗ trợ</h3>
-                    <p className="text-xs text-slate-400 mt-1">Chọn ngày, giờ và điền mục tiêu của bạn để gửi yêu cầu cho mentor</p>
+                <div className="space-y-4.5">
+                  <div className="space-y-2 border-b border-slate-100 pb-3">
+                    <span className="inline-block text-[9px] font-black text-white bg-primary px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                      Gói nổi bật
+                    </span>
+                    <h3 className="text-body-lg font-black text-slate-900 leading-tight">
+                      {selectedService ? selectedService.title : 'Chưa chọn gói'}
+                    </h3>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-primary text-2xl font-black">{priceDisplay}</span>
+                      <span className="text-meta text-slate-400 font-bold">/ giờ</span>
+                    </div>
+                    {selectedService?.description && (
+                      <div className="text-meta text-slate-500 font-semibold leading-relaxed pt-1.5 space-y-1 pr-1 max-h-[80px] overflow-y-auto custom-scrollbar">
+                        {selectedService.description.split('\n').map((line, idx) => (
+                          <p key={idx} className="flex items-start gap-1">
+                            <span className="text-primary font-bold shrink-0">✓</span>
+                            <span>{line}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {bookingError && (
@@ -1591,10 +1508,10 @@ export const Mentors: React.FC = () => {
                   )}
 
                   {/* Monthly Calendar View */}
-                  <div className="bg-[#f0f4ff]/40 p-4.5 rounded-2xl border border-[#e8eeff] space-y-3">
+                  <div className="bg-[#f0f4ff]/30 p-4.5 rounded-2xl border border-[#e8eeff] space-y-3">
                     {/* Month Picker Header */}
                     <div className="flex justify-between items-center px-1">
-                      <span className="text-sm font-bold text-[#151c29] font-headline">
+                      <span className="text-xs font-extrabold text-[#151c29] uppercase tracking-wide">
                         {`Tháng ${currentCalendarMonth.getMonth() + 1}, ${currentCalendarMonth.getFullYear()}`}
                       </span>
                       <div className="flex gap-2.5">
@@ -1603,18 +1520,18 @@ export const Mentors: React.FC = () => {
                           onClick={() => {
                             setCurrentCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
                           }}
-                          className="p-1 hover:bg-slate-200/50 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
+                          className="p-1 hover:bg-slate-200/55 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
                         >
-                          <ChevronLeft className="w-4.5 h-4.5" />
+                          <ChevronLeft className="w-4 h-4" />
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setCurrentCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
                           }}
-                          className="p-1 hover:bg-slate-200/50 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
+                          className="p-1 hover:bg-slate-200/55 rounded-full cursor-pointer text-[#717786] hover:text-[#151c29] transition-all"
                         >
-                          <ChevronRight className="w-4.5 h-4.5" />
+                          <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -1682,64 +1599,29 @@ export const Mentors: React.FC = () => {
                   {/* Selected Day Status & Booking Flow */}
                   {(() => {
                     const daySlots = activeSlots.filter(s => getLocalDateStr(s.startTime) === selectedDateStr);
-                    const slot = daySlots[0] || null;
-                    const slotServices = slot?.services || [];
-
+                    
                     return (
                       <div className="space-y-4 pt-1">
-                        {/* Service selector */}
-                        {daySlots.length > 0 && slotServices.length > 0 && (
-                          <div className="space-y-1.5 text-left">
-                            <label className="block text-xs font-bold text-[#414754] uppercase tracking-wide font-headline">Chọn môn học / dịch vụ</label>
-                            {slotServices.length === 1 ? (
-                              <div className="p-3 bg-[#f9f9ff] border border-slate-200/60 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between">
-                                <span>{slotServices[0].title}</span>
-                                <span className="text-[10px] font-black text-secondary bg-secondary-container/10 border border-secondary/20 px-2 py-0.5 rounded-full">
-                                  {slotServices[0].isFree ? 'Miễn phí' : `${slotServices[0].priceScoin?.toLocaleString('en-US') || 0} Point`}
-                                </span>
-                              </div>
-                            ) : (
-                              <select
-                                value={selectedServiceId}
-                                onChange={(e) => {
-                                  setSelectedServiceId(e.target.value);
-                                  setBookingError(null);
-                                }}
-                                className="w-full bg-[#f9f9ff] border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23717786%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_10px_center] bg-no-repeat"
-                              >
-                                {slotServices.map(s => {
-                                  const sId = s.serviceId || (s as any).id;
-                                  return (
-                                    <option key={sId} value={sId}>
-                                      {s.title} ({s.isFree ? 'Miễn phí' : `${s.priceScoin?.toLocaleString('en-US')} Point`})
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Chọn khung giờ dropdown */}
+                        {/* Chọn khung giờ */}
                         <div className="space-y-1.5 text-left">
-                          <label className="block text-xs font-bold text-[#414754] uppercase tracking-wide font-headline">Chọn khung giờ</label>
+                          <label className="block text-[10px] font-extrabold text-[#414754] uppercase tracking-wider font-sans">Chọn khung giờ học</label>
                           {daySlots.length === 0 ? (
                             <p className="text-xs text-slate-400 italic py-3 text-center bg-slate-50 border border-slate-100 rounded-xl font-sans">
                               Không có lịch rảnh nào trong ngày này.
                             </p>
                           ) : !selectedServiceId ? (
-                            <p className="text-xs text-slate-400 italic py-1">Vui lòng chọn môn học/dịch vụ ở trên.</p>
+                            <p className="text-xs text-slate-400 italic py-1 font-sans">Vui lòng chọn môn học ở cột bên trái.</p>
                           ) : candidatesLoading ? (
                             <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold py-2">
-                              <Loader2 className="w-4.5 h-4.5 animate-spin text-primary" /> Đang kiểm tra slot trống...
+                              <Loader2 className="w-4.5 h-4.5 animate-spin text-primary" /> Đang kiểm tra slot...
                             </div>
                           ) : candidates.length === 0 ? (
-                            <p className="text-xs text-rose-600 font-semibold py-1">Khung lịch này hiện đã kín, vui lòng chọn lại.</p>
+                            <p className="text-xs text-rose-600 font-semibold py-1 font-sans">Khung lịch này hiện đã kín, vui lòng chọn lại.</p>
                           ) : (
                             <select
                               value={selectedCandidateKey}
                               onChange={(e) => setSelectedCandidateKey(e.target.value)}
-                              className="w-full bg-[#f9f9ff] border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23717786%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_10px_center] bg-no-repeat"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 font-semibold cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23717786%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_10px_center] bg-no-repeat font-sans"
                             >
                               <option value="" disabled className="text-slate-400">-- Chọn khung giờ học --</option>
                               {candidates.map((c) => {
@@ -1756,8 +1638,9 @@ export const Mentors: React.FC = () => {
                           )}
                         </div>
 
-                        {/* "Xem chi tiết các khung giờ" button */}
-                        <div className="pt-1">
+                        {/* Booking Form Details */}
+                        <div className="space-y-3 pt-3 border-t border-slate-100">
+                          {/* "Xem chi tiết các khung giờ" Button */}
                           <button
                             type="button"
                             onClick={() => {
@@ -1769,11 +1652,8 @@ export const Mentors: React.FC = () => {
                             <Calendar className="w-4 h-4 text-slate-400" />
                             <span>Xem chi tiết các khung giờ</span>
                           </button>
-                        </div>
 
-                        {/* Booking Form Details */}
-                        <div className="space-y-3 pt-4 border-t border-slate-100">
-                          {/* "Đặt lịch học ngay" Trigger Button */}
+                          {/* "Đặt lịch học ngay" Button */}
                           <button
                             type="button"
                             disabled={!selectedSlotId || !selectedServiceId || !selectedCandidateKey}
@@ -1803,25 +1683,10 @@ export const Mentors: React.FC = () => {
               )}
             </div>
 
-            {/* Connection card as a button, matching image 1 layout */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsDetailedBookingMode(true);
-                if (!selectedServiceId && selectedMentorDetail.services && selectedMentorDetail.services.length > 0) {
-                  setSelectedServiceId(selectedMentorDetail.services[0].serviceId);
-                }
-                setVisibleStartDate(selectedDateStr ? new Date(selectedDateStr) : new Date());
-              }}
-              className="w-full bg-white border border-[#e8eeff] py-5 px-6 rounded-2xl text-slate-900 hover:bg-slate-50/80 hover:shadow-md text-sm font-black uppercase tracking-wider text-center cursor-pointer transition-all active:scale-[0.99] shadow-sm font-sans"
-            >
-              Kết nối với {selectedMentorDetail.displayName}
-            </button>
-
-            {/* Kết nối với Mentor */}
+            {/* Social Links Connections Card */}
             {(selectedMentorDetail.linkedinUrl || selectedMentorDetail.githubUrl || selectedMentorDetail.portfolioUrl) && (
-              <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm text-center space-y-4">
-                <h4 className="text-xs text-slate-400 font-bold uppercase tracking-wider font-headline">
+              <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm text-center space-y-4">
+                <h4 className="text-xs text-slate-400 font-extrabold uppercase tracking-widest font-sans">
                   Kết nối với {selectedMentorDetail.displayName}
                 </h4>
                 <div className="flex gap-4 justify-center">
@@ -1863,7 +1728,7 @@ export const Mentors: React.FC = () => {
             )}
 
             {/* Đánh giá gần đây */}
-            <div className="bg-white border border-[#e8eeff] p-6 rounded-2xl shadow-sm space-y-4">
+            <div className="bg-white border border-[#e8eeff] p-6 rounded-3xl shadow-sm space-y-4">
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h4 className="text-xs font-bold text-[#151c29] uppercase tracking-wider font-headline">Đánh giá gần đây</h4>
                 <button
@@ -1879,7 +1744,7 @@ export const Mentors: React.FC = () => {
                 {profileReviewsLoading ? (
                   <div className="py-6 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
                 ) : profileReviews.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic py-4 text-center">Chưa có đánh giá nào.</p>
+                  <p className="text-xs text-slate-400 italic py-4 text-center font-sans">Chưa có đánh giá nào.</p>
                 ) : (
                   profileReviews.map((rev) => (
                     <div key={rev.reviewId} className="p-3 border border-slate-100 rounded-xl space-y-2 bg-slate-50/30 text-left">
@@ -1893,7 +1758,7 @@ export const Mentors: React.FC = () => {
                           />
                           <div>
                             <span className="text-xs font-bold text-slate-800 block leading-tight">{rev.reviewerDisplayName}</span>
-                            <span className="text-[10px] text-slate-400 font-semibold block">{fmtDateTime(rev.createdAt)}</span>
+                            <span className="text-[10px] text-slate-400 font-semibold block font-sans">{fmtDateTime(rev.createdAt)}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-0.5 text-amber-400">
@@ -1903,7 +1768,7 @@ export const Mentors: React.FC = () => {
                         </div>
                       </div>
                       {rev.comment && (
-                        <p className="text-xs text-slate-600 leading-relaxed font-medium font-sans">
+                        <p className="text-xs text-slate-600 leading-relaxed font-semibold font-sans text-justify">
                           "{rev.comment}"
                         </p>
                       )}
@@ -1914,14 +1779,11 @@ export const Mentors: React.FC = () => {
             </div>
 
           </div>
+
         </div>
       </div>
     );
-  };
-
-
-
-  return (
+  };  return (
     <div className="space-y-8 text-left relative min-h-screen pb-16">
 
       {selectedMentorDetail ? (
