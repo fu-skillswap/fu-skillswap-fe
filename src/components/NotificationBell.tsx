@@ -146,7 +146,7 @@ export const NotificationBell: React.FC = () => {
     };
   }, [pollNotifications, handleIncomingNotification]);
 
-  // Tải lại toàn bộ danh sách khi mở quả chuông và tự động đánh dấu tất cả là đã đọc
+  // Tải lại toàn bộ danh sách khi mở quả chuông
   const loadList = useCallback(async () => {
     setLoading(true);
     try {
@@ -155,20 +155,8 @@ export const NotificationBell: React.FC = () => {
         notificationsApi.unreadCount(),
       ]);
       const currentItems = res.content ?? [];
-      const hasUnread = (countRes?.unreadCount ?? 0) > 0 || currentItems.some((n) => !n.read);
-
-      if (hasUnread) {
-        // Tự động đánh dấu tất cả là đã đọc trong giao diện
-        setItems(currentItems.map((n) => ({ ...n, read: true })));
-        setUnread(0);
-        // Gọi API đánh dấu tất cả đã đọc dưới background
-        notificationsApi.markAllAsRead().catch((err) => {
-          console.error('Lỗi tự động đánh dấu đọc tất cả:', err);
-        });
-      } else {
-        setItems(currentItems);
-        setUnread(0);
-      }
+      setItems(currentItems);
+      setUnread(countRes?.unreadCount ?? 0);
       
       // Đảm bảo đồng bộ hóa ID đã biết
       currentItems.forEach((n) => knownIdsRef.current.add(n.notificationId));
@@ -249,10 +237,14 @@ export const NotificationBell: React.FC = () => {
       // Cập nhật giao diện lạc quan (optimistic UI update)
       setItems((prev) => prev.map((it) => (it.notificationId === n.notificationId ? { ...it, read: true } : it)));
       setUnread((c) => Math.max(0, c - 1));
-      notificationsApi.markAsRead(n.notificationId).catch((err) => {
-        console.error('Lỗi đánh dấu đã đọc:', err);
-        pollNotifications();
-      });
+      
+      // Chỉ gửi PATCH lên backend nếu không phải là thông báo ảo từ UI
+      if (n.notificationId && !n.notificationId.startsWith('toast-')) {
+        notificationsApi.markAsRead(n.notificationId).catch((err) => {
+          console.error('Lỗi đánh dấu đã đọc:', err);
+          pollNotifications();
+        });
+      }
     }
     const path = linkFor(n);
     if (path) navigate(path);
