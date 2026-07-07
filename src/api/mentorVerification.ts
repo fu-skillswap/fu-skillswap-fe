@@ -42,7 +42,7 @@ export const mentorVerificationApi = {
 
   /** DELETE /api/me/mentor-verification/documents/{documentId} — xóa mềm */
   deleteDocument: (documentId: string) =>
-    http.del<void>(`/api/me/mentor-verification/documents/${documentId}`),
+    http.del<VerificationRequest>(`/api/me/mentor-verification/documents/${documentId}`),
 
   /** POST /api/me/mentor-verification/submit — bắt buộc termsAccepted: true */
   submit: (params: { submitNote?: string; termsAccepted: boolean }) =>
