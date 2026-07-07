@@ -3,7 +3,6 @@
 // =====================================================================
 import { http } from './http';
 import { apiClient } from './client';
-import { uploadToCloudinary } from '../lib/cloudinary';
 import type { VerificationRequest, VerificationDocument, TimelineEvent, DocumentType } from './types';
 
 export const mentorVerificationApi = {
@@ -25,21 +24,20 @@ export const mentorVerificationApi = {
 
   /**
    * POST /api/me/mentor-verification/documents
-   * BE không nhận file thô — file được upload thẳng lên Cloudinary (unsigned)
-   * trước, sau đó gửi metadata (fileUrl, publicId, sizeBytes, contentType,
-   * originalFilename...) về BE để lưu vào DB, giống luồng avatar/forum.
+   * Nhận multipart file minh chứng, backend upload lên R2 và lưu metadata vào request hiện tại.
    */
   uploadDocument: async (params: { documentType: DocumentType; file: File }) => {
-    const result = await uploadToCloudinary(params.file, { resourceType: 'auto' });
-    // BE mới yêu cầu: documentType, fileUrl, publicId, originalFilename, contentType, sizeBytes (KHÔNG còn isPrimary).
-    return http.post<VerificationDocument>('/api/me/mentor-verification/documents', {
-      documentType: params.documentType,
-      fileUrl: result.fileUrl,
-      publicId: result.publicId,
-      sizeBytes: result.sizeBytes,
-      contentType: result.contentType,
-      originalFilename: result.originalFilename,
-    });
+    const formData = new FormData();
+    formData.append('file', params.file);
+    return http.post<VerificationRequest>(
+      `/api/me/mentor-verification/documents?documentType=${params.documentType}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
   },
 
   /** DELETE /api/me/mentor-verification/documents/{documentId} — xóa mềm */
