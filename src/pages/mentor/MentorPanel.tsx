@@ -12,7 +12,7 @@ import { catalogApi } from '../../api/catalog';
 import { useAuth } from '../../context/AuthContext';
 import { forumApi } from '../../api/forum';
 import type {
-  VerificationRequest, VerificationStatus, DocumentType,
+  VerificationRequest, VerificationStatus, DocumentType, TimelineEvent,
   HelpTopic, MentorProfileResponse,
   MentorPortfolioItem, MentorAchievement,
   MentorSubjectResult, MentorProfileOptions, SupportLevelOption, ForumPost,
@@ -197,6 +197,24 @@ export const MentorPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [req, setReq] = useState<VerificationRequest | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyEvents, setHistoryEvents] = useState<TimelineEvent[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  const handleViewTimelineHistory = async () => {
+    setShowHistoryModal(true);
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const data = await mentorVerificationApi.getTimeline();
+      setHistoryEvents(data);
+    } catch (err: any) {
+      setHistoryError(err?.response?.data?.message || 'Không thể tải lịch sử chỉnh sửa.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
   const activeReq = req || (user?.roles?.includes('MENTOR') ? { status: 'APPROVED', timeline: [] } as any : null);
 
   // Mentor profile form
@@ -757,8 +775,8 @@ export const MentorPanel: React.FC = () => {
     setBusy(true);
     setUploadError(null);
     try {
-      await mentorVerificationApi.deleteDocument(documentId);
-      setReq((prev) => (prev ? { ...prev, documents: prev.documents.filter((d) => d.id !== documentId) } : prev));
+      const updatedReq = await mentorVerificationApi.deleteDocument(documentId);
+      setReq(updatedReq);
       flash('Đã xoá minh chứng.');
       await refreshRequest();
     } catch (err: any) {
@@ -1436,9 +1454,18 @@ export const MentorPanel: React.FC = () => {
                 {sm.icon}{sm.label}
               </span>
             </h3>
-            <button onClick={() => setEditingApproved(true)} className="inline-flex items-center gap-1.5 bg-primary-soft text-primary hover:bg-primary/15 text-meta font-bold py-2 px-3 rounded-field cursor-pointer transition-all">
-              <Pencil className="w-3.5 h-3.5" /> Cấu hình
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleViewTimelineHistory}
+                className="inline-flex items-center gap-1.5 bg-surface-muted hover:bg-line/45 text-fg-muted hover:text-fg text-meta font-bold py-2 px-3.5 rounded-field cursor-pointer border border-line transition-all"
+              >
+                <Clock className="w-3.5 h-3.5" /> Lịch sử
+              </button>
+              <button onClick={() => setEditingApproved(true)} className="inline-flex items-center gap-1.5 bg-primary-soft text-primary hover:bg-primary/15 text-meta font-bold py-2 px-3 rounded-field cursor-pointer transition-all">
+                <Pencil className="w-3.5 h-3.5" /> Cấu hình
+              </button>
+            </div>
           </div>
 
           <div>
@@ -1792,6 +1819,69 @@ export const MentorPanel: React.FC = () => {
         <TimelinePanel req={activeReq} />
       </div>
 
+      {/* Edit History Timeline Modal */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 relative shadow-2xl space-y-4 text-left flex flex-col max-h-[85vh]">
+            <button
+              onClick={() => setShowHistoryModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-surface-muted hover:opacity-85 text-fg-muted cursor-pointer transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-1 pr-6">
+              <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary" />
+                Lịch sử chỉnh sửa hồ sơ
+              </h3>
+              <p className="text-meta text-fg-muted leading-relaxed font-semibold">
+                Nhật ký các lần thay đổi trạng thái và phản hồi từ quản trị viên hệ thống.
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2 space-y-0 pt-2 custom-scrollbar">
+              {historyLoading ? (
+                <div className="py-12 flex justify-center items-center">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : historyError ? (
+                <p className="text-meta text-danger font-bold text-center py-6">{historyError}</p>
+              ) : historyEvents.length === 0 ? (
+                <p className="text-meta text-fg-muted font-medium text-center py-8">Chưa có lịch sử chỉnh sửa nào.</p>
+              ) : (
+                <div className="space-y-0 pl-1">
+                  {historyEvents.map((e, i, arr) => (
+                    <div key={e.id || i} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <span className={`w-3 h-3 rounded-full mt-1 ${EVENT_DOT[e.eventType] || 'bg-primary'}`} />
+                        {i < arr.length - 1 && <span className="w-0.5 flex-1 bg-line my-1" />}
+                      </div>
+                      <div className="pb-5">
+                        <p className="text-body font-bold text-fg leading-tight">{eventLabel(e.eventType)}</p>
+                        <p className="text-meta text-fg-muted font-medium mt-1">{fmtDateTime(e.createdAt)}</p>
+                        {e.actorFullName && <p className="text-meta text-fg-faint font-medium">{e.actorFullName}</p>}
+                        {e.note && <p className="text-meta text-fg-muted font-medium mt-0.5 italic">"${e.note}"</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-line-soft flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="py-2.5 px-5 bg-surface-muted hover:opacity-85 rounded-field text-meta font-bold text-fg-muted border border-line cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-lg bg-surface border border-line rounded-card p-6 relative shadow-2xl space-y-4 text-left">
@@ -1970,6 +2060,25 @@ const DocumentsCard: React.FC<{
     },
   ];
 
+  const [viewingId, setViewingId] = useState<string | null>(null);
+
+  const handleView = async (docId: string) => {
+    if (viewingId) return;
+    setViewingId(docId);
+    try {
+      const docDetail = await mentorVerificationApi.getDocument(docId);
+      if (docDetail?.fileUrl) {
+        window.open(docDetail.fileUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        alert('Tệp tin không có URL tải về.');
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Không thể tải thông tin tệp tin.');
+    } finally {
+      setViewingId(null);
+    }
+  };
+
   return (
     <div className="meetmind-card p-6 rounded-card space-y-5">
       <div className="flex items-center justify-between border-b border-line-soft pb-2.5">
@@ -2045,14 +2154,14 @@ const DocumentsCard: React.FC<{
                         className="flex items-center gap-2.5 bg-surface border border-line rounded-field p-2 transition-all hover:border-primary/30"
                       >
                         {isImg && d.fileUrl ? (
-                          <a
-                            href={d.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="w-10 h-10 rounded-field overflow-hidden shrink-0 border border-line bg-surface-muted"
+                          <button
+                            type="button"
+                            onClick={() => handleView(d.id)}
+                            disabled={viewingId === d.id}
+                            className="w-10 h-10 rounded-field overflow-hidden shrink-0 border border-line bg-surface-muted cursor-pointer hover:opacity-85 transition-opacity disabled:opacity-50 disabled:cursor-wait"
                           >
                             <img src={d.fileUrl} alt={d.originalFilename} className="w-full h-full object-cover" />
-                          </a>
+                          </button>
                         ) : (
                           <div
                             className={`w-10 h-10 rounded-field flex items-center justify-center shrink-0 ${
@@ -2062,15 +2171,15 @@ const DocumentsCard: React.FC<{
                             {isImg ? <ImageIcon className="w-4.5 h-4.5" /> : <FileText className="w-4.5 h-4.5" />}
                           </div>
                         )}
-                        <div className="min-w-0 flex-1">
-                          <a
-                            href={d.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-meta font-bold text-fg truncate block hover:text-primary hover:underline"
+                        <div className="min-w-0 flex-1 flex flex-col justify-start items-start">
+                          <button
+                            type="button"
+                            onClick={() => handleView(d.id)}
+                            disabled={viewingId === d.id}
+                            className="text-meta font-bold text-fg truncate block hover:text-primary hover:underline text-left w-full cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                           >
-                            {d.originalFilename}
-                          </a>
+                            {viewingId === d.id ? 'Đang tải tệp...' : d.originalFilename}
+                          </button>
                           <p className="text-[10px] text-fg-muted font-medium">
                             {sizeKb ? `${sizeKb} KB` : ''}
                           </p>
