@@ -774,7 +774,7 @@ export const Mentors: React.FC = () => {
           </button>
           <div>
             <h2 className="text-headline-md text-[#151c29] font-bold leading-tight font-sans">
-              Chi tiết lịch hẹn – Cô Mentor {selectedMentorDetail.displayName}
+              Chi tiết lịch hẹn – Mentor {selectedMentorDetail.displayName}
             </h2>
             <p className="text-sm font-bold text-primary block mt-0.5 font-sans">
               Lịch rảnh môn: {selectedService ? selectedService.title : 'Chưa chọn'}
