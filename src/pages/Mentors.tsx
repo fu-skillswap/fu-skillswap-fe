@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown, Briefcase, LayoutGrid, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Check, X, Star, Search, SlidersHorizontal, Loader2, AlertCircle, ArrowLeft, Globe, Award, BookOpen, Heart, ChevronDown, Briefcase, LayoutGrid, Info, ChevronLeft, ChevronRight, Compass, Link2 } from 'lucide-react';
 import { mentorsApi } from '../api/mentors';
 import { catalogApi } from '../api/catalog';
 import type {
@@ -11,6 +11,8 @@ import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
 import { getExtendedMentorData } from '../lib/mockMentors';
 import { chatApi } from '../api/chat';
+import { matchingApi } from '../api/matching';
+import type { MatchingQuestionnaire } from '../api/types';
 
 
 
@@ -192,6 +194,108 @@ export const Mentors: React.FC = () => {
   // Custom Portfolio Tabs & Modal
   const [activeDetailTab, setActiveDetailTab] = useState<'about' | 'portfolio'>('about');
   const [selectedProject, setSelectedProject] = useState<MentorPortfolioItem | null>(null);
+
+  // Matching Profile States
+  const [showMatchingModal, setShowMatchingModal] = useState(false);
+  const [matchingLoading, setMatchingLoading] = useState(false);
+  const [questionnaire, setQuestionnaire] = useState<MatchingQuestionnaire | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [profileExists, setProfileExists] = useState(false);
+  const [matchingError, setMatchingError] = useState<string | null>(null);
+
+  const handleOpenMatchingModal = async () => {
+    setShowMatchingModal(true);
+    setMatchingLoading(true);
+    setMatchingError(null);
+    try {
+      const quest = await matchingApi.getQuestionnaire();
+      setQuestionnaire(quest);
+
+      try {
+        const prof = await matchingApi.getProfile();
+        if (prof && prof.exists && prof.latestAnswerCodes) {
+          setProfileExists(true);
+          setAnswers(prof.latestAnswerCodes);
+        } else {
+          setProfileExists(false);
+          setAnswers({});
+        }
+      } catch {
+        setProfileExists(false);
+        setAnswers({});
+      }
+    } catch (err: any) {
+      setMatchingError(err?.response?.data?.message || 'Không thể tải bộ câu hỏi khảo sát.');
+    } finally {
+      setMatchingLoading(false);
+    }
+  };
+
+  const handleSelectMatchingOption = (questionCode: string, optionCode: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionCode]: optionCode,
+    }));
+  };
+
+  const handleMatchingSubmit = async () => {
+    if (!questionnaire) return;
+    
+    const q1 = questionnaire.questions.find(q => q.code === 'Q1_FOUNDATION_LEVEL');
+    const q2 = questionnaire.questions.find(q => q.code === 'Q2_OUTPUT_REVIEW_LEVEL');
+    const q3 = questionnaire.questions.find(q => q.code === 'Q3_DIRECTION_LEVEL');
+    const q4 = questionnaire.questions.find(q => q.code === 'Q4_MENTOR_FIT');
+    const q5 = questionnaire.questions.find(q => q.code === 'Q5_DURATION_PREFERENCE');
+
+    if (!q1 || !q2 || !q3 || !q4 || !q5) {
+      alert('Dữ liệu bộ câu hỏi không đồng bộ. Vui lòng thử lại sau.');
+      return;
+    }
+
+    const a1 = answers[q1.code];
+    const a2 = answers[q2.code];
+    const a3 = answers[q3.code];
+    const a4 = answers[q4.code];
+    const a5 = answers[q5.code];
+
+    if (!a1 || !a2 || !a3 || !a4 || !a5) {
+      alert('Vui lòng trả lời đầy đủ cả 5 câu hỏi trước khi lưu.');
+      return;
+    }
+
+    setMatchingLoading(true);
+    setMatchingError(null);
+    try {
+      await matchingApi.submit({
+        phase: 'ACTIVE',
+        question1AnswerCode: a1,
+        question2AnswerCode: a2,
+        question3AnswerCode: a3,
+        question4AnswerCode: a4,
+        question5AnswerCode: a5,
+      });
+
+      const recs = await mentorsApi.getRecommendations(12);
+      const m = new Map<string, MentorRecommendation>();
+      recs.forEach((r) => r.mentor && m.set(r.mentor.mentorUserId, r));
+      recMapRef.current = m;
+
+      await loadMentors(searchQuery.trim());
+      setShowMatchingModal(false);
+      
+      window.dispatchEvent(new CustomEvent('push-toast', {
+        detail: {
+          title: 'Khảo sát thành công',
+          message: '🎉 Cập nhật nhu cầu tương hợp thành công. Các mentor phù hợp nhất đã được đề xuất hàng đầu!',
+          type: 'INFO'
+        }
+      }));
+    } catch (err: any) {
+      setMatchingError(err?.response?.data?.message || 'Không thể lưu câu trả lời khảo sát.');
+    } finally {
+      setMatchingLoading(false);
+    }
+  };
 
   // recommendations chỉ tải MỘT LẦN (dùng để ghép matchScore/reasons), không gọi lại mỗi lần gõ.
   useEffect(() => {
@@ -1827,7 +1931,7 @@ export const Mentors: React.FC = () => {
           {/* Title */}
           <div className="space-y-2">
             <span className="inline-flex items-center gap-1 bg-brand-terracotta/15 text-brand-terracotta text-body font-bold py-1 px-3 rounded-full border border-brand-terracotta/25">
-              <Sparkles className="w-3.5 h-3.5" /> Kết nối kỹ năng FPT
+              <Link2 className="w-3.5 h-3.5" /> Kết nối kỹ năng FPT
             </span>
             <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight">
               Tìm kiếm Mentor & Bạn cùng tiến
@@ -1840,16 +1944,25 @@ export const Mentors: React.FC = () => {
           {/* Filter Controls */}
           <div className="bg-surface border border-brand-border p-5 rounded-card shadow-sm space-y-4">
             {/* Search row */}
-            <div className="relative w-full">
-              <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-brand-grey" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm theo tên hoặc từ khóa kỹ năng (React, Python...)..."
-                className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 pl-10 pr-10 text-body text-brand-text focus:outline-none focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta transition-all font-semibold"
-              />
-              {searching && <Loader2 className="absolute right-3.5 top-3.5 w-4 h-4 text-brand-terracotta animate-spin" />}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-brand-grey" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm kiếm theo tên hoặc từ khóa kỹ năng (React, Python...)..."
+                  className="w-full bg-brand-bg/50 border border-brand-border rounded-field py-3 pl-10 pr-10 text-body text-brand-text focus:outline-none focus:border-brand-terracotta focus:ring-1 focus:ring-brand-terracotta transition-all font-semibold"
+                />
+                {searching && <Loader2 className="absolute right-3.5 top-3.5 w-4 h-4 text-brand-terracotta animate-spin" />}
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenMatchingModal}
+                className="bg-brand-terracotta hover:bg-brand-terracotta/90 text-white font-bold text-body py-3 px-5 rounded-field flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all shadow-sm shrink-0"
+              >
+                <Compass className="w-4 h-4" /> Khám phá Mentor phù hợp
+              </button>
             </div>
 
             {/* Dropdowns Row (Point 7) */}
@@ -2343,6 +2456,127 @@ export const Mentors: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Questionnaire Modal */}
+      {showMatchingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-2xl bg-surface border border-brand-border rounded-card p-6 relative shadow-2xl space-y-4 text-left flex flex-col max-h-[90vh]">
+            <button
+              onClick={() => setShowMatchingModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-brand-bg hover:opacity-80 text-brand-text-muted cursor-pointer transition-all"
+            >
+              <X className="w-4.5 h-4.5" />
+            </button>
+
+            <div className="space-y-1 pr-6">
+              <h3 className="text-xl font-bold font-serif text-brand-text flex items-center gap-2">
+                <Compass className="w-5 h-5 text-brand-terracotta" />
+                Khám phá Mentor phù hợp
+              </h3>
+              <p className="text-meta text-brand-text-muted leading-relaxed font-semibold">
+                Trả lời nhanh 5 câu hỏi trắc nghiệm dưới đây để hệ thống tự động tính toán mức độ tương hợp và đề xuất những Mentor phù hợp nhất lên hàng đầu.
+              </p>
+            </div>
+
+            {matchingLoading && !questionnaire ? (
+              <div className="py-12 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 text-brand-terracotta animate-spin" />
+                <p className="text-meta text-brand-text-muted font-bold">Đang tải bộ câu hỏi khảo sát...</p>
+              </div>
+            ) : matchingError && !questionnaire ? (
+              <div className="py-8 text-center space-y-3">
+                <AlertCircle className="w-8 h-8 text-brand-terracotta mx-auto" />
+                <p className="text-meta text-brand-terracotta font-bold">{matchingError}</p>
+                <button
+                  onClick={handleOpenMatchingModal}
+                  className="bg-brand-terracotta text-white text-meta font-bold py-2 px-4 rounded-field hover:opacity-90"
+                >
+                  Thử lại
+                </button>
+              </div>
+            ) : questionnaire ? (
+              <>
+                {profileExists && (
+                  <div className="p-3 bg-brand-bg/80 border border-brand-border/60 rounded-xl text-meta text-brand-text-muted font-semibold">
+                    💡 Bạn đã thực hiện khảo sát trước đó. Bạn có thể thay đổi các câu trả lời dưới đây để cập nhật bộ lọc đề xuất.
+                  </div>
+                )}
+
+                <div className="flex-1 overflow-y-auto pr-2 space-y-5 custom-scrollbar">
+                  {questionnaire.questions
+                    .sort((a, b) => a.displayOrder - b.displayOrder)
+                    .map((q, idx) => {
+                      return (
+                        <div key={q.code} className="p-5 bg-brand-bg/40 border border-brand-border rounded-xl space-y-3 text-left">
+                          <p className="text-body font-extrabold text-brand-text flex items-start gap-2 leading-snug">
+                            <span className="inline-flex items-center justify-center w-5.5 h-5.5 rounded-full bg-brand-terracotta text-[10px] font-black text-white shrink-0 mt-0.5 shadow-sm">
+                              {idx + 1}
+                            </span>
+                            {q.questionText}
+                          </p>
+                          <div className="space-y-2 pl-7.5">
+                            {q.options
+                              .sort((a, b) => a.displayOrder - b.displayOrder)
+                              .map((opt) => {
+                                const isSelected = answers[q.code] === opt.code;
+                                return (
+                                  <label
+                                    key={opt.code}
+                                    onClick={() => handleSelectMatchingOption(q.code, opt.code)}
+                                    className={`flex items-center gap-3 p-3.5 rounded-field border text-meta font-bold cursor-pointer transition-all ${
+                                      isSelected
+                                        ? 'bg-brand-terracotta/10 border-brand-terracotta text-brand-terracotta shadow-sm font-extrabold'
+                                        : 'bg-surface border-brand-border text-brand-text-muted hover:border-brand-text/30 hover:bg-brand-bg/30'
+                                    }`}
+                                  >
+                                    <span className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                                      isSelected ? 'border-brand-terracotta bg-brand-terracotta/20' : 'border-brand-border bg-transparent'
+                                    }`}>
+                                      {isSelected && <span className="w-2.5 h-2.5 rounded-full bg-brand-terracotta" />}
+                                    </span>
+                                    <span className="leading-snug">{opt.label}</span>
+                                  </label>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {matchingError && (
+                  <p className="text-meta text-brand-terracotta font-bold text-center mt-2">{matchingError}</p>
+                )}
+
+                <div className="pt-3 border-t border-brand-border flex gap-3 justify-end shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowMatchingModal(false)}
+                    className="py-2.5 px-5 bg-brand-bg border border-brand-border rounded-field text-meta font-bold text-brand-text-muted hover:bg-brand-bg/80 cursor-pointer"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="button"
+                    disabled={matchingLoading}
+                    onClick={handleMatchingSubmit}
+                    className="py-2.5 px-6 bg-brand-terracotta hover:bg-brand-terracotta/95 disabled:opacity-50 text-white rounded-field text-meta font-bold cursor-pointer active:scale-98 transition-all flex items-center gap-2"
+                  >
+                    {matchingLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Đang lưu...</span>
+                      </>
+                    ) : (
+                      <span>Hoàn thành & Gợi ý Mentor</span>
+                    )}
+                  </button>
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       )}
