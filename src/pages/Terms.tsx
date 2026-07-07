@@ -3,7 +3,7 @@ import { Shield, BookOpen, Users, Monitor, AlertTriangle, CheckCircle2 } from 'l
 
 const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
   <div className="space-y-4">
-    <h2 className="flex items-center gap-2.5 text-lg font-bold text-fg font-serif border-b border-line-soft pb-3">
+    <h2 className="flex items-center gap-2.5 text-lg font-bold text-fg font-sans border-b border-line-soft pb-3">
       <span className="text-primary shrink-0">{icon}</span>
       {title}
     </h2>
@@ -28,7 +28,7 @@ export const Terms: React.FC = () => (
       <div className="w-14 h-14 bg-primary-soft rounded-2xl flex items-center justify-center mx-auto">
         <Shield className="w-7 h-7 text-primary" />
       </div>
-      <h1 className="text-2xl font-bold text-fg font-serif">Nội quy & Điều khoản sử dụng</h1>
+      <h1 className="text-2xl font-bold text-fg font-sans">Nội quy & Điều khoản sử dụng</h1>
       <p className="text-body text-fg-muted">Áp dụng cho tất cả người dùng nền tảng SkillSwap</p>
     </div>
 

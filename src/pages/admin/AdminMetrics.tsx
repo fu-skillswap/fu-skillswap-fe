@@ -9,7 +9,7 @@ export const AdminMetrics: React.FC = () => {
         <span className="inline-flex items-center gap-1 bg-brand-terracotta/15 text-brand-terracotta text-body font-bold py-1 px-3 rounded-full border border-brand-terracotta/25">
           <BarChart3 className="w-3.5 h-3.5" /> Quản trị hệ thống
         </span>
-        <h1 className="text-3xl font-extrabold text-brand-text font-serif tracking-tight">
+        <h1 className="text-3xl font-extrabold text-brand-text font-sans tracking-tight">
           Báo cáo chỉ số hoạt động MVP
         </h1>
         <p className="text-brand-text-muted text-body max-w-2xl font-medium">
@@ -65,7 +65,7 @@ export const AdminMetrics: React.FC = () => {
         {/* Chart Column */}
         <div className="lg:col-span-2 space-y-6">
           <div className="meetmind-card p-6 rounded-card">
-            <h3 className="text-base font-bold text-brand-text font-serif mb-4">Phân bổ chuyên môn Mentor phổ biến</h3>
+            <h3 className="text-base font-bold text-brand-text font-sans mb-4">Phân bổ chuyên môn Mentor phổ biến</h3>
             
             {/* Custom CSS Bar Charts representing data */}
             <div className="space-y-4 pt-2">
@@ -115,7 +115,7 @@ export const AdminMetrics: React.FC = () => {
         {/* Audit Log column */}
         <div className="space-y-6">
           <div className="meetmind-card p-6 rounded-card">
-            <h3 className="text-base font-bold text-brand-text font-serif mb-4 flex items-center gap-2">
+            <h3 className="text-base font-bold text-brand-text font-sans mb-4 flex items-center gap-2">
               <ShieldAlert className="w-4.5 h-4.5 text-brand-terracotta" /> Nhật ký hệ thống
             </h3>
             

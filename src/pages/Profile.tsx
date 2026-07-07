@@ -423,7 +423,7 @@ export const Profile: React.FC = () => {
 
           {/* Academic Profile Form */}
           <div className="meetmind-card p-6 lg:p-8 rounded-card">
-            <h2 className="text-lg font-bold text-brand-text font-serif tracking-tight border-b border-brand-border pb-3 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-brand-text font-sans tracking-tight border-b border-brand-border pb-3 flex items-center gap-2">
               <User className="w-5 h-5 text-brand-terracotta" /> Thông tin học tập chuyên sâu
             </h2>
 
@@ -678,7 +678,7 @@ export const Profile: React.FC = () => {
       {viewTab === 'academic' && (
         <div className="space-y-7">
           <div className="meetmind-card p-7 rounded-card">
-            <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5 mb-4"><GraduationCap className="w-5 h-5 text-primary" /> Thông tin học thuật</h3>
+            <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5 mb-4"><GraduationCap className="w-5 h-5 text-primary" /> Thông tin học thuật</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-7 gap-y-6">
               <FactRow icon={<Hash className="w-4 h-4" />} label="Mã sinh viên" value={studentCode || 'Chưa cập nhật'} />
               <FactRow icon={<Building2 className="w-4 h-4" />} label="Cơ sở" value={campusName} />
@@ -691,7 +691,7 @@ export const Profile: React.FC = () => {
           </div>
 
           <div className="meetmind-card p-7 rounded-card">
-            <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5 mb-4"><User className="w-5 h-5 text-primary" /> Giới thiệu</h3>
+            <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5 mb-4"><User className="w-5 h-5 text-primary" /> Giới thiệu</h3>
             <p className="text-body text-fg-muted font-medium leading-relaxed" style={{ textWrap: 'pretty' }}>{bio || 'Chưa có giới thiệu.'}</p>
           </div>
         </div>

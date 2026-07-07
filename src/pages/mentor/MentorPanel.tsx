@@ -850,7 +850,7 @@ export const MentorPanel: React.FC = () => {
   const ProfileFields = (
     <>
       <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+        <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
           <Settings className="w-5 h-5 text-primary" /> Mô tả năng lực
         </h3>
         <div className="space-y-3">
@@ -880,7 +880,7 @@ export const MentorPanel: React.FC = () => {
 
       {/* Điểm số các môn hỗ trợ (Peer Matching) */}
       <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+        <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
           <Award className="w-5 h-5 text-primary" /> Điểm số các môn hỗ trợ (Peer Matching)
         </h3>
         
@@ -956,7 +956,7 @@ export const MentorPanel: React.FC = () => {
 
       {/* Mức độ hỗ trợ kỹ năng chuyên sâu */}
       <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+        <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
           <Award className="w-5 h-5 text-primary" /> Mức độ hỗ trợ kỹ năng chuyên sâu
         </h3>
         
@@ -1018,7 +1018,7 @@ export const MentorPanel: React.FC = () => {
       </div>
 
       <div className="meetmind-card p-6 rounded-card space-y-3">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+        <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
           <Link2 className="w-5 h-5 text-primary" /> Liên kết (không bắt buộc)
         </h3>
         <div className="space-y-3">
@@ -1029,7 +1029,7 @@ export const MentorPanel: React.FC = () => {
 
       {/* Giải thưởng & Học vấn (Achievements) */}
       <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+        <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
           <Award className="w-5 h-5 text-primary" /> Học vấn & Giải thưởng
         </h3>
         
@@ -1115,7 +1115,7 @@ export const MentorPanel: React.FC = () => {
 
       {/* Portfolio dự án (Featured Projects) */}
       <div className="meetmind-card p-6 rounded-card space-y-4">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+        <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
           <Monitor className="w-5 h-5 text-primary" /> Quản lý danh sách Portfolio dự án
         </h3>
 
@@ -1195,7 +1195,7 @@ export const MentorPanel: React.FC = () => {
       </div>
 
       <div className="meetmind-card p-6 rounded-card space-y-3">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Tags className="w-5 h-5 text-primary" /> Chủ đề hỗ trợ ({helpTopicIds.length}/{helpMax})</h3>
+        <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><Tags className="w-5 h-5 text-primary" /> Chủ đề hỗ trợ ({helpTopicIds.length}/{helpMax})</h3>
         {helpTopicsCatalog.length === 0 ? (
           <p className="text-meta text-fg-muted font-medium py-2">Không tải được danh sách chủ đề. Vui lòng thử lại sau.</p>
         ) : (
@@ -1219,7 +1219,7 @@ export const MentorPanel: React.FC = () => {
   // ---------- Xem trước hồ sơ (read-only) — dùng cho bước Nộp & trạng thái Chờ duyệt ----------
   const ProfileSummary = (
     <div className="meetmind-card p-7 rounded-card space-y-6 text-left">
-      <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
+      <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5">
         <ShieldCheck className="w-5 h-5 text-primary" /> Hồ sơ chuyên môn
       </h3>
       
@@ -1430,7 +1430,7 @@ export const MentorPanel: React.FC = () => {
 
         <div className="meetmind-card p-7 rounded-card space-y-6">
           <div className="flex items-center justify-between gap-3 border-b border-line-soft pb-2.5">
-            <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2">
+            <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-success" /> Hồ sơ Mentor 
               <span className={`ml-2 inline-flex items-center gap-1 text-meta font-extrabold py-0.5 px-2 rounded-lg border ${sm.cls}`}>
                 {sm.icon}{sm.label}
@@ -1646,7 +1646,7 @@ export const MentorPanel: React.FC = () => {
       <div className="space-y-6">
         {Notices}
         <div className="flex items-center justify-between">
-          <h3 className="text-title font-bold font-serif text-fg">Cấu hình hồ sơ Mentor</h3>
+          <h3 className="text-title font-bold font-sans text-fg">Cấu hình hồ sơ Mentor</h3>
         </div>
         {ProfileFields}
         <button disabled={busy} onClick={saveApprovedProfile} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action hover:bg-action-hover text-on-action text-body font-bold py-3 px-6 rounded-field cursor-pointer disabled:opacity-50 transition-all">
@@ -1723,7 +1723,7 @@ export const MentorPanel: React.FC = () => {
             <>
               {checklist && (
                 <div className="meetmind-card p-6 rounded-card space-y-4">
-                  <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><ListChecks className="w-5 h-5 text-primary" /> Yêu cầu hồ sơ</h3>
+                  <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5"><ListChecks className="w-5 h-5 text-primary" /> Yêu cầu hồ sơ</h3>
                   <div className="space-y-4">
                     {CHECKLIST_ROWS.map(({ key, label, hint, optional }) => (
                       <RequirementRow key={key} met={!!checklist[key]} label={label} hint={hint} optional={optional} />
@@ -1767,7 +1767,7 @@ export const MentorPanel: React.FC = () => {
               <DocumentsCard docs={docs} canUpload={false} />
 
               <div className="meetmind-card p-6 rounded-card space-y-4">
-                <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2"><Send className="w-5 h-5 text-primary" /> {activeReq.status === 'NEEDS_REVISION' ? 'Nộp lại hồ sơ' : 'Hoàn tất & nộp hồ sơ'}</h3>
+                <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2"><Send className="w-5 h-5 text-primary" /> {activeReq.status === 'NEEDS_REVISION' ? 'Nộp lại hồ sơ' : 'Hoàn tất & nộp hồ sơ'}</h3>
                 <div>
                   <label className="block text-meta font-bold text-fg-muted uppercase tracking-wide mb-1.5">Ghi chú gửi admin (tuỳ chọn)</label>
                   <textarea rows={2} value={submitNote} onChange={(e) => setSubmitNote(e.target.value)} placeholder="Ví dụ: Em bổ sung lại ảnh thẻ rõ nét và thêm chứng chỉ AWS…" className="w-full bg-surface border border-line rounded-field p-3 text-body text-fg focus:outline-none focus:border-primary/50 resize-none font-medium" />
@@ -1973,7 +1973,7 @@ const DocumentsCard: React.FC<{
   return (
     <div className="meetmind-card p-6 rounded-card space-y-5">
       <div className="flex items-center justify-between border-b border-line-soft pb-2.5">
-        <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2">
+        <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2">
           <Paperclip className="w-5 h-5 text-primary" /> Minh chứng xác thực
         </h3>
         <span className="text-meta font-bold text-fg-muted">{docs.length} tệp đã tải lên</span>
@@ -2141,7 +2141,7 @@ const DocumentsCard: React.FC<{
 
 const TimelinePanel: React.FC<{ req: VerificationRequest }> = ({ req }) => (
   <div className="meetmind-card p-6 rounded-card lg:sticky lg:top-6">
-    <h3 className="text-title font-bold font-serif text-fg flex items-center gap-2 border-b border-line-soft pb-2.5 mb-4"><Clock className="w-5 h-5 text-primary" /> Lịch sử xử lý</h3>
+    <h3 className="text-title font-bold font-sans text-fg flex items-center gap-2 border-b border-line-soft pb-2.5 mb-4"><Clock className="w-5 h-5 text-primary" /> Lịch sử xử lý</h3>
     <div className="space-y-0">
       {(req.timeline || []).map((e, i, arr) => (
         <div key={e.id || i} className="flex gap-3">

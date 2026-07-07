@@ -258,7 +258,7 @@ export const CompleteProfile: React.FC = () => {
       <div className="w-full lg:w-1/2 flex justify-center px-6 py-10 sm:py-12 bg-app overflow-y-auto">
         <div className="w-full max-w-2xl">
           <div className="mb-6">
-            <h1 className="text-2xl font-extrabold tracking-tight font-serif text-brand-text">Hoàn thiện hồ sơ học thuật</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight font-sans text-brand-text">Hoàn thiện hồ sơ học thuật</h1>
             <p className="text-brand-text-muted text-body font-semibold mt-1">
               Xin chào{user?.fullName ? `, ${user.fullName}` : ''} — điền thông tin để nhận gợi ý trao đổi phù hợp.
             </p>
