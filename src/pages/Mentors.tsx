@@ -469,6 +469,9 @@ export const Mentors: React.FC = () => {
         const slots = await mentorsApi.getAvailabilitySlots(mentor.mentorUserId).catch(() => [] as MentorAvailabilitySlot[]);
         setActiveSlots(slots);
         if (slots.length === 1) setSelectedSlotId(slots[0].slotId);
+        if (detail.services && detail.services.length > 0) {
+          setSelectedServiceId(detail.services[0].serviceId);
+        }
       }
 
       if (shouldScrollToBooking) {
@@ -485,16 +488,20 @@ export const Mentors: React.FC = () => {
 
 
 
-  // Khi đổi slot: reset service + candidate (service phải thuộc slot mới).
+  // Khi đổi slot: reset candidate (giữ service nếu hợp lệ, nếu không chọn service đầu tiên của slot mới).
   const handleSelectSlot = (slotId: string) => {
     setSelectedSlotId(slotId);
-    setSelectedServiceId('');
     setCandidates([]);
     setSelectedCandidateKey('');
     setBookingError(null);
     const slot = activeSlots.find((s) => s.slotId === slotId);
-    if (slot?.services && slot.services.length === 1) {
-      setSelectedServiceId(slot.services[0].serviceId);
+    if (slot?.services && slot.services.length > 0) {
+      const hasCurrent = slot.services.some((s) => s.serviceId === selectedServiceId);
+      if (!hasCurrent) {
+        setSelectedServiceId(slot.services[0].serviceId);
+      }
+    } else {
+      setSelectedServiceId('');
     }
   };
 
