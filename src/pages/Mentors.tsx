@@ -1120,9 +1120,9 @@ export const Mentors: React.FC = () => {
         <div className="relative overflow-hidden rounded-3xl bg-white border border-[#e8eeff] shadow-sm">
           {/* Cover gradient layer (Brushed network pattern) */}
           <div
-            className="h-44 bg-cover bg-center bg-no-repeat relative flex items-center justify-center"
+            className="h-44 bg-cover bg-center bg-no-repeat relative flex items-center justify-center animate-fadeIn"
             style={{ 
-              backgroundImage: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
+              backgroundImage: "url('/background-mentor-profile.jpg')",
             }}
           >
             {/* Mesh overlay */}
