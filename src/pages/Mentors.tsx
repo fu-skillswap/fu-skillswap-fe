@@ -10,7 +10,6 @@ import type {
 import { bookingsApi } from '../api/bookings';
 import { onAvatarError } from '../lib/img';
 import { getExtendedMentorData } from '../lib/mockMentors';
-import { chatApi } from '../api/chat';
 import { matchingApi } from '../api/matching';
 import type { MatchingQuestionnaire } from '../api/types';
 
@@ -594,22 +593,6 @@ export const Mentors: React.FC = () => {
       active = false;
     };
   }, [selectedMentorDetail, currentCalendarMonth]);
-
-  const handleChatWithMentor = async () => {
-    if (!selectedMentorDetail) return;
-    try {
-      const convos = await chatApi.listConversations({ size: 100 });
-      const found = convos.content?.find(c => c.otherUserId === selectedMentorDetail.mentorUserId);
-      if (found) {
-        window.location.href = `/chat?conversationId=${found.id}`;
-      } else {
-        alert('Bạn chỉ có thể nhắn tin cho mentor sau khi yêu cầu đặt lịch hẹn được chấp nhận.');
-      }
-    } catch (err) {
-      console.warn('Failed to find conversation', err);
-      alert('Không thể kết nối với hệ thống tin nhắn lúc này.');
-    }
-  };
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1665,15 +1648,6 @@ export const Mentors: React.FC = () => {
                             className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-primary/20 font-sans"
                           >
                             <span>Đặt lịch học ngay</span>
-                          </button>
-
-                          {/* "Nhắn tin cho Mentor" Button */}
-                          <button
-                            type="button"
-                            onClick={handleChatWithMentor}
-                            className="w-full flex items-center justify-center gap-2 bg-white border border-primary/25 hover:bg-slate-50 text-primary text-xs font-bold py-3 px-4 rounded-xl cursor-pointer transition-all active:scale-[0.98] font-sans"
-                          >
-                            <span>Nhắn tin cho Mentor</span>
                           </button>
                         </div>
                       </div>
